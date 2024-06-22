@@ -13,11 +13,13 @@ import { useAuth } from "../../../../contexts/authContext";
 import { useSql } from "../../../../contexts/sqlContext";
 import * as Updates from "expo-updates";
 import { TextInput } from "react-native-gesture-handler";
+import { useSocket } from "../../../../contexts/socketContext";
 
 const Settings = ({ navigation }) => {
   const theme = useTheme();
   const auth = useAuth();
   const sql = useSql();
+  const socket = useSocket();
   const[sender,setSender]=useState(theme.chatColor.sender)
   const[receiver,setReceiver]=useState(theme.chatColor.receiver)
 
@@ -33,6 +35,7 @@ const Settings = ({ navigation }) => {
   }
 
   const checkForUpdate = async () => {
+    if(!socket.isConnected) return;
     try {
       const update = await Updates.checkForUpdateAsync();
       if (update.isAvailable) {
