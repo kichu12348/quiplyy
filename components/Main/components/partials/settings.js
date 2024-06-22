@@ -113,7 +113,7 @@ const Settings = ({ navigation }) => {
       </View>
       <View style={styles.middle("center", "column", "flex-start")}>
         <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
-          Theme
+          Themes
         </Text>
         <Selector state="Dark" />
         <Selector state="Light" />
