@@ -58,6 +58,7 @@ function SqlProvider({ children }) {
         `);
 
     const rows = await db.getAllAsync("SELECT * FROM contacts");
+    if(contacts?.length===rows?.length) return;
     setContacts(rows);
   }
 
@@ -73,6 +74,14 @@ function SqlProvider({ children }) {
     try {
       const { id, username, time, roomID } = contact;
       const db = await SQLite.openDatabaseAsync("contacts.db");
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS contacts (
+                id TEXT,
+                username TEXT,
+                roomID TEXT,
+                time TEXT
+            );
+        `)
       const checkUser = await db.getFirstAsync(
         `SELECT * FROM contacts WHERE username = ?`,
         [username]

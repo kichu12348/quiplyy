@@ -6,36 +6,45 @@ import {
   Image,
   TouchableOpacity,
   Alert,
+  Modal,
 } from "react-native";
-import {useState} from "react";
+import { useState } from "react";
 import { useTheme } from "../../../../contexts/theme";
 import { useAuth } from "../../../../contexts/authContext";
 import { useSql } from "../../../../contexts/sqlContext";
 import * as Updates from "expo-updates";
 import { TextInput } from "react-native-gesture-handler";
 import { useSocket } from "../../../../contexts/socketContext";
+import * as SQLlite from "expo-sqlite";
+import axios from "axios";
 
 const Settings = ({ navigation }) => {
   const theme = useTheme();
   const auth = useAuth();
   const sql = useSql();
   const socket = useSocket();
-  const[sender,setSender]=useState(theme.chatColor.sender)
-  const[receiver,setReceiver]=useState(theme.chatColor.receiver)
+  const [sender, setSender] = useState(theme.chatColor.sender);
+  const [receiver, setReceiver] = useState(theme.chatColor.receiver);
+  const [isBackupOpen, setIsBackupOpen] = useState(false);
 
+  axios.defaults.baseURL = `${socket.endPoint}/message`;
 
-  const changeColor=()=>{
-    if(sender===""||receiver==="") return;
-    if(sender===theme.chatColor.sender&&receiver===theme.chatColor.receiver) return;
-    if(!sender.includes("rgba")||!receiver.includes("rgba")){
+  const changeColor = () => {
+    if (sender === "" || receiver === "") return;
+    if (
+      sender === theme.chatColor.sender &&
+      receiver === theme.chatColor.receiver
+    )
+      return;
+    if (!sender.includes("rgba") || !receiver.includes("rgba")) {
       Alert.alert("Invalid Color Only RGBA values are allowed");
       return;
     }
-    theme.changeChatColor(sender,receiver);
-  }
+    theme.changeChatColor(sender, receiver);
+  };
 
   const checkForUpdate = async () => {
-    if(!socket.isConnected) return;
+    if (!socket.isConnected) return;
     try {
       const update = await Updates.checkForUpdateAsync();
       if (update.isAvailable) {
@@ -50,6 +59,118 @@ const Settings = ({ navigation }) => {
     }
   };
 
+  const BackupMessages = async () => {
+    if (!socket.isConnected) {
+      Alert.alert("No Internet Connection");
+      return;
+    }
+    if (socket.isLoading) {
+      Alert.alert("Please wait for the server to connect");
+      return;
+    }
+    const db = await SQLlite.openDatabaseAsync("messages.db");
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS messages (
+        idx INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT,
+        sender TEXT,
+        msg TEXT,
+        roomID TEXT,
+        isSticker BOOLEAN DEFAULT 0,
+        sticker TEXT DEFAULT NULL,
+        isDeleted BOOLEAN DEFAULT 0,
+        time TEXT
+      );
+    `);
+    const rows = await db.getAllAsync("SELECT * FROM messages");
+    if (rows.length === 0) {
+      Alert.alert("No Messages to Backup");
+      return;
+    }
+    await axios
+      .post("/backup", { messages: rows, token: auth.token })
+      .then((res) => {
+        if (res.data.success) {
+          Alert.alert("Messages Backed Up Successfully");
+        } else {
+          Alert.alert("Error Backing Up Messages");
+        }
+      });
+  };
+
+  const getBackup = async () => {
+    if (!socket.isConnected) {
+      Alert.alert("No Internet Connection");
+      return;
+    }
+    if (socket.isLoading) {
+      Alert.alert("Please wait for the server to connect");
+      return;
+    }
+    await axios
+      .post("/getBackup", { token: auth.token })
+      .then(async (res) => {
+        if (res.data.success) {
+          try {
+            const db = await SQLlite.openDatabaseAsync("messages.db");
+            await db.execAsync("DROP TABLE IF EXISTS messages");
+            await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS messages (
+          idx INTEGER PRIMARY KEY AUTOINCREMENT,
+          id TEXT,
+          sender TEXT,
+          msg TEXT,
+          roomID TEXT,
+          isSticker BOOLEAN DEFAULT 0,
+          sticker TEXT DEFAULT NULL,
+          isDeleted BOOLEAN DEFAULT 0,
+          time TEXT
+        );
+      `);
+            res.data.messages.map(async (message) => {
+              await db.runAsync(
+                `
+          INSERT INTO messages (id,sender,msg,roomID,isSticker,sticker,isDeleted,time) VALUES (?,?,?,?,?,?,?,?)
+          `,
+                [
+                  message.id,
+                  message.sender,
+                  message.msg,
+                  message.roomID,
+                  message.isSticker,
+                  message.sticker,
+                  message.isDeleted,
+                  message.time,
+                ]
+              );
+            });
+
+            await axios
+              .post("/deleteBackup", { token: auth.token })
+              .then((res) => {
+                if (res.data.success) {
+                  Alert.alert("Messages Restored Successfully");
+                  return;
+                } else {
+                  Alert.alert("Error: Restoring Messages");
+                  return;
+                }
+              })
+              .catch((e) => {
+                Alert.alert("Error Restoring Messages");
+              });
+            return;
+          } catch (e) {
+            Alert.alert("Error Restoring Messages");
+            return;
+          }
+        }
+        Alert.alert("Error: ", res.data.error.message || "Error Restoring Messages");
+      })
+      .catch((e) => {
+        Alert.alert("Error Restoring Messages");
+      });
+  };
 
   const Selector = ({ state }) => {
     return (
@@ -67,6 +188,42 @@ const Settings = ({ navigation }) => {
           {state}
         </Text>
       </TouchableOpacity>
+    );
+  };
+
+  const BackupComponent = () => {
+    return (
+      <SafeAreaView style={styles.backUpcontainer(theme.theme)}>
+        <View style={styles.backUpHeader}>
+          <TouchableOpacity onPress={() => setIsBackupOpen(false)}>
+            <Image source={theme.Icons.return} style={styles.Image(0)} />
+          </TouchableOpacity>
+          <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
+            Back
+          </Text>
+        </View>
+        <View style={styles.body}>
+          <Text style={styles.backUpText}>
+            ⚠️ downloading Backup will replace the current messages.....
+          </Text>
+          <View style={styles.centerDiv}>
+            <TouchableOpacity
+              style={styles.button(theme.theme)}
+              onPress={() => BackupMessages()}
+            >
+              <Text style={styles.text("white")}>Backup Messages</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.centerDiv}>
+            <TouchableOpacity
+              style={styles.button(theme.theme)}
+              onPress={() => getBackup()}
+            >
+              <Text style={styles.text("white")}>download Backup</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
     );
   };
 
@@ -88,26 +245,35 @@ const Settings = ({ navigation }) => {
       </View>
       <View style={styles.middle()}>
         <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
-          {auth.user?auth.user.username:"User"} 
+          {auth.user ? auth.user.username : "User"}
         </Text>
-        <Image source={auth.user?({uri:`https://api.multiavatar.com/${auth.user.username}.png?apikey=CglVv3piOwAuoJ`}):theme.Icons.setting} style={styles.Image(10, 20)} />
+        <Image
+          source={
+            auth.user
+              ? {
+                  uri: `https://api.multiavatar.com/${auth.user.username}.png?apikey=CglVv3piOwAuoJ`,
+                }
+              : theme.Icons.setting
+          }
+          style={styles.Image(10, 20)}
+        />
       </View>
       <View style={styles.middle("center", "column", "flex-start", 30)}>
-      <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
-          Color Picker
+        <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
+          Color
         </Text>
         <View style={styles.centerDiv}>
-          <TextInput 
-          style={styles.TextInput(theme,true)}
-          value={sender}
-          onChangeText={(text)=>setSender(text)}
-          onSubmitEditing={changeColor}
+          <TextInput
+            style={styles.TextInput(theme, true)}
+            value={sender}
+            onChangeText={(text) => setSender(text)}
+            onSubmitEditing={changeColor}
           />
           <TextInput
-          style={styles.TextInput(theme,false)}
-          value={receiver}
-          onChangeText={(text)=>setReceiver(text)}
-          onSubmitEditing={changeColor}
+            style={styles.TextInput(theme, false)}
+            value={receiver}
+            onChangeText={(text) => setReceiver(text)}
+            onSubmitEditing={changeColor}
           />
         </View>
       </View>
@@ -118,32 +284,43 @@ const Settings = ({ navigation }) => {
         <Selector state="Dark" />
         <Selector state="Light" />
       </View>
-      <View style={styles.middle("center", "column", "flex-start", 30)}>
-        <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
-          Updates
-        </Text>
+
+      <View style={styles.row}>
+        <TouchableOpacity
+          style={styles.rowBtn(theme.theme)}
+          onPress={() => checkForUpdate()}
+        >
+          <Text style={styles.text("white")}>Check For Update</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.rowBtn(theme.theme)}
+          onPress={() => setIsBackupOpen(true)}
+        >
+          <Text style={styles.text("white")}>Backup</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.middle("center", "column", "flex-start", 0)}>
         <View style={styles.centerDiv}>
           <TouchableOpacity
             style={styles.button(theme.theme)}
-            onPress={()=>checkForUpdate()}
-          >
-            <Text style={styles.text("white")}>Check For Update</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      <View style={styles.middle("center", "column", "flex-start", 0)}>
-        <View style={styles.centerDiv}>
-          <TouchableOpacity 
-          style={styles.button(theme.theme)}
-          onPress={() => {
-            auth.logOut()
-            sql.dropContactsDB()
-          }}
+            onPress={() => {
+              auth.logOut();
+              sql.dropContactsDB();
+            }}
           >
             <Text style={styles.text("white")}>Logout</Text>
           </TouchableOpacity>
         </View>
       </View>
+      <Modal
+        transparent={true}
+        visible={isBackupOpen}
+        animationType="slide"
+        hardwareAccelerated={true}
+      >
+        <BackupComponent />
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -204,7 +381,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     opacity: theme ? 1 : 0,
   }),
-  button: (theme,opacity=1) => ({
+  button: (theme, opacity = 1) => ({
     backgroundColor:
       theme === "dark" ? "rgba(198,0,198,1)" : "rgba(0,255,0,0.8)",
     height: 50,
@@ -212,9 +389,9 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
-    marginHorizontal: 20,
+    marginHorizontal: 0,
     marginVertical: 20,
-    opacity:opacity
+    opacity: opacity,
   }),
   centerDiv: {
     justifyContent: "center",
@@ -222,15 +399,59 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     width: "100%",
   },
-  TextInput:(theme,state)=>({
-    flex  :1,
-    height:50,
-    backgroundColor:state?theme.chatColor.sender:theme.chatColor.receiver,
-    borderRadius:25,
-    padding:10,
-    margin:10,
-    marginTop:20,
-    color:"white",
-    fontWeight:"bold"
-  })
+  TextInput: (theme, state) => ({
+    flex: 1,
+    height: 50,
+    backgroundColor: state ? theme.chatColor.sender : theme.chatColor.receiver,
+    borderRadius: 25,
+    padding: 10,
+    margin: 10,
+    marginTop: 20,
+    color: "white",
+    fontWeight: "bold",
+  }),
+  backUpcontainer: (theme) => ({
+    flex: 1,
+    backgroundColor: theme === "dark" ? "black" : "white",
+    justifyContent: "center",
+    alignItems: "center",
+  }),
+  body: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  backUpHeader: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    backgroundColor: "transparent",
+    width: "100%",
+    marginTop: 20,
+    marginLeft: 20,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 20,
+  },
+  rowBtn: (theme) => ({
+    backgroundColor:
+      theme === "dark" ? "rgba(198,0,198,1)" : "rgba(0,255,0,0.8)",
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 30,
+    marginHorizontal: 10,
+    padding: 10,
+    minWidth: "10%",
+  }),
+  backUpText: {
+    fontSize: 15,
+    fontWeight: 400,
+    marginVertical: 20,
+    color: "red",
+  },
 });

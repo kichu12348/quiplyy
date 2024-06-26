@@ -7,12 +7,14 @@ import axios from "axios";
 const AuthContext = createContext();
 
 const AuthProvider = ({ children }) => {
-  axios.defaults.baseURL = "https://quiplyserver.onrender.com/user";
+  
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [contacts, setContacts] = useState(null);
-  const { socket, setIsAuth, isConnected } = useSocket();
+  const { socket, setIsAuth, isConnected, isAuth, isLoading,endPoint} = useSocket();
 
+  axios.defaults.baseURL = `${endPoint}/user`;
+  //SETTING DATA INTO DB LOCAL
   const setData = async (token, user) => {
     const db = await SQLite.openDatabaseAsync("user.db");
     db.execAsync(`
@@ -29,6 +31,7 @@ const AuthProvider = ({ children }) => {
     ]);
   };
 
+  //GETTING DATA IF EXISTS FROM DB LOCALLY
   const getData = async () => {
     const db = await SQLite.openDatabaseAsync("user.db");
     db.execAsync(`
@@ -38,10 +41,11 @@ const AuthProvider = ({ children }) => {
           id TEXT
           );
       `);
-    const rows = await db.getAllAsync("SELECT * FROM user");
-    return rows;
+    const row = await db.getFirstAsync("SELECT * FROM user");
+    return row;
   };
 
+  //REMOVES CONTACTS DATA FROM LOCAL DB
   const removeData = async () => {
     const db = await SQLite.openDatabaseAsync("user.db");
     db.execAsync(`
@@ -49,6 +53,7 @@ const AuthProvider = ({ children }) => {
     `);
   };
 
+  //REMOVES MESSAGES STORED IN LOACAL DB
   const removeMessages = async () => {
     const db = await SQLite.openDatabaseAsync("messages.db");
     db.execAsync(`
@@ -56,6 +61,7 @@ const AuthProvider = ({ children }) => {
       `);
   };
 
+  //LOGINS IN A USER
   const login = async (username, password) => {
     await axios
       .post("/login", { username, password })
@@ -67,7 +73,9 @@ const AuthProvider = ({ children }) => {
           socket?.emit("joinID", { id: res.data.user.id });
           setIsAuth(true);
         } else {
-          setIsAuth(false);
+          if (isAuth) {
+            setIsAuth(false);
+          }
           Alert.alert(res.data.error);
         }
       })
@@ -77,6 +85,7 @@ const AuthProvider = ({ children }) => {
       });
   };
 
+  //REGISTERS A NEW USER
   const signup = async (username, password) => {
     await axios
       .post("/signup", { username, password })
@@ -98,31 +107,21 @@ const AuthProvider = ({ children }) => {
       });
   };
 
+  //ION KNOW WHY THIS IS
   const checkAuth = async () => {
-    const [token] = await getData();
-
-    if (token && socket) {
-      setUser({ username: token.username, id: token.id });
-      setToken(token.token);
-      socket?.emit("joinID", { id: token.id });
-      setIsAuth(true);
-      if (!isConnected) return;
-      await axios
-        .post("/auth", { token })
-        .then((res) => {
-          if (res.data.success) {
-            return;
-          }
-          setIsAuth(false);
-        })
-        .catch(() => {
-          setIsAuth(false);
-        });
-      return;
+    const user = await getData();
+    if (!token && isAuth && user) {
+      setUser({ username: user.username, id: user.id });
+      setToken(user.token);
     }
-    setIsAuth(false);
+    if (user && socket && isAuth) {
+      if (isConnected && socket && !isLoading) {
+        socket?.emit("joinID", { id: user.id });
+      }
+    }
   };
 
+  //CLEARS ALL DATA AND SIGNS OUT
   const logOut = async () => {
     await removeData();
     await removeMessages();
@@ -157,17 +156,21 @@ const AuthProvider = ({ children }) => {
   };
 
   const getContacts = async () => {
-    if (!isConnected) return;
-    if (!token) return;
-    const resp = await axios.post("/getContacts", { token });
-    if (resp.data.success) {
-      return resp.data.contacts;
+    if (!isConnected && !token && !isAuth) return;
+    try {
+      const resp = await axios.post("/getContacts", { token });
+      if (resp.data.success) {
+        return resp.data.contacts;
+      }
+    } catch (e) {
+      console.log("error:getting contacts: " + e.message);
+      return null;
     }
   };
 
   useEffect(() => {
     checkAuth();
-  }, [socket, isConnected]);
+  }, [socket, isConnected, isAuth]);
 
   const value = useMemo(() => {
     return {

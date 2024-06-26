@@ -1,29 +1,21 @@
 import { Text, StyleSheet, View, Image } from "react-native";
-import {useEffect} from "react";
+import { useEffect } from "react";
 import floatingBot from "./images/floatingBoot.gif";
 import { useSocket } from "../../contexts/socketContext";
 
-const Loading = ({navigation}) => {
-    
-    const socket= useSocket()
-
-    useEffect(()=>{
-        if(!socket.isLoading && socket.isAuth && socket.isConnected){
-            navigation.replace("homePage")
-        }
-        else if(!socket.isLoading && !socket.isAuth){
-            navigation.replace("authPage")
-        }
-        else if(socket.isAuth && !socket.isConnected){
-            navigation.replace("homePage")
-        }
-    },[socket.isLoading,socket.isAuth,socket.isConnected])
-
-
+const Loading = ({ navigation }) => {
+  const socket = useSocket();
+  useEffect(() => {
+    if (socket.isAuth) {
+      navigation.replace("homePage");
+    } else if (!socket.isAuth && !socket.isLoading) {
+      navigation.replace("authPage");
+    }
+  }, [socket.isAuth, socket.isLoading]);
 
   return (
     <View style={styles.container}>
-        <Image style={styles.Image} source={floatingBot}/>
+      <Image style={styles.Image} source={floatingBot} />
       <Text style={styles.textStyle}>Server is Loading...</Text>
     </View>
   );
@@ -39,10 +31,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   Image: {
-    height:300,
+    height: 300,
     width: 300,
-    alignSelf:"center",
-    marginLeft:"20%"
+    alignSelf: "center",
+    marginLeft: "20%",
   },
   textStyle: {
     fontSize: 25,

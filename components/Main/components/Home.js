@@ -1,57 +1,58 @@
-import { View, Text, StyleSheet, SafeAreaView } from "react-native";
+import { StyleSheet, SafeAreaView } from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useEffect } from "react";
 import Chats from "./partials/chats";
 import Stuff from "./partials/stuff";
+import Blog from "./partials/blogs";
 import Settings from "./partials/settings";
 import SingleChat from "./partials/singleChat";
 import { useTheme } from "../../../contexts/theme";
 import { useAuth } from "../../../contexts/authContext";
+import { useSocket } from "../../../contexts/socketContext";
+
 
 const Home = ({navigation}) => {
   const Stack = createStackNavigator();
 
   const theme = useTheme();
   const auth = useAuth();
+  const socket = useSocket()
   useEffect(() => {
-    if (!auth.user) {
+    if (!socket.isAuth) {
       navigation.replace("authPage");
     }
-  },[auth.token]);
+  },[auth.token,socket.isAuth]);
 
   
 
   return (
     <SafeAreaView style={styles.container(theme.theme)}>
-      <Stack.Navigator>
+      <Stack.Navigator 
+        initialRouteName="Chats"
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
         <Stack.Screen
           name="Chats"
           component={Chats}
-          options={{
-            header: () => null,
-          }}
         />
         <Stack.Screen
           name="Stuff"
           component={Stuff}
-          options={{
-            header: () => null,
-          }}
         />
         <Stack.Screen
           name="Settings"
           component={Settings}
-          options={{
-            header: () => null,
-          }}
         />
         <Stack.Screen
           name="SingleChat"
           component={SingleChat}
-          options={{
-            header: () => null,
-          }}
         />
+        <Stack.Screen
+          name="blogPage"
+          component={Blog}
+          />
       </Stack.Navigator>
     </SafeAreaView>
   );

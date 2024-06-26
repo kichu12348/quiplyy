@@ -19,13 +19,13 @@ import { useSocket } from "../../../../contexts/socketContext";
 
 const Body = ({ moveTo }) => {
   const theme = useTheme();
-  axios.defaults.baseURL = "https://quiplyserver.onrender.com/user";
+  
   const { width } = Dimensions.get("window");
   const { setSelectedContact } = useMessager();
   const sql = useSql();
   const auth = useAuth();
-  const { socket,isConnected} = useSocket();
-
+  const { socket,isConnected,endPoint} = useSocket();
+  axios.defaults.baseURL = `${endPoint}/user`;
   const [contacts, setContacts] = useState(sql.contacts);
   const [query, setQuery] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
@@ -46,11 +46,14 @@ const Body = ({ moveTo }) => {
       if (res.data.success) {
         setContacts(res.data.list.filter(e => auth.user?.username !== e?.username && e?.username.toLowerCase().includes(query.toLowerCase())));
       }
+    }).catch((e) => {
+      console.log("error:query " + e.message);
     });
   };
 
   const addContact = (id) => {
     if(!isConnected) return;
+    if(id===auth.user.id) return;
     auth.addContact(id);
     setIsQuerying(false);
     setContacts(sql.contacts);
@@ -94,6 +97,7 @@ const Body = ({ moveTo }) => {
   }, [sql.contacts]);
 
   const handleAddContactSocket = useCallback((data) => {
+    if(data.id===auth.user.id)return;
     sql.setContacts(prev => [...prev, {
       id: data.id,
       username: data.username,

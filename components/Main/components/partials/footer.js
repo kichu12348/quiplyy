@@ -16,9 +16,11 @@ const Footer = ({moveTo}) => {
       >
         <Image style={styles.Image} source={Icons.stuff}/>
       </TouchableOpacity>
-      <View>
-        <Image style={styles.Image} source={Icons.chat}/>
-      </View>
+      <TouchableOpacity
+      onPress={()=>moveTo('blogPage')} 
+      >
+        <Image style={styles.Image} source={Icons.blog}/>
+      </TouchableOpacity>
       <View>
         <Image style={styles.Image} source={user?({uri:`https://api.multiavatar.com/${user.username}.png?apikey=CglVv3piOwAuoJ`}):Icons.chat}/>
       </View>
