@@ -17,6 +17,7 @@ const Main = () => {
 
   useEffect(() => {
     if (isUpdateAvailable) {
+      Updates.fetchUpdateAsync();
       Updates.reloadAsync();
     }
   },[isUpdatePending]);
@@ -25,7 +26,7 @@ const Main = () => {
 
   useEffect(()=>{
     Updates.checkForUpdateAsync()
-    Updates.fetchUpdateAsync();
+    
   },[])
 
 
