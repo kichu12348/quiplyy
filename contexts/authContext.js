@@ -151,7 +151,7 @@ const AuthProvider = ({ children }) => {
         }
       })
       .catch((e) => {
-        Alert.alert("error:1 " + e.message);
+        return;
       });
   };
 
