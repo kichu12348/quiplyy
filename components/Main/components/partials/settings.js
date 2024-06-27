@@ -65,7 +65,7 @@ const Settings = ({ navigation }) => {
       return;
     }
     if (socket.isLoading) {
-      Alert.alert("Please wait for the server to connect");
+      Alert.alert("Please wait for the server to connect!");
       return;
     }
     const db = await SQLlite.openDatabaseAsync("messages.db");
