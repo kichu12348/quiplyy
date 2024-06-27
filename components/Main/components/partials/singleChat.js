@@ -13,7 +13,7 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
 } from "react-native";
-import { useCallback, useEffect, useRef, useState} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import * as SQLite from "expo-sqlite";
 import { useTheme } from "../../../../contexts/theme";
@@ -81,7 +81,6 @@ const SingleChat = ({ navigation }) => {
     setMessages(rows);
   };
 
-
   const addMessageToDB = async (db, message) => {
     if (message.isDeleted) {
       await db.runAsync("DELETE FROM messages WHERE id = ?", [message.id]);
@@ -127,7 +126,7 @@ const SingleChat = ({ navigation }) => {
       if (message.isDeleted) {
         await addMessageToDB(db, message);
         if (user.id === message.sender) return;
-        if (receivedMessageIds.current.has(message.id)){
+        if (receivedMessageIds.current.has(message.id)) {
           receivedMessageIds.current.delete(message.id);
         }
         await axios.post("/delete", { messageId: message.id });
@@ -152,13 +151,12 @@ const SingleChat = ({ navigation }) => {
   }
 
   const startChat = async () => {
-    if (!isConnected || !selectedContact) return;
-
-    socket.emit("joinRoom", { roomID: selectedContact.roomID });
-
     try {
       const db = await dbPromise;
       await createTableIfNotExists(db);
+      await loadMessages(db);
+      if (!isConnected || !selectedContact) return;
+      socket?.emit("joinRoom", { roomID: selectedContact.roomID });
       const res = await axios.post("/check", {
         roomID: selectedContact.roomID,
       });
@@ -171,9 +169,6 @@ const SingleChat = ({ navigation }) => {
             handleIncomingMessage(message);
           }
         }
-        await loadMessages(db);
-      } else {
-        await loadMessages(db);
       }
     } catch (e) {
       console.log("error: check message: ", e.message);
@@ -250,17 +245,16 @@ const SingleChat = ({ navigation }) => {
   useEffect(() => {
     if (socket) {
       socket.on("newMessage", handleIncomingMessage);
-      socket.on("typing",({id})=>{
-        if(id!==selectedContact.id)return;
-        if(isTyping)return;
-        if(id===user.id)return;
-          if(isTyping)return;
-          setIsTyping(true);
-          setTimeout(()=>{
-            setIsTyping(false);
-          },5000)
-        
-      })
+      socket.on("typing", ({ id }) => {
+        if (id !== selectedContact.id) return;
+        if (isTyping) return;
+        if (id === user.id) return;
+        if (isTyping) return;
+        setIsTyping(true);
+        setTimeout(() => {
+          setIsTyping(false);
+        }, 5000);
+      });
       return () => {
         socket.off("newMessage", handleIncomingMessage);
       };
@@ -276,8 +270,8 @@ const SingleChat = ({ navigation }) => {
 
   const isTypingHandler = (text) => {
     if (!isConnected || !selectedContact || !socket) return;
-    if(text.trim()==="")return;
-    socket?.emit("typing", { roomID: selectedContact.roomID,user:user.id });
+    if (text.trim() === "") return;
+    socket?.emit("typing", { roomID: selectedContact.roomID, user: user.id });
   };
 
   //components
@@ -309,7 +303,13 @@ const SingleChat = ({ navigation }) => {
             {item.isSticker ? (
               <Image
                 source={stickerPaths[item.sticker]}
-                style={styles.Image(item.sender===user.id?0:-10, item.sender===user.id?-10:0, 200, 200, 10)}
+                style={styles.Image(
+                  item.sender === user.id ? 0 : -10,
+                  item.sender === user.id ? -10 : 0,
+                  200,
+                  200,
+                  10
+                )}
               />
             ) : (
               <Text
@@ -333,7 +333,7 @@ const SingleChat = ({ navigation }) => {
     return (
       <TouchableWithoutFeedback onPress={() => setIsSticker(false)}>
         <View style={styles.stickerModal}>
-          <BlurView style={styles.stickerContainer()}>
+          <BlurView intensity={300} style={styles.stickerContainer()}>
             <View style={styles.stickerHeader}>
               <TouchableOpacity
                 style={styles.Image(10, 20, 40, 40)}
@@ -390,7 +390,7 @@ const SingleChat = ({ navigation }) => {
         onPress={() => setIsFocused({ focused: false, item: isFocused.item })}
       >
         <BlurView
-          intensity={200}
+          intensity={300}
           style={styles.blurView(
             isFocused.item?.isSticker ? "center" : "flex-end"
           )}
@@ -417,7 +417,7 @@ const SingleChat = ({ navigation }) => {
 
   useEffect(() => {
     if (flatListRef.current && messages.length > 0) {
-      if(loaded)return;
+      if (loaded) return;
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 200);
@@ -426,105 +426,94 @@ const SingleChat = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container(theme)}>
-      
-        <View style={styles.header(theme)}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.Image(10, 20)}
-          >
-            <Image source={Icons.return} style={styles.Image()} />
-          </TouchableOpacity>
+      <View style={styles.header(theme)}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.Image(10, 20)}
+        >
+          <Image source={Icons.return} style={styles.Image()} />
+        </TouchableOpacity>
 
-          <Text style={styles.textStyles(theme)}>
-            {selectedContact ? selectedContact?.username : "Single Chat"}
-          </Text>
-          <Image
-            source={{
-              uri: `https://api.multiavatar.com/${selectedContact.username}.png?apikey=CglVv3piOwAuoJ`,
-            }}
-            style={styles.Image(20, 10)}
+        <Text style={styles.textStyles(theme)}>
+          {selectedContact ? selectedContact?.username : "Single Chat"}
+        </Text>
+        <Image
+          source={{
+            uri: `https://api.multiavatar.com/${selectedContact.username}.png?apikey=CglVv3piOwAuoJ`,
+          }}
+          style={styles.Image(20, 10)}
+        />
+      </View>
+      <KeyboardAvoidingView
+        style={styles.body}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        enabled
+        keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 5}
+      >
+        <View style={styles.flatListContainer}>
+          <FlatList
+            data={messages}
+            renderItem={RenderList}
+            ref={flatListRef}
+            onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
+            onContentSizeChange={() =>
+              flatListRef.current.scrollToEnd({ animated: true })
+            }
           />
         </View>
-        <KeyboardAvoidingView
-          style={styles.body}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          enabled
-          keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 5}
-        >
-          <View style={styles.flatListContainer}>
-            <FlatList
-              data={messages}
-              renderItem={RenderList}
-              ref={flatListRef}
-              onLayout={() =>
-                flatListRef.current.scrollToEnd({ animated: true })
-                }
-              onContentSizeChange={() =>
-                flatListRef.current.scrollToEnd({ animated: true })
-                }
-            />
-          </View>
-          <View style={styles.footer}>
-            <View style={styles.updateContainer}>
-              <Text style={styles.textStyles(theme, 15, 400, "rgba(198,198,198,0.5)")}>
+        <View style={styles.footer}>
+          <View style={styles.updateContainer}>
+            <Text
+              style={styles.textStyles(theme, 15, 400, "rgba(198,198,198,0.5)")}
+            >
               {isTyping ? "Typing..." : ""}
             </Text>
-            </View>
-            
-            <TouchableOpacity
-              onPress={() => setIsSticker(true)}
-              style={styles.Button(theme, isConnected, 40, 40, 10)}
-              disabled={!isConnected || isLoading || !socket}
-            >
-              <Image
-                source={Icons.sticker}
-                style={styles.Image(0, 0, 40, 40)}
-              />
-            </TouchableOpacity>
-            <TextInput
-              placeholder="Type a message"
-              placeholderTextColor={theme === "dark" ? "white" : "black"}
-              style={styles.TextInput(theme)}
-              readOnly={!isConnected || isLoading || !socket}
-              value={msg}
-              onChangeText={(text) => {
-                setMsg(text);
-                isTypingHandler(text);
-              }}
-              
-            />
-            <TouchableOpacity
-              onPress={sendMessage}
-              style={styles.Button(theme, isConnected, 45, 45, 0, 10)}
-              disabled={
-                !isConnected || msg.trim() === "" || isLoading || !socket
-              }
-            >
-              <Image
-                source={Icons.sendBtn}
-                style={styles.Image(0, 0, 45, 45)}
-              />
-            </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
-        <Modal
-          visible={isSticker}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setIsSticker(false)}
-          hardwareAccelerated={true}
-        >
-          <StickerComponent />
-        </Modal>
-        <Modal
-          animationType="fade"
-          transparent={true}
-          hardwareAccelerated={true}
-          visible={isFocused.focused}
-        >
-          <BlurItem isFocused={isFocused} />
-        </Modal>
-      
+
+          <TouchableOpacity
+            onPress={() => setIsSticker(true)}
+            style={styles.Button(theme, isConnected, 40, 40, 10)}
+            disabled={!isConnected || isLoading || !socket}
+          >
+            <Image source={Icons.sticker} style={styles.Image(0, 0, 40, 40)} />
+          </TouchableOpacity>
+          <TextInput
+            placeholder="Type a message"
+            placeholderTextColor={theme === "dark" ? "white" : "black"}
+            style={styles.TextInput(theme)}
+            readOnly={!isConnected || isLoading || !socket}
+            value={msg}
+            onChangeText={(text) => {
+              setMsg(text);
+              isTypingHandler(text);
+            }}
+          />
+          <TouchableOpacity
+            onPress={sendMessage}
+            style={styles.Button(theme, isConnected, 45, 45, 0, 10)}
+            disabled={!isConnected || msg.trim() === "" || isLoading || !socket}
+          >
+            <Image source={Icons.sendBtn} style={styles.Image(0, 0, 45, 45)} />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+      <Modal
+        visible={isSticker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsSticker(false)}
+        hardwareAccelerated={true}
+      >
+        <StickerComponent />
+      </Modal>
+      <Modal
+        animationType="fade"
+        transparent={true}
+        hardwareAccelerated={true}
+        visible={isFocused.focused}
+      >
+        <BlurItem isFocused={isFocused} />
+      </Modal>
     </SafeAreaView>
   );
 };

@@ -93,7 +93,10 @@ const Settings = ({ navigation }) => {
         if (res.data.success) {
           Alert.alert("Messages Backed Up Successfully");
         } else {
-          Alert.alert("Error Backing Up Messages");
+          Alert.alert(
+            "Error:",
+            res.data.error.message || "Error Backing Up Messages"
+          );
         }
       });
   };
@@ -165,7 +168,10 @@ const Settings = ({ navigation }) => {
             return;
           }
         }
-        Alert.alert("Error: ", res.data.error.message || "Error Restoring Messages");
+        Alert.alert(
+          "Error: ",
+          res.data.error.message || "Error Restoring Messages"
+        );
       })
       .catch((e) => {
         Alert.alert("Error Restoring Messages");
