@@ -16,6 +16,7 @@ const Main = () => {
   } = Updates.useUpdates();
 
   useEffect(() => {
+    if(__DEV__) return;
     if (isUpdateAvailable) {
       Updates.fetchUpdateAsync();
       Updates.reloadAsync();
@@ -25,6 +26,7 @@ const Main = () => {
 
 
   useEffect(()=>{
+    if(__DEV__) return;
     Updates.checkForUpdateAsync()
     
   },[])
@@ -41,7 +43,7 @@ const Main = () => {
       <StatusBar
         style={theme.theme === "dark" ? "light" : "dark"}
         backgroundColor={theme.theme === "dark" ? "black" : "white"}
-        translucent
+        translucent={true}
       />
       <Stack.Navigator>
         <Stack.Screen
