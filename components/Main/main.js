@@ -1,7 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
-import * as Updates from "expo-updates";
 import { useTheme } from "../../contexts/theme";
 import Auth from "../Auth/authPage";
 import Home from "./components/Home";
@@ -9,32 +7,6 @@ import Loading from "../Auth/loadingPage";
 import { createStackNavigator,TransitionPresets } from "@react-navigation/stack";
 
 const Main = () => {
-
-  const {
-    isUpdateAvailable,
-    isUpdatePending
-  } = Updates.useUpdates();
-
-  useEffect(() => {
-    if(__DEV__) return;
-    if (isUpdateAvailable) {
-      Updates.fetchUpdateAsync();
-      Updates.reloadAsync();
-    }
-  },[isUpdatePending]);
-
-
-
-  useEffect(()=>{
-    if(__DEV__) return;
-    Updates.checkForUpdateAsync()
-    
-  },[])
-
-
-
-
-
   const Stack = createStackNavigator();
   const theme = useTheme();
 
