@@ -316,7 +316,7 @@ const SingleChat = ({ navigation }) => {
                 style={styles.textStyles(
                   theme,
                   isOnlyEmojis(item.msg) ? 60 : 15,
-                  400,
+                  '400',
                   "white"
                 )}
               >

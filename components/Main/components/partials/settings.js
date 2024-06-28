@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
   }),
   backUpText: {
     fontSize: 15,
-    fontWeight: 400,
+    fontWeight:'400',
     marginVertical: 20,
     color: "red",
   },

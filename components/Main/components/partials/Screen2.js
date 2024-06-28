@@ -36,7 +36,7 @@ const Screen2 = ({ navigation }) => {
       >
         <ScrollView>
             <Text style={styles.textStyles(30)}>{currentBlog.title}</Text>
-            <Text style={styles.textStyles(20, 200)}>{currentBlog.body}</Text>
+            <Text style={styles.textStyles(20,'200')}>{currentBlog.body}</Text>
         </ScrollView>
         
       </ImageBackground>

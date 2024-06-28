@@ -57,7 +57,7 @@ const Screen1 = ({ navigation }) => {
       >
         <View style={styles.blogContainer(theme)}>
           <Text style={styles.textStyles(theme)}>{item.title}</Text>
-          <Text style={styles.textStyles(theme, 15, 200)}>
+          <Text style={styles.textStyles(theme, 15, '200')}>
             {item.body.length > 100
               ? trimAndSlice(item.body) + "..."
               : item.body}
