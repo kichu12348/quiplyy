@@ -1,5 +1,5 @@
 import { StyleSheet, SafeAreaView } from "react-native";
-import { createStackNavigator } from "@react-navigation/stack";
+import { createStackNavigator ,TransitionPresets} from "@react-navigation/stack";
 import { useEffect } from "react";
 import Chats from "./partials/chats";
 import Stuff from "./partials/stuff";
@@ -18,8 +18,11 @@ const Home = ({navigation}) => {
   const auth = useAuth();
   const socket = useSocket()
   useEffect(() => {
-    if (!socket.isAuth) {
+    if (!socket.isAuth && !socket.isLoading) {
       navigation.replace("authPage");
+    }
+    else if(!socket.isAuth && socket.isLoading){
+      navigation.replace("LoadingPage");
     }
   },[auth.token,socket.isAuth]);
 
@@ -31,6 +34,8 @@ const Home = ({navigation}) => {
         initialRouteName="Chats"
         screenOptions={{
           headerShown: false,
+          gestureEnabled: true,
+          ...TransitionPresets.SlideFromRightIOS
         }}
       >
         <Stack.Screen

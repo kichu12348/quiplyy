@@ -1,5 +1,5 @@
 import { SafeAreaView, StyleSheet } from "react-native";
-import { createStackNavigator } from "@react-navigation/stack";
+import { createStackNavigator,TransitionPresets} from "@react-navigation/stack";
 import { useTheme } from "../../../../contexts/theme";
 import Screen1 from "./Screen1";
 import Screen2 from "./Screen2";
@@ -12,6 +12,8 @@ const Blog = () => {
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
+          gestureEnabled: true,
+          ...TransitionPresets.SlideFromRightIOS
         }}
         initialRouteName="Blogs"
       >

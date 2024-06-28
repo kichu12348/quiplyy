@@ -6,7 +6,7 @@ import { useTheme } from "../../contexts/theme";
 import Auth from "../Auth/authPage";
 import Home from "./components/Home";
 import Loading from "../Auth/loadingPage";
-import { createStackNavigator } from "@react-navigation/stack";
+import { createStackNavigator,TransitionPresets } from "@react-navigation/stack";
 
 const Main = () => {
 
@@ -45,7 +45,12 @@ const Main = () => {
         backgroundColor={theme.theme === "dark" ? "black" : "white"}
         translucent={true}
       />
-      <Stack.Navigator>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          ...TransitionPresets.SlideFromRightIOS
+        }}
+      >
         <Stack.Screen
           name="LoadingPage"
           component={Loading}

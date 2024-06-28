@@ -246,7 +246,7 @@ const Settings = ({ navigation }) => {
         </TouchableOpacity>
 
         <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
-          Setting
+          Settings
         </Text>
       </View>
       <View style={styles.middle()}>

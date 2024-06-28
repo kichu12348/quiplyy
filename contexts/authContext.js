@@ -45,21 +45,22 @@ const AuthProvider = ({ children }) => {
     return row;
   };
 
-  //REMOVES CONTACTS DATA FROM LOCAL DB
+  //REMOVES DATA FROM LOCAL DB
   const removeData = async () => {
-    const db = await SQLite.openDatabaseAsync("user.db");
-    db.execAsync(`
-    DROP TABLE IF EXISTS user
-    `);
+    try{
+    const userDb = await SQLite.openDatabaseAsync("user.db");
+    const contactsDb = await SQLite.openDatabaseAsync("contacts.db");
+    const messagesDb = await SQLite.openDatabaseAsync("messages.db");
+    await userDb.execAsync(`DROP TABLE IF EXISTS user`);
+    await contactsDb.execAsync(`DROP TABLE IF EXISTS contacts`);
+    await messagesDb.execAsync(`DROP TABLE IF EXISTS messages`);
+    }catch(e){
+      return;
+    }
+    
   };
 
-  //REMOVES MESSAGES STORED IN LOACAL DB
-  const removeMessages = async () => {
-    const db = await SQLite.openDatabaseAsync("messages.db");
-    db.execAsync(`
-      DROP TABLE IF EXISTS messages
-      `);
-  };
+  
 
   //LOGINS IN A USER
   const login = async (username, password) => {
@@ -124,7 +125,6 @@ const AuthProvider = ({ children }) => {
   //CLEARS ALL DATA AND SIGNS OUT
   const logOut = async () => {
     await removeData();
-    await removeMessages();
     setUser(null);
     setToken(null);
     setIsAuth(false);
@@ -163,7 +163,6 @@ const AuthProvider = ({ children }) => {
         return resp.data.contacts;
       }
     } catch (e) {
-      console.log("error:getting contacts: " + e.message);
       return null;
     }
   };
