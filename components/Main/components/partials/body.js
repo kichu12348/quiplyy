@@ -7,6 +7,8 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  Touchable,
+  Modal,
 } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { TextInput } from "react-native-gesture-handler";
@@ -16,6 +18,7 @@ import { useSql } from "../../../../contexts/sqlContext";
 import { useAuth } from "../../../../contexts/authContext";
 import axios from "axios";
 import { useSocket } from "../../../../contexts/socketContext";
+import CreateGroupChat from "./createGroupChat";
 
 const Body = ({ moveTo }) => {
   const theme = useTheme();
@@ -26,9 +29,20 @@ const Body = ({ moveTo }) => {
   const auth = useAuth();
   const { socket,isConnected,endPoint} = useSocket();
   axios.defaults.baseURL = `${endPoint}/user`;
+
+
   const [contacts, setContacts] = useState(sql.contacts);
   const [query, setQuery] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
+  const [isGpChat,setIsGpChat]=useState(false)
+
+
+  const openGpChat=()=>{
+    setIsGpChat(true)
+    setQuery("")
+    setIsQuerying(false)
+    setContacts(sql.contacts)
+  }
 
   const setMessager = (contact) => {
     setSelectedContact(contact);
@@ -74,7 +88,7 @@ const Body = ({ moveTo }) => {
             source={{
               uri: `https://api.multiavatar.com/${item.username}.png?apikey=CglVv3piOwAuoJ`,
             }}
-            style={styles.Image}
+            style={styles.Image()}
           />
           <Text
             style={styles.textStyles(
@@ -96,28 +110,39 @@ const Body = ({ moveTo }) => {
     setContacts(sql.contacts);
   }, [sql.contacts]);
 
+
+
+
   const handleAddContactSocket = useCallback((data) => {
     if(data.id===auth.user.id)return;
+    if(sql.contacts.find(e=>e && e?.id===data.id))return;
     sql.setContacts(prev => [...prev, {
       id: data.id,
       username: data.username,
       roomID: data.roomID,
+      isGroup: data.isGroup,
+      noOfMembers: data.noOfMembers,
     }]);
     setContacts(prev => [...prev, {
       id: data.id,
       username: data.username,
       roomID: data.roomID,
+      isGroup: data.isGroup,
+      noOfMembers: data.noOfMembers,
     }]);
     sql.AddContact({
       id: data.id,
       username: data.username,
       roomID: data.roomID,
       time: Date.now().toString(),
+      isGroup: data.isGroup,
+      noOfMembers: data.noOfMembers,
     })
   }, [socket]);
 
   useEffect(() => {
     socket?.on('addContact', handleAddContactSocket);
+    socket?.on('groupCreated', handleAddContactSocket);
     return () => {
       socket?.off('addContact', handleAddContactSocket);
     };
@@ -127,7 +152,8 @@ const Body = ({ moveTo }) => {
     <SafeAreaView
       style={styles.container(theme.theme === "dark" ? "black" : "white")}
     >
-      <TextInput
+      <View style={styles.textInputContainer}>
+        <TextInput
         placeholder="search...🔍"
         placeholderTextColor={theme.theme === "dark" ? "white" : "black"}
         style={styles.TextInput(theme.theme)}
@@ -136,6 +162,18 @@ const Body = ({ moveTo }) => {
         onChange={() => queryUsers()}
         readOnly={!isConnected||!socket}
       />
+      <TouchableOpacity 
+      style={styles.Image(10)}
+      disabled={!isConnected||!socket}
+      onPress={openGpChat}
+      >
+        <Image
+        source={theme.Icons.add}
+        style={styles.Image()}
+      />
+      </TouchableOpacity>
+      
+      </View>
       <View style={styles.flatListContainer(width)}>
         <FlatList
           renderItem={renderList}
@@ -143,6 +181,16 @@ const Body = ({ moveTo }) => {
           keyExtractor={item => item.id}
         />
       </View>
+      <Modal
+      visible={isGpChat}
+      animationType="slide"
+      hardwareAccelerated={true}
+      transparent={true}
+      >
+        <CreateGroupChat
+        setIsGpChat={setIsGpChat}
+        />
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -158,7 +206,7 @@ const styles = StyleSheet.create({
   }),
   TextInput: (color) => ({
     height: 50,
-    width: "90%",
+    width: "80%",
     backgroundColor: color === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.2)",
     borderRadius: 25,
     padding: 10,
@@ -187,8 +235,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 30,
   }),
-  Image: {
+  Image:(mt=0,ml=0)=>({
     height: 50,
     width: 50,
-  },
+    marginTop:mt,
+    marginLeft:ml,
+  }),
+  textInputContainer:{
+    height:80,
+    flexDirection:"row",
+    alignItems:"center",
+    justifyContent:"center",
+  }
 });

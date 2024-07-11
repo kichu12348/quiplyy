@@ -16,19 +16,23 @@ function SqlProvider({ children }) {
         username: auth.contacts.username,
         roomID: auth.contacts.roomID,
         time: auth.contacts.time,
+        isGroup: auth.contacts.isGroup,
+        noOfMembers:auth.contacts.noOfMenbers
       });
       setContacts(prev=>[...prev,{
         id: auth.contacts.id,
         username: auth.contacts.username,
         roomID: auth.contacts.roomID,
         time: auth.contacts.time,
+        isGroup: auth.contacts.isGroup,
+        noOfMembers:auth.contacts.noOfMenbers
       }])
     }
   }, [auth.contacts]);
 
+
   const getContacts = async () => {
     const c = await auth.getContacts();
-    
     if (!c || c?.length===contacts?.length) return;
     c?.map(async (contact) => {
       await AddContact({
@@ -36,6 +40,8 @@ function SqlProvider({ children }) {
         username: contact.contact.username,
         time: contact.contact.updatedAt,
         roomID: contact.roomID,
+        isGroup: contact.contact.isGroup,
+        noOfMembers:contact.contact.noOfMembers
       });
       Contacts();
     });
@@ -53,6 +59,8 @@ function SqlProvider({ children }) {
                 id TEXT,
                 username TEXT,
                 roomID TEXT,
+                isGroup BOOLEAN DEFAULT false,
+                noOfMembers INTEGER DEFAULT 0,
                 time TEXT
             );
         `);
@@ -72,13 +80,15 @@ function SqlProvider({ children }) {
   async function AddContact(contact) {
     
     try {
-      const { id, username, time, roomID } = contact;
+      const { id, username, time, roomID,isGroup,noOfMembers} = contact;
       const db = await SQLite.openDatabaseAsync("contacts.db");
       await db.execAsync(`
         CREATE TABLE IF NOT EXISTS contacts (
                 id TEXT,
                 username TEXT,
                 roomID TEXT,
+                isGroup BOOLEAN DEFAULT false,
+                noOfMembers INTEGER DEFAULT 0,
                 time TEXT
             );
         `)
@@ -88,8 +98,8 @@ function SqlProvider({ children }) {
       );
       if (checkUser) return false;
       await db.runAsync(
-        `INSERT INTO contacts (id, username, time,roomID) VALUES (?, ?, ?,?)`,
-        [id, username, time, roomID]
+        `INSERT INTO contacts (id, username, time,roomID,isGroup,noOfMembers) VALUES (?, ?, ?,?,?,?)`,
+        [id, username, time, roomID,isGroup,noOfMembers]
       );
       return true;
     } catch (e) {

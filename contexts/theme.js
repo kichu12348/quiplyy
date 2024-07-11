@@ -15,6 +15,8 @@ import blogD from './images/blogD.png';
 import blogL from './images/blogL.png';
 import addL from './images/addL.png';
 import addD from './images/addD.png';
+import tickL from './images/tickL.png';
+import tickD from './images/tickD.png';
 
 const ThemeContext = createContext();
 
@@ -33,7 +35,8 @@ const ThemeProvider = ({ children }) => {
     sendBtn: sendBtnD,
     sticker: stickerD,
     blog: blogD,
-    add:addD
+    add:addD,
+    tick:tickD
   });
   
   const themeSetting = async (theme) => {
@@ -49,7 +52,8 @@ const ThemeProvider = ({ children }) => {
           sendBtn: sendBtnD,
           sticker: stickerD,
           blog: blogL,
-          add:addL
+          add:addL,
+          tick:tickL
         });
       } else {
         setIcons({
@@ -60,7 +64,8 @@ const ThemeProvider = ({ children }) => {
           sendBtn: sendBtnD,
           sticker: stickerD,
           blog: blogD,
-          add:addD
+          add:addD,
+          tick:tickD
         });
       }
     } catch (e) {
@@ -85,7 +90,8 @@ const ThemeProvider = ({ children }) => {
               sendBtn: sendBtnD,
               sticker: stickerD,
               blog: blogD,
-              add:addD
+              add:addD,
+              tick:tickD
             });
           }else{
             setIcons({
@@ -96,7 +102,8 @@ const ThemeProvider = ({ children }) => {
               sendBtn: sendBtnD,
               sticker: stickerD,
               blog: blogL,
-              add:addL
+              add:addL,
+              tick:tickL
             });
           }
           if(chatColor){
@@ -123,7 +130,8 @@ const ThemeProvider = ({ children }) => {
         sendBtn: sendBtnD,
         sticker: stickerD,
         blog: blogL,
-        add:addL
+        add:addL,
+        tick:tickL
       });
     } else {
       setIcons({
@@ -134,7 +142,8 @@ const ThemeProvider = ({ children }) => {
         sendBtn: sendBtnD,
         sticker: stickerD,
         blog: blogD,
-        add:addD
+        add:addD,
+        tick:tickD
       });
     }
   }, []);

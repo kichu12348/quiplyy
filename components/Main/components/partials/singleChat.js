@@ -26,31 +26,17 @@ import LongPressComponent from "./utils/longPress";
 const SingleChat = ({ navigation }) => {
   const { theme, Icons, chatColor } = useTheme();
   const { selectedContact, randomUID } = useMessager();
-  const { socket, isConnected, isLoading, endPoint } = useSocket();
-  const { user } = useAuth();
+  const { socket, isConnected, isLoading, endPoint, stickerList } = useSocket();
+  const { user, token } = useAuth();
 
   axios.defaults.baseURL = `${endPoint}/message`;
-
-  //stickers
-
-  const stickerPaths = {
-    bonjour: require("./stickers/bonjour.jpeg"),
-    mogCat: require("./stickers/mogCat.gif"),
-    fisiks: require("./stickers/fisiks.jpeg"),
-    ionGetIt: require("./stickers/ionGetIt.jpeg"),
-    smileCat: require("./stickers/smileCat.gif"),
-    stopThinking: require("./stickers/stopThinking.jpeg"),
-    think: require("./stickers/think.jpeg"),
-    tricks: require("./stickers/tricks.jpeg"),
-    mexicanCat: require("./stickers/mexicanCat.gif"),
-  };
-  //////////
 
   const [msg, setMsg] = useState("");
   const [messages, setMessages] = useState([]);
   const [isSticker, setIsSticker] = useState(false);
   const [isFocused, setIsFocused] = useState({ focused: false, item: null });
   const [isTyping, setIsTyping] = useState(false);
+  const [stickers, setStickers] = useState([]);
   const receivedMessageIds = useRef(new Set());
 
   let loaded = false;
@@ -63,11 +49,13 @@ const SingleChat = ({ navigation }) => {
         idx INTEGER PRIMARY KEY AUTOINCREMENT,
         id TEXT,
         sender TEXT,
+        senderName TEXT,
         msg TEXT,
         roomID TEXT,
         isSticker BOOLEAN DEFAULT 0,
         sticker TEXT DEFAULT NULL,
         isDeleted BOOLEAN DEFAULT 0,
+        isGroup BOOLEAN DEFAULT 0,
         time TEXT
       );
     `);
@@ -78,6 +66,9 @@ const SingleChat = ({ navigation }) => {
       "SELECT * FROM messages WHERE roomID = ?",
       [selectedContact.roomID]
     );
+    rows.map((e) => {
+      receivedMessageIds.current.add(e.id);
+    });
     setMessages(rows);
   };
 
@@ -89,7 +80,7 @@ const SingleChat = ({ navigation }) => {
     }
     if (message.isSticker) {
       await db.runAsync(
-        "INSERT INTO messages (id, sender, msg, roomID, time, isSticker, sticker,isDeleted) VALUES (?,?,?,?,?,?,?,?)",
+        "INSERT INTO messages (id, sender, msg, roomID, time, isSticker, sticker,isDeleted,isGroup,senderName) VALUES (?,?,?,?,?,?,?,?,?,?)",
         [
           message.id,
           message.sender,
@@ -99,12 +90,14 @@ const SingleChat = ({ navigation }) => {
           message.isSticker,
           message.sticker,
           message.isDeleted,
+          message.isGroup,
+          message.senderName,
         ]
       );
       return;
     }
     await db.runAsync(
-      `INSERT INTO messages (id, sender, msg, roomID, time,isSticker, sticker,isDeleted) VALUES (?, ?, ?, ?, ?,?,?,?)`,
+      `INSERT INTO messages (id, sender, msg, roomID, time,isSticker, sticker,isDeleted,isGroup,senderName) VALUES (?, ?, ?, ?, ?,?,?,?,?,?)`,
       [
         message.id,
         message.sender,
@@ -114,6 +107,8 @@ const SingleChat = ({ navigation }) => {
         message.isSticker,
         message.sticker,
         message.isDeleted,
+        message.isGroup,
+        message.senderName,
       ]
     );
   };
@@ -124,12 +119,20 @@ const SingleChat = ({ navigation }) => {
         return;
       const db = await dbPromise;
       if (message.isDeleted) {
-        await addMessageToDB(db, message);
         if (user.id === message.sender) return;
         if (receivedMessageIds.current.has(message.id)) {
           receivedMessageIds.current.delete(message.id);
+          console.log("delete");
+          await addMessageToDB(db, message);
         }
-        await axios.post("/delete", { messageId: message.id });
+
+        await axios.post("/delete", {
+          messageId: message.id,
+          isGroup: selectedContact.isGroup,
+          noOfMembers: selectedContact.noOfMembers,
+          sender: message.sender,
+          token
+        });
         return;
       }
 
@@ -137,7 +140,12 @@ const SingleChat = ({ navigation }) => {
         receivedMessageIds.current.add(message.id);
         await addMessageToDB(db, message);
         setMessages((prev) => [...prev, message]);
-        await axios.post("/delete", { messageId: message.id });
+        await axios.post("/delete", {
+          messageId: message.id,
+          isGroup: selectedContact.isGroup,
+          noOfMembers: selectedContact.noOfMembers,
+          sender: message.sender,
+        });
       }
     },
     [isConnected, selectedContact, user.id]
@@ -159,6 +167,9 @@ const SingleChat = ({ navigation }) => {
       socket?.emit("joinRoom", { roomID: selectedContact.roomID });
       const res = await axios.post("/check", {
         roomID: selectedContact.roomID,
+        isGroup: selectedContact.isGroup,
+        noOfMembers: selectedContact.noOfMembers,
+        token,
       });
       if (res.data.success) {
         for (const message of res.data.messages) {
@@ -166,6 +177,12 @@ const SingleChat = ({ navigation }) => {
             message.sender !== user.id &&
             !receivedMessageIds.current.has(message.id)
           ) {
+            handleIncomingMessage(message);
+          }
+          if(message.sender !==user.id
+            && receivedMessageIds.current.has(message.id)
+            && message.isDeleted
+          ){
             handleIncomingMessage(message);
           }
         }
@@ -177,6 +194,9 @@ const SingleChat = ({ navigation }) => {
 
   useEffect(() => {
     startChat();
+    if (stickerList.length !== 0) {
+      setStickers(stickerList);
+    }
   }, [selectedContact, isConnected]);
 
   const sendSticker = async (sticker) => {
@@ -185,12 +205,15 @@ const SingleChat = ({ navigation }) => {
     const message = {
       id: randomUID(),
       sender: user.id,
+      senderName: user.username,
       msg: "",
       roomID: selectedContact.roomID,
       time: new Date().toISOString(),
       isSticker: true,
       sticker: sticker,
       isDeleted: false,
+      isGroup: selectedContact.isGroup,
+      noOfMembers: selectedContact.noOfMembers,
     };
 
     const db = await dbPromise;
@@ -206,12 +229,15 @@ const SingleChat = ({ navigation }) => {
     const message = {
       id: randomUID(),
       sender: user.id,
+      senderName: user.username,
       msg: msg,
       roomID: selectedContact.roomID,
       time: new Date().toISOString(),
       isSticker: false,
       sticker: null,
       isDeleted: false,
+      isGroup: selectedContact.isGroup,
+      noOfMembers: selectedContact.noOfMembers,
     };
 
     setMsg("");
@@ -225,12 +251,15 @@ const SingleChat = ({ navigation }) => {
     const message = {
       id: messageId,
       sender: user.id,
+      senderName: user.username,
       msg: "",
       roomID: selectedContact.roomID,
       time: new Date().toISOString(),
       isSticker: false,
       sticker: null,
       isDeleted: true,
+      isGroup: selectedContact.isGroup,
+      noOfMembers: selectedContact.noOfMembers,
     };
     loaded = true;
     setIsFocused({ focused: false, item: item });
@@ -241,7 +270,6 @@ const SingleChat = ({ navigation }) => {
       loaded = false;
     }, 500);
   };
-
   useEffect(() => {
     if (socket) {
       socket.on("newMessage", handleIncomingMessage);
@@ -301,27 +329,51 @@ const SingleChat = ({ navigation }) => {
             }
           >
             {item.isSticker ? (
-              <Image
-                source={stickerPaths[item.sticker]}
-                style={styles.Image(
-                  item.sender === user.id ? 0 : -10,
-                  item.sender === user.id ? -10 : 0,
-                  200,
-                  200,
-                  10
-                )}
-              />
+              <>
+                {item.isGroup && item.sender !== user.id ? (
+                  <Text
+                    style={styles.textStyles(
+                      theme,
+                      15,
+                      "400",
+                      theme === "dark" ? "white" : "black",
+                      0.8
+                    )}
+                  >
+                    {item.senderName}
+                  </Text>
+                ) : null}
+                <Image
+                  source={{ uri: `${endPoint}/stickers/${item.sticker}` }}
+                  style={styles.Image(
+                    item.sender === user.id ? 0 : -10,
+                    item.sender === user.id ? -10 : 0,
+                    200,
+                    200,
+                    10
+                  )}
+                />
+              </>
             ) : (
-              <Text
-                style={styles.textStyles(
-                  theme,
-                  isOnlyEmojis(item.msg) ? 60 : 15,
-                  '400',
-                  "white"
-                )}
-              >
-                {item.msg}
-              </Text>
+              <>
+                {item.isGroup && item.sender !== user.id ? (
+                  <Text
+                    style={styles.textStyles(theme, 12, "400", "white", 0.8)}
+                  >
+                    {item.senderName}
+                  </Text>
+                ) : null}
+                <Text
+                  style={styles.textStyles(
+                    theme,
+                    isOnlyEmojis(item.msg) ? 60 : 18,
+                    "400",
+                    "white"
+                  )}
+                >
+                  {item.msg}
+                </Text>
+              </>
             )}
           </View>
         </LongPressComponent>
@@ -329,7 +381,12 @@ const SingleChat = ({ navigation }) => {
     );
   };
 
-  StickerComponent = () => {
+  const rowLength =
+    stickers.length % 3 === 0
+      ? stickers.length / 3
+      : Math.floor(stickers.length / 3) + 1;
+
+  const StickerComponent = () => {
     return (
       <TouchableWithoutFeedback onPress={() => setIsSticker(false)}>
         <View style={styles.stickerModal}>
@@ -348,17 +405,25 @@ const SingleChat = ({ navigation }) => {
             </View>
             <View style={styles.stickers}>
               <ScrollView scrollEnabled={true} style={styles.ScrollView}>
-                <View style={styles.rows}>
-                  <StickerItem stickers={["bonjour", "fisiks", "ionGetIt"]} />
-                </View>
-                <View style={styles.rows}>
-                  <StickerItem
-                    stickers={["mogCat", "smileCat", "stopThinking"]}
-                  />
-                </View>
-                <View style={styles.rows}>
-                  <StickerItem stickers={["think", "tricks", "mexicanCat"]} />
-                </View>
+                {stickers.length > 0
+                  ? (() => {
+                      const stickerItems = [];
+                      for (let index = 0; index < rowLength; index++) {
+                        const stickerRow = [
+                          stickers[index * 3],
+                          stickers[index * 3 + 1] || null,
+                          stickers[index * 3 + 2] || null,
+                        ];
+
+                        stickerItems.push(
+                          <View key={`row-${index}`} style={styles.rows}>
+                            <StickerItem stickers={stickerRow} />
+                          </View>
+                        );
+                      }
+                      return stickerItems;
+                    })()
+                  : null}
               </ScrollView>
             </View>
           </BlurView>
@@ -371,13 +436,18 @@ const SingleChat = ({ navigation }) => {
     return (
       <>
         {stickers.map((sticker, index) => {
-          return (
-            <TouchableOpacity key={index} onPress={() => sendSticker(sticker)}>
+          return sticker ? (
+            <TouchableOpacity
+              key={sticker.id}
+              onPress={() => sendSticker(sticker.name)}
+            >
               <Image
-                source={stickerPaths[sticker]}
+                source={{ uri: `${endPoint}/stickers/${sticker.name}` }}
                 style={styles.Image(10, 10, 100, 100, 20)}
               />
             </TouchableOpacity>
+          ) : (
+            <View key={`empty-${index}`} />
           );
         })}
       </>
@@ -437,12 +507,14 @@ const SingleChat = ({ navigation }) => {
         <Text style={styles.textStyles(theme)}>
           {selectedContact ? selectedContact?.username : "Single Chat"}
         </Text>
-        <Image
-          source={{
-            uri: `https://api.multiavatar.com/${selectedContact.username}.png?apikey=CglVv3piOwAuoJ`,
-          }}
-          style={styles.Image(20, 10)}
-        />
+        {!selectedContact.isGroup ? (
+          <Image
+            source={{
+              uri: `https://api.multiavatar.com/${selectedContact.username}.png?apikey=CglVv3piOwAuoJ`,
+            }}
+            style={styles.Image(20, 10)}
+          />
+        ) : null}
       </View>
       <KeyboardAvoidingView
         style={styles.body}
@@ -530,11 +602,13 @@ const styles = StyleSheet.create({
     theme,
     fontSize = 20,
     fontWeight = "bold",
-    color = theme === "dark" ? "white" : "black"
+    color = theme === "dark" ? "white" : "black",
+    opacity = 1
   ) => ({
     color: color,
     fontSize: fontSize,
     fontWeight: fontWeight,
+    opacity: opacity,
   }),
   header: (theme) => ({
     height: 50,
@@ -630,20 +704,25 @@ const styles = StyleSheet.create({
   messageLeft: (isEmoji, chatColor) => ({
     backgroundColor: isEmoji ? "transparent" : chatColor.sender,
     borderRadius: 10,
-    padding: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     marginTop: 5,
     minWidth: 50,
     maxWidth: "80%",
     marginRight: 10,
+    flexDirection: "column",
   }),
   messageRight: (isEmoji, chatColor) => ({
     backgroundColor: isEmoji ? "transparent" : chatColor.receiver,
     borderRadius: 10,
-    padding: 10,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+    paddingTop: 5,
     marginTop: 5,
     minWidth: 50,
     maxWidth: "80%",
     marginLeft: 10,
+    flexDirection: "column",
   }),
   stickerModal: {
     flex: 1,

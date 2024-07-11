@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, useMemo } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import * as SQLite from "expo-sqlite";
 import { createClient } from "@supabase/supabase-js";
+import axios from "axios";
 
 const SocketContext = createContext();
 
@@ -11,11 +12,13 @@ const SocketProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuth, setIsAuth] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const endPoint = "https://quiplyserver.onrender.com"; //https://quiplyserver.onrender.com
+  const [stickerList, setStickerList] = useState([]);
 
+  const endPoint = "http://192.168.1.36:5000"; //https://quiplyserver.onrender.com
   const SUPABASE_URL = "https://vevcjimdxdaprqrdbptj.supabase.co";
-  const SUPABASE_KEY ="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZldmNqaW1keGRhcHJxcmRicHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTE4NzMxMTAsImV4cCI6MjAyNzQ0OTExMH0.8p3Ho0QJ0h-3ANpQLa_qX05PCqWu22X2l2YdL4dBss8";
-  
+  const SUPABASE_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZldmNqaW1keGRhcHJxcmRicHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTE4NzMxMTAsImV4cCI6MjAyNzQ0OTExMH0.8p3Ho0QJ0h-3ANpQLa_qX05PCqWu22X2l2YdL4dBss8";
+
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const isLoggedIn = async () => {
@@ -42,11 +45,17 @@ const SocketProvider = ({ children }) => {
       });
       isLoggedIn();
       const socket = io(endPoint);
-      socket.on("connect", () => {
-        if (isLoading) {
-          setIsLoading(false);
-          setSocket(socket);
-        }
+      socket.on("connect", async () => {
+        await axios
+          .get(`${endPoint}/sticker`)
+          .then((res) => {
+            setStickerList(res.data.stickers);
+          })
+          .catch((e) => {
+            console.log("error:sticker " + e.message);
+          });
+        setIsLoading(false);
+        setSocket(socket);
       });
 
       socket.on("connect_error", () => {
@@ -68,7 +77,16 @@ const SocketProvider = ({ children }) => {
   }, [socket]);
 
   const value = useMemo(() => {
-    return { socket, isLoading, isAuth, setIsAuth, isConnected, endPoint,supabase };
+    return {
+      socket,
+      isLoading,
+      isAuth,
+      setIsAuth,
+      isConnected,
+      endPoint,
+      supabase,
+      stickerList,
+    };
   }, [socket, isLoading, isAuth, isConnected]);
 
   return (

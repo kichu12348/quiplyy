@@ -7,7 +7,7 @@ const MessagerProvider = ({ children }) => {
   
   const [selectedContact, setSelectedContact] = useState(null);
 
-  const randomUID = (len=16) => {
+  const randomUID = (len=32) => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let str = "";
     for (let i = 0; i < len; i++) {

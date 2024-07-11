@@ -144,6 +144,8 @@ const AuthProvider = ({ children }) => {
               id: user?.id,
               username: user?.username,
               roomID: res.data.contact.roomID,
+              isGroup: res.data.contact.isGroup,
+              noOfMembers: res.data.contact.noOfMembers,
             },
           });
         } else {
