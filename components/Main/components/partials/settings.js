@@ -121,20 +121,22 @@ const Settings = ({ navigation }) => {
             await db.execAsync(`
         CREATE TABLE IF NOT EXISTS messages (
           idx INTEGER PRIMARY KEY AUTOINCREMENT,
-          id TEXT,
-          sender TEXT,
-          msg TEXT,
-          roomID TEXT,
-          isSticker BOOLEAN DEFAULT 0,
-          sticker TEXT DEFAULT NULL,
-          isDeleted BOOLEAN DEFAULT 0,
-          time TEXT
+        id TEXT,
+        sender TEXT,
+        senderName TEXT,
+        msg TEXT,
+        roomID TEXT,
+        isSticker BOOLEAN DEFAULT 0,
+        sticker TEXT DEFAULT NULL,
+        isDeleted BOOLEAN DEFAULT 0,
+        isGroup BOOLEAN DEFAULT 0,
+        time TEXT
         );
       `);
             res.data.messages.map(async (message) => {
               await db.runAsync(
                 `
-          INSERT INTO messages (id,sender,msg,roomID,isSticker,sticker,isDeleted,time) VALUES (?,?,?,?,?,?,?,?)
+          INSERT INTO messages (id, sender, msg, roomID, isSticker, sticker, isDeleted, time, isGroup, senderName) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `,
                 [
                   message.id,
@@ -145,6 +147,8 @@ const Settings = ({ navigation }) => {
                   message.sticker,
                   message.isDeleted,
                   message.time,
+                  message.isGroup,
+                  message.senderName,
                 ]
               );
             });
