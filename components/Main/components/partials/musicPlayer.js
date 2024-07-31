@@ -1,13 +1,23 @@
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image,Platform } from 'react-native';
-import { useState, useEffect } from 'react';
-import { useTheme } from '../../../../contexts/theme';
-import { Audio } from 'expo-av';
-import snowfallImg from './audio/images/snowfall.png';
-import calmImg from './audio/images/calmIMG.jpg';
-import resoIMG from './audio/images/resoIMG.png';
-import snowfall from './audio/snowfall.mp3'
-import calm from './audio/calm.mp3'
-import reso from './audio/resoH.mp3'
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+  Image,
+  Platform
+} from "react-native";
+import { useState, useEffect } from "react";
+import { useTheme } from "../../../../contexts/theme";
+import { Audio } from "expo-av";
+import snowfallImg from "./audio/images/snowfall.png";
+import calmImg from "./audio/images/calmIMG.jpg";
+import resoIMG from "./audio/images/resoIMG.png";
+import peace from "./audio/images/peace.jpg";
+import snowfall from "./audio/snowfall.mp3";
+import calm from "./audio/calm.mp3";
+import reso from "./audio/resoH.mp3";
+import watchingStar from "./audio/watchingStar.mp3";
 
 const Music = () => {
   const theme = useTheme();
@@ -18,7 +28,8 @@ const Music = () => {
   const [isBuffering, setIsBuffering] = useState(false);
   const [isSnowfallPlaying, setIsSnowfallPlaying] = useState(false);
   const [isCalmPlaying, setIsCalmPlaying] = useState(false);
-  const[isResonancePlaying,setIsResonancePlaying]=useState(false)
+  const [isResonancePlaying, setIsResonancePlaying] = useState(false);
+  const [isWatchingStarPlaying, setIsWatchingStarPlaying] = useState(false);
 
   useEffect(() => {
     return sound
@@ -53,16 +64,18 @@ const Music = () => {
       if (audioFile === snowfall) {
         setIsSnowfallPlaying(true);
         setIsCalmPlaying(false);
-        setIsResonancePlaying(false)
+        setIsResonancePlaying(false);
+        setIsWatchingStarPlaying(false);
       } else if (audioFile === calm) {
         setIsCalmPlaying(true);
         setIsSnowfallPlaying(false);
-        setIsResonancePlaying(false)
-      }
-      else if(audioFile===reso){
-        setIsResonancePlaying(true)
-        setIsCalmPlaying(false)
-        setIsSnowfallPlaying(false)
+        setIsResonancePlaying(false);
+        setIsWatchingStarPlaying(false);
+      } else if (audioFile === reso) {
+        setIsResonancePlaying(true);
+        setIsCalmPlaying(false);
+        setIsSnowfallPlaying(false);
+        setIsWatchingStarPlaying(false);
       }
     } catch (error) {
       console.log("Error loading sound:", error);
@@ -91,11 +104,18 @@ const Music = () => {
         >
           <Image source={snowfallImg} style={styles.audioImage} />
           <Text style={styles.text(theme.theme)}>Snowfall</Text>
-          {isSnowfallPlaying && playbackStatus?.positionMillis / playbackStatus?.durationMillis !== 1 && (
-            <View
-              style={styles.timeStamps((playbackStatus?.positionMillis / playbackStatus?.durationMillis) * 100,theme.theme)}
-            />
-          )}
+          {isSnowfallPlaying &&
+            playbackStatus?.positionMillis / playbackStatus?.durationMillis !==
+              1 && (
+              <View
+                style={styles.timeStamps(
+                  (playbackStatus?.positionMillis /
+                    playbackStatus?.durationMillis) *
+                    100,
+                  theme.theme
+                )}
+              />
+            )}
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.soundBox(theme.theme)}
@@ -109,18 +129,23 @@ const Music = () => {
         >
           <Image source={calmImg} style={styles.audioImage} />
           <Text style={styles.text(theme.theme)}>Calm</Text>
-          {isCalmPlaying && playbackStatus?.positionMillis / playbackStatus?.durationMillis !== 1 && (
-            <View
-              style={
-                styles.timeStamps((playbackStatus?.positionMillis / playbackStatus?.durationMillis) * 100,theme.theme)
-                }
-            />
-          )}
+          {isCalmPlaying &&
+            playbackStatus?.positionMillis / playbackStatus?.durationMillis !==
+              1 && (
+              <View
+                style={styles.timeStamps(
+                  (playbackStatus?.positionMillis /
+                    playbackStatus?.durationMillis) *
+                    100,
+                  theme.theme
+                )}
+              />
+            )}
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.soundBox(theme.theme)}
           onPress={() => {
-            if (isPlaying && isCalmPlaying) {
+            if (isPlaying && isResonancePlaying) {
               pauseSound();
             } else {
               loadAndPlaySound(reso);
@@ -129,13 +154,43 @@ const Music = () => {
         >
           <Image source={resoIMG} style={styles.audioImage} />
           <Text style={styles.text(theme.theme)}>Resonance</Text>
-          {isResonancePlaying && playbackStatus?.positionMillis / playbackStatus?.durationMillis !== 1 && (
-            <View
-              style={
-                styles.timeStamps((playbackStatus?.positionMillis / playbackStatus?.durationMillis) * 100,theme.theme)
-                }
-            />
-          )}
+          {isResonancePlaying &&
+            playbackStatus?.positionMillis / playbackStatus?.durationMillis !==
+              1 && (
+              <View
+                style={styles.timeStamps(
+                  (playbackStatus?.positionMillis /
+                    playbackStatus?.durationMillis) *
+                    100,
+                  theme.theme
+                )}
+              />
+            )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.soundBox(theme.theme)}
+          onPress={() => {
+            if (isPlaying && isWatchingStarPlaying) {
+              pauseSound();
+            } else {
+              loadAndPlaySound(watchingStar);
+            }
+          }}
+        >
+          <Image source={peace} style={styles.audioImage} />
+          <Text style={styles.text(theme.theme)}>Stars</Text>
+          {isWatchingStarPlaying &&
+            playbackStatus?.positionMillis / playbackStatus?.durationMillis !==
+              1 && (
+              <View
+                style={styles.timeStamps(
+                  (playbackStatus?.positionMillis /
+                    playbackStatus?.durationMillis) *
+                    100,
+                  theme.theme
+                )}
+              />
+            )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -146,27 +201,28 @@ export default Music;
 
 const styles = StyleSheet.create({
   container: (theme) => ({
-    width: '100%',
+    width: "100%",
     flex: 1,
-    backgroundColor: theme === 'dark' ? 'black' : 'white',
+    backgroundColor: theme === "dark" ? "black" : "white",
   }),
   stuffContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
   },
   soundBox: (theme) => ({
     height: 100,
-    width: '80%',
-    backgroundColor: theme === 'dark' ? 'black' : 'white',
+    width: "80%",
+    backgroundColor: theme === "dark" ? "black" : "white",
     borderRadius: 15,
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
     margin: 10,
     ...Platform.select({
       ios: {
-        shadowColor: theme === 'dark' ? 'white' : 'black',
+        shadowColor: theme === "dark" ? "white" : "black",
         shadowOffset: {
           width: 2,
           height: 2,
@@ -176,7 +232,7 @@ const styles = StyleSheet.create({
       },
       android: {
         elevation: 10,
-        shadowColor: theme === 'dark' ? 'white' : 'black',
+        shadowColor: theme === "dark" ? "white" : "black",
       },
     }),
     padding: 10,
@@ -188,17 +244,17 @@ const styles = StyleSheet.create({
     marginRight: 20,
   },
   text: (theme) => ({
-    color: theme === 'dark' ? 'white' : 'black',
+    color: theme === "dark" ? "white" : "black",
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   }),
-  timeStamps:(width,theme)=>({
-    position: 'absolute',
-    width:`${width}%`,
+  timeStamps: (width, theme) => ({
+    position: "absolute",
+    width: `${width}%`,
     height: 3,
     bottom: 3,
-    left:10,
-    backgroundColor: theme==="dark"?"white":"black",
+    left: 10,
+    backgroundColor: theme === "dark" ? "white" : "black",
     borderRadius: 10,
   }),
 });

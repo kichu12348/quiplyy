@@ -35,14 +35,16 @@ function SqlProvider({ children }) {
     const c = await auth.getContacts();
     if (!c || c?.length===contacts?.length) return;
     c?.map(async (contact) => {
-      await AddContact({
+      const newContact ={
         id: contact.contact._id,
         username: contact.contact.username,
         time: contact.contact.updatedAt,
         roomID: contact.roomID,
         isGroup: contact.contact.isGroup,
         noOfMembers:contact.contact.noOfMembers
-      });
+      }
+      if(contacts.find(e=>e.id===newContact.id)) return;
+      await AddContact(newContact);
       Contacts();
     });
     

@@ -26,7 +26,7 @@ import LongPressComponent from "./utils/longPress";
 const SingleChat = ({ navigation }) => {
   const { theme, Icons, chatColor } = useTheme();
   const { selectedContact, randomUID } = useMessager();
-  const { socket, isConnected, isLoading, endPoint, stickerList } = useSocket();
+  const { socket, isConnected, isLoading, endPoint } = useSocket();
   const { user, token } = useAuth();
 
   axios.defaults.baseURL = `${endPoint}/message`;
@@ -36,7 +36,6 @@ const SingleChat = ({ navigation }) => {
   const [isSticker, setIsSticker] = useState(false);
   const [isFocused, setIsFocused] = useState({ focused: false, item: null });
   const [isTyping, setIsTyping] = useState(false);
-  const [stickers, setStickers] = useState([]);
   const receivedMessageIds = useRef(new Set());
 
   let loaded = false;
@@ -61,6 +60,42 @@ const SingleChat = ({ navigation }) => {
     `);
   };
 
+  const stickers = {
+    mogCat: require("./stickers/mogCat.gif"),
+    bonjour: require("./stickers/bonjour.jpeg"),
+    fisiks: require("./stickers/fisiks.jpeg"),
+    ionGetIt: require("./stickers/ionGetIt.jpeg"),
+    mexicanCat: require("./stickers/mexicanCat.gif"),
+    stopThinking: require("./stickers/stopThinking.jpeg"),
+    think: require("./stickers/think.jpeg"),
+    tricks: require("./stickers/tricks.jpeg"),
+    vanish: require("./stickers/vanish.gif"),
+    smileCat: require("./stickers/smileCat.gif"),
+    sus: require("./stickers/sus.png"),
+    okCat: require("./stickers/okCat.png"),
+    dogIntense: require("./stickers/dogIntense.gif"),
+    dancingDoge: require("./stickers/dancingDoge.gif"),
+    dancingDog: require("./stickers/dancingDog.gif"),
+    susAmg: require("./stickers/susAmg.png"),
+  };
+  const stickerList = [
+    { id: 1, name: "mogCat" },
+    { id: 2, name: "bonjour" },
+    { id: 3, name: "fisiks" },
+    { id: 4, name: "ionGetIt" },
+    { id: 5, name: "mexicanCat" },
+    { id: 6, name: "stopThinking" },
+    { id: 7, name: "think" },
+    { id: 8, name: "tricks" },
+    { id: 9, name: "vanish" },
+    { id: 10, name: "smileCat" },
+    { id: 11, name: "sus" },
+    { id: 12, name: "okCat" },
+    { id: 13, name: "dogIntense" },
+    { id: 14, name: "dancingDoge" },
+    { id: 15, name: "dancingDog" },
+    { id: 16, name: "susAmg" },
+  ];
   const loadMessages = async (db) => {
     const rows = await db.getAllAsync(
       "SELECT * FROM messages WHERE roomID = ?",
@@ -131,7 +166,7 @@ const SingleChat = ({ navigation }) => {
           isGroup: selectedContact.isGroup,
           noOfMembers: selectedContact.noOfMembers,
           sender: message.sender,
-          token
+          token,
         });
         return;
       }
@@ -179,10 +214,11 @@ const SingleChat = ({ navigation }) => {
           ) {
             handleIncomingMessage(message);
           }
-          if(message.sender !==user.id
-            && receivedMessageIds.current.has(message.id)
-            && message.isDeleted
-          ){
+          if (
+            message.sender !== user.id &&
+            receivedMessageIds.current.has(message.id) &&
+            message.isDeleted
+          ) {
             handleIncomingMessage(message);
           }
         }
@@ -194,9 +230,6 @@ const SingleChat = ({ navigation }) => {
 
   useEffect(() => {
     startChat();
-    if (stickerList.length !== 0) {
-      setStickers(stickerList);
-    }
   }, [selectedContact, isConnected]);
 
   const sendSticker = async (sticker) => {
@@ -344,7 +377,7 @@ const SingleChat = ({ navigation }) => {
                   </Text>
                 ) : null}
                 <Image
-                  source={{ uri: `${endPoint}/stickers/${item.sticker}` }}
+                  source={stickers[item.sticker]}
                   style={styles.Image(
                     item.sender === user.id ? 0 : -10,
                     item.sender === user.id ? -10 : 0,
@@ -382,9 +415,9 @@ const SingleChat = ({ navigation }) => {
   };
 
   const rowLength =
-    stickers.length % 3 === 0
-      ? stickers.length / 3
-      : Math.floor(stickers.length / 3) + 1;
+    stickerList.length % 3 === 0
+      ? stickerList.length / 3
+      : Math.floor(stickerList.length / 3) + 1;
 
   const StickerComponent = () => {
     return (
@@ -405,19 +438,19 @@ const SingleChat = ({ navigation }) => {
             </View>
             <View style={styles.stickers}>
               <ScrollView scrollEnabled={true} style={styles.ScrollView}>
-                {stickers.length > 0
+                {stickerList.length > 0
                   ? (() => {
                       const stickerItems = [];
                       for (let index = 0; index < rowLength; index++) {
                         const stickerRow = [
-                          stickers[index * 3],
-                          stickers[index * 3 + 1] || null,
-                          stickers[index * 3 + 2] || null,
+                          stickerList[index * 3],
+                          stickerList[index * 3 + 1] || null,
+                          stickerList[index * 3 + 2] || null,
                         ];
 
                         stickerItems.push(
                           <View key={`row-${index}`} style={styles.rows}>
-                            <StickerItem stickers={stickerRow} />
+                            <StickerItem stickersL={stickerRow} />
                           </View>
                         );
                       }
@@ -432,17 +465,17 @@ const SingleChat = ({ navigation }) => {
     );
   };
 
-  const StickerItem = ({ stickers }) => {
+  const StickerItem = ({ stickersL }) => {
     return (
       <>
-        {stickers.map((sticker, index) => {
+        {stickersL.map((sticker, index) => {
           return sticker ? (
             <TouchableOpacity
               key={sticker.id}
               onPress={() => sendSticker(sticker.name)}
             >
               <Image
-                source={{ uri: `${endPoint}/stickers/${sticker.name}` }}
+                source={stickers[sticker.name]}
                 style={styles.Image(10, 10, 100, 100, 20)}
               />
             </TouchableOpacity>
@@ -514,7 +547,9 @@ const SingleChat = ({ navigation }) => {
             }}
             style={styles.Image(20, 10)}
           />
-        ) : null}
+        ) : (
+          <Image source={Icons.group} style={styles.Image(20, 10)} />
+        )}
       </View>
       <KeyboardAvoidingView
         style={styles.body}

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   Modal,
+  ScrollView
 } from "react-native";
 import { useState } from "react";
 import { useTheme } from "../../../../contexts/theme";
@@ -237,6 +238,7 @@ const Settings = ({ navigation }) => {
     <SafeAreaView
       style={styles.container(theme.theme === "dark" ? "black" : "white")}
     >
+      
       <View style={styles.header()}>
         <TouchableOpacity
           style={styles.Image(10)}
@@ -249,6 +251,7 @@ const Settings = ({ navigation }) => {
           Settings
         </Text>
       </View>
+      <ScrollView style={styles.scrollView}>
       <View style={styles.middle()}>
         <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
           {auth.user ? auth.user.username : "User"}
@@ -327,6 +330,7 @@ const Settings = ({ navigation }) => {
       >
         <BackupComponent />
       </Modal>
+     </ScrollView>
     </SafeAreaView>
   );
 };
@@ -339,6 +343,9 @@ const styles = StyleSheet.create({
     backgroundColor: bg,
     flexDirection: "column",
   }),
+  scrollView:{
+    flex:1,
+  },
   text: (color) => ({
     color: color,
     fontSize: 20,
