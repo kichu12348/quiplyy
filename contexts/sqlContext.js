@@ -43,6 +43,10 @@ function SqlProvider({ children }) {
         isGroup: contact.contact.isGroup,
         noOfMembers:contact.contact.noOfMembers
       }
+      if(contacts.find(e=>e.id===newContact.id && e.noOfMembers>newContact.noOfMembers)){
+        updateContact(newContact);
+        return;
+      }
       if(contacts.find(e=>e.id===newContact.id)) return;
       await AddContact(newContact);
       Contacts();
@@ -70,6 +74,16 @@ function SqlProvider({ children }) {
     const rows = await db.getAllAsync("SELECT * FROM contacts");
     if(contacts?.length===rows?.length) return;
     setContacts(rows);
+  }
+
+  async function updateContact(contact) {
+    const { id, username, time, roomID,isGroup,noOfMembers } = contact;
+    const db = await SQLite.openDatabaseAsync("contacts.db");
+    await db.runAsync(
+      `UPDATE contacts SET username = ?, time = ?, roomID = ?, isGroup = ?, noOfMembers = ? WHERE id = ?`,
+      [username, time, roomID,isGroup,noOfMembers, id]
+    );
+    Contacts();
   }
 
   async function dropContactsDB() {
@@ -116,7 +130,8 @@ function SqlProvider({ children }) {
       Contacts,
       AddContact,
       dropContactsDB,
-      setContacts
+      setContacts,
+      updateContact,
     };
   }, [contacts]);
 

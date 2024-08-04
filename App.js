@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaProvider} from "react-native-safe-area-context";
 import { ThemeProvider } from "./contexts/theme";
 import { SocketProvider } from "./contexts/socketContext";
 import { MessagerProvider } from "./contexts/messagerContext";

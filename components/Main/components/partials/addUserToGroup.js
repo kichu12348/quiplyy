@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Image,
   FlatList,
-  TextInput,
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,9 +16,9 @@ import { useSocket } from "../../../../contexts/socketContext";
 import axios from "axios";
 import { useAuth } from "../../../../contexts/authContext";
 
-const CreateGroupChat = ({ setIsGpChat }) => {
+const AddUserToGroup = ({ setIsAddUser, groupId, setCurrentContact }) => {
   const { theme, Icons } = useTheme();
-  const { setContacts, AddContact, contacts } = useSql();
+  const { updateContact, contacts } = useSql();
   const { socket, isConnected, endPoint } = useSocket();
   const { token } = useAuth();
 
@@ -27,69 +26,43 @@ const CreateGroupChat = ({ setIsGpChat }) => {
 
   //states
   const [selectedContacts, setSelectedContacts] = useState([]);
-  const [groupName, setGroupName] = useState("");
+  console.log(groupId);
 
   const createGroupChat = async () => {
     if (!isConnected || !socket) return;
-    if (selectedContacts.length < 2) {
-      Alert.alert("Select atleast 2 contacts");
-      return;
-    }
-    if (!groupName) {
-      Alert.alert("Enter group name");
-      return;
-    }
-    if (groupName.length < 5) {
-      Alert.alert("Group name should be atleast 5 characters");
-      return;
-    }
+    if (selectedContacts.length === 0) return setIsAddUser(false);
+
     await axios
-      .post("/createGroup", {
+      .post("/addUsersToGroup", {
         token,
-        groupName,
-        contacts: selectedContacts,
+        users: selectedContacts,
+        groupId: groupId.id,
       })
       .then((res) => {
         if (res.data.success) {
-          AddContact({
-            id: res.data.contact.id,
-            username: res.data.contact.username,
-            roomID: res.data.contact.roomID,
-            time: res.data.contact.time,
-            isGroup: res.data.contact.isGroup,
-            noOfMembers: res.data.contact.noOfMembers,
-          });
-          setContacts((prev) => [
-            ...prev,
-            {
-              id: res.data.contact.id,
-              username: res.data.contact.username,
-              roomID: res.data.contact.roomID,
-              time: res.data.contact.time,
-              isGroup: res.data.contact.isGroup,
-              noOfMembers: res.data.contact.noOfMembers,
-            },
-          ]);
-          setGroupName("");
-          setSelectedContacts([]);
-          setIsGpChat(false);
-          socket.emit("groupChatCreated", {
+          const updatedContact = {
+            id: groupId.id,
+            username: groupId.username,
+            isGroup: true,
+            noOfMembers: res.data.members,
+            roomID: groupId.roomID,
+            time: groupId.time,
+          };
+          setCurrentContact(updateContact);
+          updateContact(updatedContact);
+
+          socket.emit("updateContact", {
+            updateContact: updatedContact,
             contacts: selectedContacts,
-            data:{
-              id: res.data.contact.id,
-              username: res.data.contact.username,
-              roomID: res.data.contact.roomID,
-              time: res.data.contact.time,
-              isGroup: res.data.contact.isGroup,
-              noOfMembers: res.data.contact.noOfMembers,
-            }
           });
+
+          setIsAddUser(false);
           return;
         }
-        if (!res.data.success) {
-          Alert.alert(res.data.error);
-          return;
-        }
+        setIsAddUser(false);
+      })
+      .catch((err) => {
+        Alert.alert("Error", err.message);
       });
   };
 
@@ -126,22 +99,14 @@ const CreateGroupChat = ({ setIsGpChat }) => {
 
   const insets = useSafeAreaInsets();
   return (
-    <SafeAreaView style={styles.container(theme,insets)}>
+    <SafeAreaView style={styles.container(theme, insets)}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => setIsGpChat(false)}>
+        <TouchableOpacity onPress={() => setIsAddUser(false)}>
           <Image source={Icons.return} style={styles.Image(50)} />
         </TouchableOpacity>
-        <Text style={styles.text(theme)}>CreateGroupChat</Text>
+        <Text style={styles.text(theme)}>Add Users</Text>
       </View>
       <View style={styles.flatListContainer("100%")}>
-        <TextInput
-          placeholder="Group Name...."
-          placeholderTextColor={theme === "dark" ? "white" : "black"}
-          style={styles.TextInput(theme)}
-          readOnly={!isConnected || !socket}
-          value={groupName}
-          onChangeText={(text) => setGroupName(text)}
-        />
         <FlatList
           renderItem={renderList}
           data={contacts}
@@ -153,7 +118,7 @@ const CreateGroupChat = ({ setIsGpChat }) => {
             disabled={!isConnected || !socket}
             onPress={createGroupChat}
           >
-            <Text style={styles.text()}>create</Text>
+            <Text style={styles.text()}>Add</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -161,10 +126,10 @@ const CreateGroupChat = ({ setIsGpChat }) => {
   );
 };
 
-export default CreateGroupChat;
+export default AddUserToGroup;
 
 const styles = StyleSheet.create({
-  container: (theme,pd) => ({
+  container: (theme, pd) => ({
     flex: 1,
     justifyContent: "flex-start",
     alignItems: "center",

@@ -2,13 +2,14 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   Image,
   TouchableOpacity,
   Dimensions,
   Modal,
+  SafeAreaView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback } from "react";
 import { TextInput } from "react-native-gesture-handler";
 import { useTheme } from "../../../../contexts/theme";
@@ -21,6 +22,8 @@ import CreateGroupChat from "./createGroupChat";
 
 const Body = ({ moveTo }) => {
   const theme = useTheme();
+
+  const insets = useSafeAreaInsets();
 
   const { width } = Dimensions.get("window");
   const { setSelectedContact } = useMessager();
@@ -153,17 +156,26 @@ const Body = ({ moveTo }) => {
     [socket]
   );
 
+  const handleUpdateContactSocket = useCallback(data=>{
+    sql.updateContact(data);
+    setContacts(sql.contacts);
+  },[socket])
+  
   useEffect(() => {
     socket?.on("addContact", handleAddContactSocket);
     socket?.on("groupCreated", handleAddContactSocket);
+    socket?.on("updateContacT",handleUpdateContactSocket);
     return () => {
       socket?.off("addContact", handleAddContactSocket);
     };
   }, [socket, handleAddContactSocket]);
 
   return (
-    <SafeAreaView
-      style={styles.container(theme.theme === "dark" ? "black" : "white")}
+    <View
+      style={styles.container(
+        theme.theme === "dark" ? "black" : "white",
+        insets.top
+      )}
     >
       <View style={styles.textInputContainer}>
         <TextInput
@@ -198,18 +210,19 @@ const Body = ({ moveTo }) => {
       >
         <CreateGroupChat setIsGpChat={setIsGpChat} />
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
 export default Body;
 
 const styles = StyleSheet.create({
-  container: (bg) => ({
+  container: (bg, pdTop = 0) => ({
     flex: 1,
-    padding: 10,
+    padding: 0,
     alignItems: "center",
     backgroundColor: bg,
+    paddingTop: pdTop,
   }),
   TextInput: (color) => ({
     height: 50,
@@ -218,8 +231,6 @@ const styles = StyleSheet.create({
       color === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.2)",
     borderRadius: 25,
     padding: 10,
-    margin: 10,
-    marginTop: 20,
     color: color === "dark" ? "white" : "black",
     fontWeight: "bold",
   }),
@@ -250,9 +261,10 @@ const styles = StyleSheet.create({
     marginLeft: ml,
   }),
   textInputContainer: {
-    height: 80,
+    height: 60,
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-evenly",
   },
 });

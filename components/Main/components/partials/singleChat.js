@@ -2,7 +2,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   Image,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -13,6 +12,7 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import * as SQLite from "expo-sqlite";
@@ -22,10 +22,11 @@ import { useSocket } from "../../../../contexts/socketContext";
 import { useAuth } from "../../../../contexts/authContext";
 import { BlurView } from "expo-blur";
 import LongPressComponent from "./utils/longPress";
+import AddUserToGroup from "./addUserToGroup";
 
 const SingleChat = ({ navigation }) => {
   const { theme, Icons, chatColor } = useTheme();
-  const { selectedContact, randomUID } = useMessager();
+  const { selectedContact, randomUID,setSelectedContact } = useMessager();
   const { socket, isConnected, isLoading, endPoint } = useSocket();
   const { user, token } = useAuth();
 
@@ -36,7 +37,10 @@ const SingleChat = ({ navigation }) => {
   const [isSticker, setIsSticker] = useState(false);
   const [isFocused, setIsFocused] = useState({ focused: false, item: null });
   const [isTyping, setIsTyping] = useState(false);
+  const [isAddUser, setIsAddUser] = useState(false);
   const receivedMessageIds = useRef(new Set());
+
+  const insets = useSafeAreaInsets();
 
   let loaded = false;
 
@@ -334,6 +338,8 @@ const SingleChat = ({ navigation }) => {
     if (text.trim() === "") return;
     socket?.emit("typing", { roomID: selectedContact.roomID, user: user.id });
   };
+ 
+  const addUserToGroup = ()=> {}
 
   //components
   const RenderList = ({ item }) => {
@@ -528,7 +534,7 @@ const SingleChat = ({ navigation }) => {
   }, [messages]);
 
   return (
-    <SafeAreaView style={styles.container(theme)}>
+    <View style={styles.container(theme,insets)}>
       <View style={styles.header(theme)}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -548,14 +554,22 @@ const SingleChat = ({ navigation }) => {
             style={styles.Image(20, 10)}
           />
         ) : (
+        <>
           <Image source={Icons.group} style={styles.Image(20, 10)} />
+          <View style={styles.addUserConatiner}>
+          <TouchableOpacity onPress={()=>setIsAddUser(true)}>
+            <Image source={Icons.add} style={styles.Image()} />
+          </TouchableOpacity>
+        </View>
+        </>
         )}
+        
       </View>
       <KeyboardAvoidingView
         style={styles.body}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         enabled
-        keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 5}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 65 : 30}
       >
         <View style={styles.flatListContainer}>
           <FlatList
@@ -621,17 +635,27 @@ const SingleChat = ({ navigation }) => {
       >
         <BlurItem isFocused={isFocused} />
       </Modal>
-    </SafeAreaView>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        hardwareAccelerated={true}
+        visible={isAddUser}
+      >
+        <AddUserToGroup setIsAddUser={setIsAddUser} groupId={selectedContact} setCurrentContact={setSelectedContact} />
+      </Modal>
+    </View>
   );
 };
 
 export default SingleChat;
 
 const styles = StyleSheet.create({
-  container: (theme) => ({
+  container: (theme,pd) => ({
     flex: 1,
     backgroundColor: theme === "dark" ? "black" : "white",
     flexDirection: "column",
+    paddingTop: pd.top,
+    paddingBottom:Platform.OS==="ios"?0: pd.bottom,
   }),
   textStyles: (
     theme,
@@ -649,7 +673,7 @@ const styles = StyleSheet.create({
     height: 50,
     width: "100%",
     backgroundColor: "transparent",
-    marginTop: 30,
+    marginTop: 0,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-start",
@@ -687,7 +711,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-evenly",
     minHeight: 50,
-    maxHeight: 100,
+    maxHeight: 50,
   },
   TextInput: (theme) => ({
     height: 50,
@@ -837,5 +861,11 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 20,
     paddingHorizontal: 10,
+  },
+  addUserConatiner: {
+    flex: 1,
+    alignItems: "flex-end",
+    justifyContent: "center",
+    paddingRight: 10,
   },
 });

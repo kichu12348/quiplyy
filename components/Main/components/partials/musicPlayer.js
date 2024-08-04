@@ -2,11 +2,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   Image,
-  Platform
+  Platform,
+  SafeAreaView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import { useTheme } from "../../../../contexts/theme";
 import { Audio } from "expo-av";
@@ -30,6 +31,8 @@ const Music = () => {
   const [isCalmPlaying, setIsCalmPlaying] = useState(false);
   const [isResonancePlaying, setIsResonancePlaying] = useState(false);
   const [isWatchingStarPlaying, setIsWatchingStarPlaying] = useState(false);
+
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     return sound
@@ -77,6 +80,12 @@ const Music = () => {
         setIsSnowfallPlaying(false);
         setIsWatchingStarPlaying(false);
       }
+      else if(audioFile=== watchingStar){
+        setIsWatchingStarPlaying(true);
+        setIsResonancePlaying(false);
+        setIsCalmPlaying(false);
+        setIsSnowfallPlaying(false);
+      }
     } catch (error) {
       console.log("Error loading sound:", error);
     }
@@ -90,7 +99,7 @@ const Music = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container(theme.theme)}>
+    <SafeAreaView style={styles.container(theme.theme,insets.top)}>
       <View style={styles.stuffContainer}>
         <TouchableOpacity
           style={styles.soundBox(theme.theme)}
@@ -200,10 +209,11 @@ const Music = () => {
 export default Music;
 
 const styles = StyleSheet.create({
-  container: (theme) => ({
+  container: (theme,pdTop=0) => ({
     width: "100%",
     flex: 1,
     backgroundColor: theme === "dark" ? "black" : "white",
+    paddingTop: pdTop,
   }),
   stuffContainer: {
     flex: 1,

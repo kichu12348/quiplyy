@@ -2,13 +2,13 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   Image,
   TouchableOpacity,
   Alert,
   Modal,
   ScrollView
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useTheme } from "../../../../contexts/theme";
 import { useAuth } from "../../../../contexts/authContext";

@@ -1,4 +1,5 @@
-import { StyleSheet, SafeAreaView } from "react-native";
+import { StyleSheet} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { createStackNavigator ,TransitionPresets} from "@react-navigation/stack";
 import { useEffect } from "react";
 import Chats from "./partials/chats";
