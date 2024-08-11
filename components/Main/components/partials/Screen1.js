@@ -8,8 +8,8 @@ import {
   Modal,
   StyleSheet,
   Platform,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../../../contexts/theme";
 import { useSocket } from "../../../../contexts/socketContext";
 import AddBlogs from "./addBlogs";
@@ -131,7 +131,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 20,
   },
   title: (theme) => ({
     color: theme === "dark" ? "white" : "black",

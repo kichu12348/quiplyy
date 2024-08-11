@@ -557,7 +557,10 @@ const SingleChat = ({ navigation }) => {
         <>
           <Image source={Icons.group} style={styles.Image(20, 10)} />
           <View style={styles.addUserConatiner}>
-          <TouchableOpacity onPress={()=>setIsAddUser(true)}>
+          <TouchableOpacity 
+          onPress={()=>setIsAddUser(true)}
+          disabled={!isConnected || isLoading || !socket}
+          >
             <Image source={Icons.add} style={styles.Image()} />
           </TouchableOpacity>
         </View>

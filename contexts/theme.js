@@ -19,6 +19,8 @@ import tickL from './images/tickL.png';
 import tickD from './images/tickD.png';
 import groupL from './images/groupL.png';
 import groupD from './images/groupD.png';
+import chessD from './images/chessD.png';
+import chessL from './images/chessL.png';
 
 const ThemeContext = createContext();
 
@@ -39,39 +41,47 @@ const ThemeProvider = ({ children }) => {
     blog: blogD,
     add:addD,
     tick:tickD,
-    group:groupD
+    group:groupD,
+    chess:chessD
   });
+
+
+  const darkIcons = {
+    chat: chatD,
+    setting: settingD,
+    stuff: stuffD,
+    return: returnD,
+    sendBtn: sendBtnD,
+    sticker: stickerD,
+    blog: blogD,
+    add:addD,
+    tick:tickD,
+    group:groupD,
+    chess:chessD
+  };
+
+  const lightIcons = {
+    chat: chatL,
+    setting: settingL,
+    stuff: stuffL,
+    return: returnL,
+    sendBtn: sendBtnD,
+    sticker: stickerD,
+    blog: blogL,
+    add:addL,
+    tick:tickL,
+    group:groupL,
+    chess:chessL
+  }
   
   const themeSetting = async (theme) => {
     try {
       await AsyncStorage.setItem('theme', theme);
       setTheme(theme);
       if (theme === "light") {
-        setIcons({
-          chat: chatL,
-          setting: settingL,
-          stuff: stuffL,
-          return: returnL,
-          sendBtn: sendBtnD,
-          sticker: stickerD,
-          blog: blogL,
-          add:addL,
-          tick:tickL,
-          group:groupL
-        });
+        setIcons(lightIcons);
       } else {
-        setIcons({
-          chat: chatD,
-          setting: settingD,
-          stuff: stuffD,
-          return: returnD,
-          sendBtn: sendBtnD,
-          sticker: stickerD,
-          blog: blogD,
-          add:addD,
-          tick:tickD,
-          group:groupD
-        });
+        setIcons(darkIcons);
       }
     } catch (e) {
       console.log(e);
@@ -87,31 +97,9 @@ const ThemeProvider = ({ children }) => {
         if (storedTheme) {
           setTheme(storedTheme);
           if(storedTheme==="dark"){
-            setIcons({
-              chat: chatD,
-              setting: settingD,
-              stuff: stuffD,
-              return: returnD,
-              sendBtn: sendBtnD,
-              sticker: stickerD,
-              blog: blogD,
-              add:addD,
-              tick:tickD,
-              group:groupD
-            });
+            setIcons(darkIcons);
           }else{
-            setIcons({
-              chat: chatL,
-              setting: settingL,
-              stuff: stuffL,
-              return: returnL,
-              sendBtn: sendBtnD,
-              sticker: stickerD,
-              blog: blogL,
-              add:addL,
-              tick:tickL,
-              group:groupL
-            });
+            setIcons(lightIcons);
           }
           if(chatColor){
             setChatColor(JSON.parse(chatColor));
@@ -129,31 +117,9 @@ const ThemeProvider = ({ children }) => {
     getTheme();
 
     if (theme === "light") {
-      setIcons({
-        chat: chatL,
-        setting: settingL,
-        stuff: stuffL,
-        return: returnL,
-        sendBtn: sendBtnD,
-        sticker: stickerD,
-        blog: blogL,
-        add:addL,
-        tick:tickL,
-        group:groupL
-      });
+      setIcons(lightIcons);
     } else {
-      setIcons({
-        chat: chatD,
-        setting: settingD,
-        stuff: stuffD,
-        return: returnD,
-        sendBtn: sendBtnD,
-        sticker: stickerD,
-        blog: blogD,
-        add:addD,
-        tick:tickD,
-        group:groupD
-      });
+      setIcons(darkIcons);
     }
   }, []);
 

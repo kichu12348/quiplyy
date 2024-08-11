@@ -119,7 +119,7 @@ function SqlProvider({ children }) {
       );
       return true;
     } catch (e) {
-      console.log(e.message);
+      console.log("sql add error: "+e.message);
       return false;
     }
   }

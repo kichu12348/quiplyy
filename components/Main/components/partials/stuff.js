@@ -1,4 +1,5 @@
-import { SafeAreaView, Text,StyleSheet,View,TouchableOpacity,Image} from 'react-native'
+import {Text,StyleSheet,View,TouchableOpacity,Image} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import React from 'react'
 import Music from './musicPlayer'
 import { useTheme } from '../../../../contexts/theme'
@@ -16,6 +17,11 @@ const Stuff = ({navigation}) => {
           <Image source={Icons.return} style={styles.backIcon} />
         </TouchableOpacity>
         <Text style={styles.title(theme)}>Stuff</Text>
+        <View style={styles.chessBox}>
+          <TouchableOpacity onPress={()=>navigation.navigate('ChessJs')}>
+          <Image source={Icons.chess} style={styles.backIcon} />
+          </TouchableOpacity>
+        </View>
       </View>
       <Music />
     </SafeAreaView>
@@ -42,7 +48,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center',
-    marginTop: 20,
   },
   title: (theme) => ({
     color: theme === 'dark' ? 'white' : 'black',
@@ -57,4 +62,10 @@ const styles = StyleSheet.create({
     height: 40,
     width: 40,
   },
+  chessBox:{
+    flex:1,
+    justifyContent:'center',
+    alignItems:'flex-end',
+    paddingRight:10
+  }
 })

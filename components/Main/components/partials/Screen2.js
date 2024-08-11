@@ -4,11 +4,11 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  SafeAreaView,
   ImageBackground,
   Text,
   ScrollView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../../../contexts/theme";
 import { useBlog } from "../../../../contexts/BlogContext";
 import readingIMG from "./images/readingIMG.jpg";
@@ -67,7 +67,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-start",
     alignItems: "center",
-    marginTop: 20,
   },
   body: {
     flex: 1,

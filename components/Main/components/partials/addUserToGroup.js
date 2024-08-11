@@ -15,40 +15,43 @@ import { useSql } from "../../../../contexts/sqlContext";
 import { useSocket } from "../../../../contexts/socketContext";
 import axios from "axios";
 import { useAuth } from "../../../../contexts/authContext";
+import { useMessager } from "../../../../contexts/messagerContext";
 
-const AddUserToGroup = ({ setIsAddUser, groupId, setCurrentContact }) => {
+const AddUserToGroup = ({setIsAddUser}) => {
   const { theme, Icons } = useTheme();
   const { updateContact, contacts } = useSql();
   const { socket, isConnected, endPoint } = useSocket();
   const { token } = useAuth();
+  const {selectedContact,setSelectedContact}=useMessager();
 
   axios.defaults.baseURL = `${endPoint}/user`;
 
   //states
   const [selectedContacts, setSelectedContacts] = useState([]);
-  console.log(groupId);
+
 
   const createGroupChat = async () => {
-    if (!isConnected || !socket) return;
+    try{
+      if (!isConnected || !socket) return;
     if (selectedContacts.length === 0) return setIsAddUser(false);
 
     await axios
       .post("/addUsersToGroup", {
         token,
         users: selectedContacts,
-        groupId: groupId.id,
+        groupId: selectedContact.id,
       })
       .then((res) => {
         if (res.data.success) {
           const updatedContact = {
-            id: groupId.id,
-            username: groupId.username,
+            id: selectedContact.id,
+            username: selectedContact.username,
             isGroup: true,
             noOfMembers: res.data.members,
-            roomID: groupId.roomID,
-            time: groupId.time,
+            roomID: selectedContact.roomID,
+            time: selectedContact.time,
           };
-          setCurrentContact(updateContact);
+          setSelectedContact(updatedContact);
           updateContact(updatedContact);
 
           socket.emit("updateContact", {
@@ -64,6 +67,10 @@ const AddUserToGroup = ({ setIsAddUser, groupId, setCurrentContact }) => {
       .catch((err) => {
         Alert.alert("Error", err.message);
       });
+    }catch(err){
+      console.log("adding users to gp err:"+err.message)
+    }
+    
   };
 
   const renderList = ({ item }) => {

@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   Modal,
-  ScrollView
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
@@ -18,6 +18,7 @@ import { TextInput } from "react-native-gesture-handler";
 import { useSocket } from "../../../../contexts/socketContext";
 import * as SQLlite from "expo-sqlite";
 import axios from "axios";
+import { connect } from "socket.io-client";
 
 const Settings = ({ navigation }) => {
   const theme = useTheme();
@@ -242,7 +243,6 @@ const Settings = ({ navigation }) => {
     <SafeAreaView
       style={styles.container(theme.theme === "dark" ? "black" : "white")}
     >
-      
       <View style={styles.header()}>
         <TouchableOpacity
           style={styles.Image(10)}
@@ -256,85 +256,103 @@ const Settings = ({ navigation }) => {
         </Text>
       </View>
       <ScrollView style={styles.scrollView}>
-      <View style={styles.middle()}>
-        <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
-          {auth.user ? auth.user.username : "User"}
-        </Text>
-        <Image
-          source={
-            auth.user
-              ? {
-                  uri: `https://api.multiavatar.com/${auth.user.username}.png?apikey=CglVv3piOwAuoJ`,
-                }
-              : theme.Icons.setting
-          }
-          style={styles.Image(10, 20)}
-        />
-      </View>
-      <View style={styles.middle("center", "column", "flex-start", 30)}>
-        <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
-          Color
-        </Text>
-        <View style={styles.centerDiv}>
-          <TextInput
-            style={styles.TextInput(theme, true)}
-            value={sender}
-            onChangeText={(text) => setSender(text)}
-            onSubmitEditing={changeColor}
-          />
-          <TextInput
-            style={styles.TextInput(theme, false)}
-            value={receiver}
-            onChangeText={(text) => setReceiver(text)}
-            onSubmitEditing={changeColor}
+        <View style={styles.middle()}>
+          <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
+            {auth.user ? auth.user.username : "User"}
+          </Text>
+          <Image
+            source={
+              auth.user
+                ? {
+                    uri: `https://api.multiavatar.com/${auth.user.username}.png?apikey=CglVv3piOwAuoJ`,
+                  }
+                : theme.Icons.setting
+            }
+            style={styles.Image(10, 20)}
           />
         </View>
-      </View>
-      <View style={styles.middle("center", "column", "flex-start")}>
-        <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
-          Themes
-        </Text>
-        <Selector state="Dark" />
-        <Selector state="Light" />
-      </View>
+        <View style={styles.middle("center", "column", "flex-start", 30)}>
+          <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
+            Color
+          </Text>
+          <View style={styles.centerDiv}>
+            <TextInput
+              style={styles.TextInput(theme, true)}
+              value={sender}
+              onChangeText={(text) => setSender(text)}
+              onSubmitEditing={changeColor}
+            />
+            <TextInput
+              style={styles.TextInput(theme, false)}
+              value={receiver}
+              onChangeText={(text) => setReceiver(text)}
+              onSubmitEditing={changeColor}
+            />
+          </View>
+        </View>
+        <View style={styles.middle("center", "column", "flex-start")}>
+          <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
+            Themes
+          </Text>
+          <Selector state="Dark" />
+          <Selector state="Light" />
+        </View>
 
-      <View style={styles.row}>
-        <TouchableOpacity
-          style={styles.rowBtn(theme.theme)}
-          onPress={() => checkForUpdate()}
-        >
-          <Text style={styles.text("white")}>Check For Update</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.rowBtn(theme.theme)}
-          onPress={() => setIsBackupOpen(true)}
-        >
-          <Text style={styles.text("white")}>Backup</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.middle("center", "column", "flex-start", 0)}>
-        <View style={styles.centerDiv}>
+        <View style={styles.row}>
           <TouchableOpacity
-            style={styles.button(theme.theme)}
-            onPress={() => {
-              auth.logOut();
-              sql.dropContactsDB();
-            }}
+            style={styles.rowBtn(theme.theme)}
+            onPress={() => checkForUpdate()}
           >
-            <Text style={styles.text("white")}>Logout</Text>
+            <Text style={styles.text("white")}>Check For Update</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.rowBtn(theme.theme)}
+            onPress={() => setIsBackupOpen(true)}
+          >
+            <Text style={styles.text("white")}>Backup</Text>
           </TouchableOpacity>
         </View>
-      </View>
-      <Modal
-        transparent={true}
-        visible={isBackupOpen}
-        animationType="slide"
-        hardwareAccelerated={true}
-      >
-        <BackupComponent />
-      </Modal>
-     </ScrollView>
+
+        <View style={styles.middle("center", "column", "flex-start", 0)}>
+          <View style={styles.centerDiv}>
+            <TouchableOpacity
+              style={styles.button(theme.theme)}
+              onPress={() => {
+                auth.logOut();
+                sql.dropContactsDB();
+              }}
+            >
+              <Text style={styles.text("white")}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <Modal
+          transparent={true}
+          visible={isBackupOpen}
+          animationType="slide"
+          hardwareAccelerated={true}
+        >
+          <BackupComponent />
+        </Modal>
+        <View style={styles.connectionDet}>
+          <Text
+            style={styles.text(theme.theme === "dark" ? "white" : "black", 15)}
+          >
+            Connected:{" "}
+            {socket.isConnected && socket ? "Yes" : "No"}
+          </Text>
+          {socket.isConnected && socket ? (
+            <Text
+              style={styles.text(
+                theme.theme === "dark" ? "white" : "black",
+                15
+              )}
+            >connection id: {" "}
+              {socket.socket?.id}
+            </Text>
+          ) : null}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -347,12 +365,12 @@ const styles = StyleSheet.create({
     backgroundColor: bg,
     flexDirection: "column",
   }),
-  scrollView:{
-    flex:1,
+  scrollView: {
+    flex: 1,
   },
-  text: (color) => ({
+  text: (color, fts = 20) => ({
     color: color,
-    fontSize: 20,
+    fontSize: fts,
     fontWeight: "bold",
   }),
   header: () => ({
@@ -467,8 +485,14 @@ const styles = StyleSheet.create({
   }),
   backUpText: {
     fontSize: 15,
-    fontWeight:'400',
+    fontWeight: "400",
     marginVertical: 20,
     color: "red",
+  },
+  connectionDet: {
+    minHeight: 100,
+    flexDirection: "column",
+    justifyContent: "space-evenly",
+    alignItems: "center",
   },
 });

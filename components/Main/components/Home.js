@@ -7,6 +7,7 @@ import Stuff from "./partials/stuff";
 import Blog from "./partials/blogs";
 import Settings from "./partials/settings";
 import SingleChat from "./partials/singleChat";
+import ChessJs from "./partials/chess";
 import { useTheme } from "../../../contexts/theme";
 import { useAuth } from "../../../contexts/authContext";
 import { useSocket } from "../../../contexts/socketContext";
@@ -59,6 +60,10 @@ const Home = ({navigation}) => {
           name="blogPage"
           component={Blog}
           />
+        <Stack.Screen
+          name="ChessJs"
+          component={ChessJs}
+        />
       </Stack.Navigator>
     </SafeAreaView>
   );
