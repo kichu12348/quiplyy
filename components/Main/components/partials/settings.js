@@ -7,43 +7,28 @@ import {
   Alert,
   Modal,
   ScrollView,
+  Switch,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import SafeAreaView from "./utils/safe";
 import { useState } from "react";
 import { useTheme } from "../../../../contexts/theme";
 import { useAuth } from "../../../../contexts/authContext";
 import { useSql } from "../../../../contexts/sqlContext";
 import * as Updates from "expo-updates";
-import { TextInput } from "react-native-gesture-handler";
 import { useSocket } from "../../../../contexts/socketContext";
 import * as SQLlite from "expo-sqlite";
 import axios from "axios";
-import { connect } from "socket.io-client";
 
 const Settings = ({ navigation }) => {
   const theme = useTheme();
   const auth = useAuth();
   const sql = useSql();
   const socket = useSocket();
-  const [sender, setSender] = useState(theme.chatColor.sender);
-  const [receiver, setReceiver] = useState(theme.chatColor.receiver);
   const [isBackupOpen, setIsBackupOpen] = useState(false);
 
   axios.defaults.baseURL = `${socket.endPoint}/message`;
 
-  const changeColor = () => {
-    if (sender === "" || receiver === "") return;
-    if (
-      sender === theme.chatColor.sender &&
-      receiver === theme.chatColor.receiver
-    )
-      return;
-    if (!sender.includes("rgba") || !receiver.includes("rgba")) {
-      Alert.alert("Invalid Color Only RGBA values are allowed");
-      return;
-    }
-    theme.changeChatColor(sender, receiver);
-  };
+  
 
   const checkForUpdate = async () => {
     if (!socket.isConnected) return;
@@ -184,25 +169,6 @@ const Settings = ({ navigation }) => {
       });
   };
 
-  const Selector = ({ state }) => {
-    return (
-      <TouchableOpacity
-        style={styles.SelectorContainer}
-        onPress={() => theme.themeSetting(state.toLowerCase())}
-      >
-        <View
-          style={styles.circle(
-            theme.theme === "dark" && state === "Dark" ? "white" : "black",
-            theme.theme === state.toLowerCase()
-          )}
-        ></View>
-        <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
-          {state}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-
   const BackupComponent = () => {
     return (
       <SafeAreaView style={styles.backUpcontainer(theme.theme)}>
@@ -240,9 +206,7 @@ const Settings = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView
-      style={styles.container(theme.theme === "dark" ? "black" : "white")}
-    >
+    <SafeAreaView>
       <View style={styles.header()}>
         <TouchableOpacity
           style={styles.Image(10)}
@@ -251,13 +215,15 @@ const Settings = ({ navigation }) => {
           <Image source={theme.Icons.return} style={styles.Image(0)} />
         </TouchableOpacity>
 
-        <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
+        <Text style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D")}>
           Settings
         </Text>
       </View>
       <ScrollView style={styles.scrollView}>
-        <View style={styles.middle()}>
-          <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
+        
+        <View style={styles.center}>
+          <View style={styles.middle("space-between","row","center",20,theme)}>
+          <Text style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D")}>
             {auth.user ? auth.user.username : "User"}
           </Text>
           <Image
@@ -271,33 +237,41 @@ const Settings = ({ navigation }) => {
             style={styles.Image(10, 20)}
           />
         </View>
-        <View style={styles.middle("center", "column", "flex-start", 30)}>
-          <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
-            Color
+        <View style={styles.middle("space-between", "row", "flex-start",20,theme)}>
+          <Text style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D")}>
+            Dark Mode
           </Text>
-          <View style={styles.centerDiv}>
-            <TextInput
-              style={styles.TextInput(theme, true)}
-              value={sender}
-              onChangeText={(text) => setSender(text)}
-              onSubmitEditing={changeColor}
-            />
-            <TextInput
-              style={styles.TextInput(theme, false)}
-              value={receiver}
-              onChangeText={(text) => setReceiver(text)}
-              onSubmitEditing={changeColor}
-            />
-          </View>
+          <Switch
+          trackColor={{ false: "#E0E0E0", true: "#4CAF50" }}
+          thumbColor={"#E0E0E0"}
+          value={theme.theme === "dark"}
+          onValueChange={() => theme.themeSetting(theme.theme === "dark" ? "light" : "dark")}
+          />
         </View>
-        <View style={styles.middle("center", "column", "flex-start")}>
-          <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
-            Themes
+        <View style={styles.middle("space-between", "column", "flex-start",20,theme)}>
+          <Text style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D")}>
+            Chat Background
           </Text>
-          <Selector state="Dark" />
-          <Selector state="Light" />
+          <ScrollView 
+          style={styles.container()}
+          horizontal={true}
+          >
+            {theme.chatTheme.map(c=>{
+              return(
+                <TouchableOpacity
+                onPress={()=>theme.setCurrentChatImage(c)}
+                style={styles.Image(10,0,5,100,100)}
+                key={c.statusBarColor}
+                >
+                  <Image source={c.image} style={styles.Image(0,0,5,100,100)}/>
+                </TouchableOpacity>
+              )
+            })}
+          </ScrollView>
         </View>
 
+
+        <View style={styles.middle("center", "column", "flex-start", 0,theme)}>
         <View style={styles.row}>
           <TouchableOpacity
             style={styles.rowBtn(theme.theme)}
@@ -312,8 +286,6 @@ const Settings = ({ navigation }) => {
             <Text style={styles.text("white")}>Backup</Text>
           </TouchableOpacity>
         </View>
-
-        <View style={styles.middle("center", "column", "flex-start", 0)}>
           <View style={styles.centerDiv}>
             <TouchableOpacity
               style={styles.button(theme.theme)}
@@ -326,6 +298,7 @@ const Settings = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
+        </View>
         <Modal
           transparent={true}
           visible={isBackupOpen}
@@ -336,15 +309,15 @@ const Settings = ({ navigation }) => {
         </Modal>
         <View style={styles.connectionDet}>
           <Text
-            style={styles.text(theme.theme === "dark" ? "white" : "black", 15)}
+            style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D", 15)}
           >
             Connected:{" "}
-            {socket.isConnected && socket ? "Yes" : "No"}
+            {socket.isConnected && socket.socket ? "Yes" : "No"}
           </Text>
-          {socket.isConnected && socket ? (
+          {socket.isConnected && socket.socket ? (
             <Text
               style={styles.text(
-                theme.theme === "dark" ? "white" : "black",
+                theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D",
                 15
               )}
             >connection id: {" "}
@@ -360,10 +333,8 @@ const Settings = ({ navigation }) => {
 export default Settings;
 
 const styles = StyleSheet.create({
-  container: (bg) => ({
+  container: () => ({
     flex: 1,
-    backgroundColor: bg,
-    flexDirection: "column",
   }),
   scrollView: {
     flex: 1,
@@ -372,6 +343,7 @@ const styles = StyleSheet.create({
     color: color,
     fontSize: fts,
     fontWeight: "bold",
+    alignSelf: "center",
   }),
   header: () => ({
     height: 50,
@@ -381,25 +353,31 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     marginTop: 20,
   }),
-  Image: (marginR = 0, marginL = 0) => ({
-    height: 40,
-    width: 40,
+  Image: (marginR = 0, marginL = 0,borderRadius=20,height=40,width=40) => ({
+    height: height,
+    width: width,
     marginRight: marginR,
     marginLeft: marginL,
+    borderRadius: borderRadius,
   }),
   middle: (
     justifyContent = "flex-end",
     flexDirection = "row",
     alignItems = "center",
-    marginTop = 20
-  ) => ({
+    marginTop = 20,
+    theme
+  ) => (
+    {
     flexDirection: flexDirection,
     justifyContent: justifyContent,
     alignItems: alignItems,
     backgroundColor: "transparent",
-    marginTop: marginTop,
-    marginLeft: 20,
+    marginTop: 20,
+    width: "90%",
     minHeight: 50,
+    padding: 15,
+    backgroundColor: theme.theme=== "dark"?"#212121":"#e0e0e0",
+    borderRadius: 25,
   }),
   SelectorContainer: {
     flexDirection: "row",
@@ -425,7 +403,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginHorizontal: 0,
-    marginVertical: 20,
+    marginTop: 15,
     opacity: opacity,
   }),
   centerDiv: {
@@ -470,7 +448,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 20,
   },
   rowBtn: (theme) => ({
     backgroundColor:
@@ -495,4 +472,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-evenly",
     alignItems: "center",
   },
+  center: {
+    justifyContent: "center",
+    alignItems: "center",
+  }
 });

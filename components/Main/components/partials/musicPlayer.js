@@ -5,9 +5,8 @@ import {
   TouchableOpacity,
   Image,
   Platform,
-  SafeAreaView,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import SafeAreaView from "./utils/safe";
 import { useState, useEffect } from "react";
 import { useTheme } from "../../../../contexts/theme";
 import { Audio } from "expo-av";
@@ -32,7 +31,7 @@ const Music = () => {
   const [isResonancePlaying, setIsResonancePlaying] = useState(false);
   const [isWatchingStarPlaying, setIsWatchingStarPlaying] = useState(false);
 
-  const insets = useSafeAreaInsets();
+
 
   useEffect(() => {
     return sound
@@ -99,7 +98,7 @@ const Music = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container(theme.theme,insets.top)}>
+    <SafeAreaView style={styles.container(theme.theme)}>
       <View style={styles.stuffContainer}>
         <TouchableOpacity
           style={styles.soundBox(theme.theme)}
@@ -224,7 +223,7 @@ const styles = StyleSheet.create({
   soundBox: (theme) => ({
     height: 100,
     width: "80%",
-    backgroundColor: theme === "dark" ? "black" : "white",
+    backgroundColor: theme==="dark"?"#212121":"#e0e0e0",
     borderRadius: 15,
     flexDirection: "row",
     justifyContent: "flex-start",

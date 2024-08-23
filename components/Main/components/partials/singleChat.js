@@ -11,8 +11,9 @@ import {
   Modal,
   ScrollView,
   TouchableWithoutFeedback,
+  ImageBackground,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import SafeAreaView from "./utils/safe";
 import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import * as SQLite from "expo-sqlite";
@@ -23,12 +24,15 @@ import { useAuth } from "../../../../contexts/authContext";
 import { BlurView } from "expo-blur";
 import LongPressComponent from "./utils/longPress";
 import AddUserToGroup from "./addUserToGroup";
+import { StatusBar } from "expo-status-bar";
 
 const SingleChat = ({ navigation }) => {
-  const { theme, Icons, chatColor } = useTheme();
-  const { selectedContact, randomUID,setSelectedContact } = useMessager();
+  const { theme, Icons, chatColor, textInputColor, currentChatTheme } =useTheme();
+  const { selectedContact, randomUID, setSelectedContact } = useMessager();
   const { socket, isConnected, isLoading, endPoint } = useSocket();
   const { user, token } = useAuth();
+
+
 
   axios.defaults.baseURL = `${endPoint}/message`;
 
@@ -38,9 +42,8 @@ const SingleChat = ({ navigation }) => {
   const [isFocused, setIsFocused] = useState({ focused: false, item: null });
   const [isTyping, setIsTyping] = useState(false);
   const [isAddUser, setIsAddUser] = useState(false);
+  const [maxHeight, setMaxHeight] = useState(50);
   const receivedMessageIds = useRef(new Set());
-
-  const insets = useSafeAreaInsets();
 
   let loaded = false;
 
@@ -154,11 +157,11 @@ const SingleChat = ({ navigation }) => {
 
   const handleIncomingMessage = useCallback(
     async (message) => {
-      if (!isConnected || !selectedContact || message.sender === user.id)
+      if (!isConnected || !selectedContact || message.sender === user?.id)
         return;
       const db = await dbPromise;
       if (message.isDeleted) {
-        if (user.id === message.sender) return;
+        if (user?.id === message.sender) return;
         if (receivedMessageIds.current.has(message.id)) {
           receivedMessageIds.current.delete(message.id);
           console.log("delete");
@@ -167,7 +170,7 @@ const SingleChat = ({ navigation }) => {
 
         await axios.post("/delete", {
           messageId: message.id,
-          isGroup: selectedContact.isGroup,
+          isGroup: selectedContact?.isGroup,
           noOfMembers: selectedContact.noOfMembers,
           sender: message.sender,
           token,
@@ -181,13 +184,13 @@ const SingleChat = ({ navigation }) => {
         setMessages((prev) => [...prev, message]);
         await axios.post("/delete", {
           messageId: message.id,
-          isGroup: selectedContact.isGroup,
-          noOfMembers: selectedContact.noOfMembers,
+          isGroup: selectedContact?.isGroup,
+          noOfMembers: selectedContact?.noOfMembers,
           sender: message.sender,
         });
       }
     },
-    [isConnected, selectedContact, user.id]
+    [isConnected, selectedContact, user?.id]
   );
 
   function isOnlyEmojis(text) {
@@ -206,20 +209,20 @@ const SingleChat = ({ navigation }) => {
       socket?.emit("joinRoom", { roomID: selectedContact.roomID });
       const res = await axios.post("/check", {
         roomID: selectedContact.roomID,
-        isGroup: selectedContact.isGroup,
-        noOfMembers: selectedContact.noOfMembers,
+        isGroup: selectedContact?.isGroup,
+        noOfMembers: selectedContact?.noOfMembers,
         token,
       });
       if (res.data.success) {
         for (const message of res.data.messages) {
           if (
-            message.sender !== user.id &&
+            message.sender !== user?.id &&
             !receivedMessageIds.current.has(message.id)
           ) {
             handleIncomingMessage(message);
           }
           if (
-            message.sender !== user.id &&
+            message.sender !== user?.id &&
             receivedMessageIds.current.has(message.id) &&
             message.isDeleted
           ) {
@@ -241,16 +244,16 @@ const SingleChat = ({ navigation }) => {
 
     const message = {
       id: randomUID(),
-      sender: user.id,
+      sender: user?.id,
       senderName: user.username,
       msg: "",
-      roomID: selectedContact.roomID,
+      roomID: selectedContact?.roomID,
       time: new Date().toISOString(),
       isSticker: true,
       sticker: sticker,
       isDeleted: false,
-      isGroup: selectedContact.isGroup,
-      noOfMembers: selectedContact.noOfMembers,
+      isGroup: selectedContact?.isGroup,
+      noOfMembers: selectedContact?.noOfMembers,
     };
 
     const db = await dbPromise;
@@ -265,16 +268,16 @@ const SingleChat = ({ navigation }) => {
 
     const message = {
       id: randomUID(),
-      sender: user.id,
+      sender: user?.id,
       senderName: user.username,
       msg: msg,
-      roomID: selectedContact.roomID,
+      roomID: selectedContact?.roomID,
       time: new Date().toISOString(),
       isSticker: false,
       sticker: null,
       isDeleted: false,
-      isGroup: selectedContact.isGroup,
-      noOfMembers: selectedContact.noOfMembers,
+      isGroup: selectedContact?.isGroup,
+      noOfMembers: selectedContact?.noOfMembers,
     };
 
     setMsg("");
@@ -287,7 +290,7 @@ const SingleChat = ({ navigation }) => {
   const deleteMessage = async (messageId, item) => {
     const message = {
       id: messageId,
-      sender: user.id,
+      sender: user?.id,
       senderName: user.username,
       msg: "",
       roomID: selectedContact.roomID,
@@ -295,7 +298,7 @@ const SingleChat = ({ navigation }) => {
       isSticker: false,
       sticker: null,
       isDeleted: true,
-      isGroup: selectedContact.isGroup,
+      isGroup: selectedContact?.isGroup,
       noOfMembers: selectedContact.noOfMembers,
     };
     loaded = true;
@@ -313,7 +316,7 @@ const SingleChat = ({ navigation }) => {
       socket.on("typing", ({ id }) => {
         if (id !== selectedContact.id) return;
         if (isTyping) return;
-        if (id === user.id) return;
+        if (id === user?.id) return;
         if (isTyping) return;
         setIsTyping(true);
         setTimeout(() => {
@@ -327,7 +330,7 @@ const SingleChat = ({ navigation }) => {
   }, [handleIncomingMessage]);
 
   longPressEventHandle = (state, item) => {
-    if (item.sender !== user.id) return;
+    if (item.sender !== user?.id) return;
     if (state) {
       setIsFocused({ focused: true, item: item });
     }
@@ -336,17 +339,15 @@ const SingleChat = ({ navigation }) => {
   const isTypingHandler = (text) => {
     if (!isConnected || !selectedContact || !socket) return;
     if (text.trim() === "") return;
-    socket?.emit("typing", { roomID: selectedContact.roomID, user: user.id });
+    socket?.emit("typing", { roomID: selectedContact.roomID, user: user?.id });
   };
- 
-  const addUserToGroup = ()=> {}
 
   //components
   const RenderList = ({ item }) => {
     return (
       <View
         style={styles.flatListItem(
-          item.sender === user.id ? "flex-end" : "flex-start"
+          item.sender === user?.id ? "flex-end" : "flex-start"
         )}
       >
         <LongPressComponent
@@ -356,7 +357,7 @@ const SingleChat = ({ navigation }) => {
         >
           <View
             style={
-              item.sender === user.id
+              item.sender === user?.id
                 ? styles.messageLeft(
                     item.isSticker ? true : isOnlyEmojis(item.msg),
                     chatColor
@@ -369,7 +370,7 @@ const SingleChat = ({ navigation }) => {
           >
             {item.isSticker ? (
               <>
-                {item.isGroup && item.sender !== user.id ? (
+                {item.isGroup && item.sender !== user?.id ? (
                   <Text
                     style={styles.textStyles(
                       theme,
@@ -385,8 +386,8 @@ const SingleChat = ({ navigation }) => {
                 <Image
                   source={stickers[item.sticker]}
                   style={styles.Image(
-                    item.sender === user.id ? 0 : -10,
-                    item.sender === user.id ? -10 : 0,
+                    item.sender === user?.id ? 0 : -10,
+                    item.sender === user?.id ? -10 : 0,
                     200,
                     200,
                     10
@@ -395,7 +396,7 @@ const SingleChat = ({ navigation }) => {
               </>
             ) : (
               <>
-                {item.isGroup && item.sender !== user.id ? (
+                {item.isGroup && item.sender !== user?.id ? (
                   <Text
                     style={styles.textStyles(theme, 12, "400", "white", 0.8)}
                   >
@@ -532,133 +533,154 @@ const SingleChat = ({ navigation }) => {
       }, 200);
     }
   }, [messages]);
-
   return (
-    <View style={styles.container(theme,insets)}>
-      <View style={styles.header(theme)}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.Image(10, 20)}
+    <SafeAreaView>
+      <ImageBackground style={{ flex: 1 }} source={currentChatTheme.image} resizeMode="cover">
+        <StatusBar style="light" backgroundColor={currentChatTheme.statusBarColor} />
+        <View style={styles.header(theme)}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.Image(10, 20)}
+          >
+            <Image source={Icons.return} style={styles.Image()} />
+          </TouchableOpacity>
+
+          <Text style={styles.textStyles(theme)}>
+            {selectedContact ? selectedContact?.username : "Single Chat"}
+          </Text>
+          {!selectedContact?.isGroup ? (
+            <Image
+              source={{
+                uri: `https://api.multiavatar.com/${selectedContact.username}.png?apikey=CglVv3piOwAuoJ`,
+              }}
+              style={styles.Image(20, 10)}
+            />
+          ) : (
+            <>
+              <Image source={Icons.group} style={styles.Image(20, 10)} />
+              <View style={styles.addUserConatiner}>
+                <TouchableOpacity
+                  onPress={() => setIsAddUser(true)}
+                  disabled={!isConnected || isLoading || !socket}
+                >
+                  <Image source={Icons.add} style={styles.Image()} />
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </View>
+        <KeyboardAvoidingView
+          style={styles.body}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          enabled
+          keyboardVerticalOffset={Platform.OS === "ios" ? 45 : 45}
         >
-          <Image source={Icons.return} style={styles.Image()} />
-        </TouchableOpacity>
-
-        <Text style={styles.textStyles(theme)}>
-          {selectedContact ? selectedContact?.username : "Single Chat"}
-        </Text>
-        {!selectedContact.isGroup ? (
-          <Image
-            source={{
-              uri: `https://api.multiavatar.com/${selectedContact.username}.png?apikey=CglVv3piOwAuoJ`,
-            }}
-            style={styles.Image(20, 10)}
-          />
-        ) : (
-        <>
-          <Image source={Icons.group} style={styles.Image(20, 10)} />
-          <View style={styles.addUserConatiner}>
-          <TouchableOpacity 
-          onPress={()=>setIsAddUser(true)}
-          disabled={!isConnected || isLoading || !socket}
-          >
-            <Image source={Icons.add} style={styles.Image()} />
-          </TouchableOpacity>
-        </View>
-        </>
-        )}
-        
-      </View>
-      <KeyboardAvoidingView
-        style={styles.body}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        enabled
-        keyboardVerticalOffset={Platform.OS === "ios" ? 65 : 30}
-      >
-        <View style={styles.flatListContainer}>
-          <FlatList
-            data={messages}
-            renderItem={RenderList}
-            ref={flatListRef}
-            onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
-            onContentSizeChange={() =>
-              flatListRef.current.scrollToEnd({ animated: true })
-            }
-          />
-        </View>
-        <View style={styles.footer}>
-          <View style={styles.updateContainer}>
-            <Text
-              style={styles.textStyles(theme, 15, 400, "rgba(198,198,198,0.5)")}
-            >
-              {isTyping ? "Typing..." : ""}
-            </Text>
+          <View style={styles.flatListContainer}>
+            <FlatList
+              data={messages}
+              renderItem={RenderList}
+              ref={flatListRef}
+              onLayout={() =>
+                flatListRef.current.scrollToEnd({ animated: true })
+              }
+              onContentSizeChange={() =>
+                flatListRef.current.scrollToEnd({ animated: true })
+              }
+            />
           </View>
-
-          <TouchableOpacity
-            onPress={() => setIsSticker(true)}
-            style={styles.Button(theme, isConnected, 40, 40, 10)}
-            disabled={!isConnected || isLoading || !socket}
-          >
-            <Image source={Icons.sticker} style={styles.Image(0, 0, 40, 40)} />
-          </TouchableOpacity>
-          <TextInput
-            placeholder="Type a message"
-            placeholderTextColor={theme === "dark" ? "white" : "black"}
-            style={styles.TextInput(theme)}
-            readOnly={!isConnected || isLoading || !socket}
-            value={msg}
-            onChangeText={(text) => {
-              setMsg(text);
-              isTypingHandler(text);
-            }}
+          <View style={styles.footer(textInputColor)}>
+            <View style={styles.textInp(textInputColor, maxHeight)}>
+              <TouchableOpacity
+                onPress={() => setIsSticker(true)}
+                style={styles.Button(theme, isConnected, 35, 35, 10)}
+                disabled={!isConnected || isLoading || !socket}
+              >
+                <Image
+                  source={Icons.sticker}
+                  style={styles.Image(0, 0, 35, 35)}
+                />
+              </TouchableOpacity>
+              <TextInput
+                placeholder="Type a message"
+                placeholderTextColor={theme === "dark" ? "#E0E0E0" : "#2D2D2D"}
+                style={styles.TextInput(theme)}
+                readOnly={!isConnected || isLoading || !socket}
+                multiline={true}
+                numberOfLines={4}
+                editable={isConnected && !isLoading && socket}
+                onContentSizeChange={(e) => {
+                  if (
+                    e.nativeEvent.contentSize.height > 50 &&
+                    e.nativeEvent.contentSize.height < 100
+                  ) {
+                    setMaxHeight(e.nativeEvent.contentSize.height);
+                  } else if (e.nativeEvent.contentSize.height > 100) {
+                    setMaxHeight(100);
+                  } else {
+                    setMaxHeight(50);
+                  }
+                }}
+                value={msg}
+                onChangeText={(text) => {
+                  setMsg(text);
+                }}
+              />
+              <TouchableOpacity
+                onPress={sendMessage}
+                style={styles.Button(theme, isConnected, 35, 35, 0, 10)}
+                disabled={
+                  !isConnected || msg.trim() === "" || isLoading || !socket
+                }
+              >
+                <Image
+                  source={Icons.sendBtn}
+                  style={styles.Image(0, 0, 35, 35)}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+        <Modal
+          visible={isSticker}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setIsSticker(false)}
+          hardwareAccelerated={true}
+        >
+          <StickerComponent />
+        </Modal>
+        <Modal
+          animationType="fade"
+          transparent={true}
+          hardwareAccelerated={true}
+          visible={isFocused.focused}
+        >
+          <BlurItem isFocused={isFocused} />
+        </Modal>
+        <Modal
+          animationType="slide"
+          transparent={true}
+          hardwareAccelerated={true}
+          visible={isAddUser}
+        >
+          <AddUserToGroup
+            setIsAddUser={setIsAddUser}
+            groupId={selectedContact}
+            setCurrentContact={setSelectedContact}
           />
-          <TouchableOpacity
-            onPress={sendMessage}
-            style={styles.Button(theme, isConnected, 45, 45, 0, 10)}
-            disabled={!isConnected || msg.trim() === "" || isLoading || !socket}
-          >
-            <Image source={Icons.sendBtn} style={styles.Image(0, 0, 45, 45)} />
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-      <Modal
-        visible={isSticker}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsSticker(false)}
-        hardwareAccelerated={true}
-      >
-        <StickerComponent />
-      </Modal>
-      <Modal
-        animationType="fade"
-        transparent={true}
-        hardwareAccelerated={true}
-        visible={isFocused.focused}
-      >
-        <BlurItem isFocused={isFocused} />
-      </Modal>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        hardwareAccelerated={true}
-        visible={isAddUser}
-      >
-        <AddUserToGroup setIsAddUser={setIsAddUser} groupId={selectedContact} setCurrentContact={setSelectedContact} />
-      </Modal>
-    </View>
+        </Modal>
+      </ImageBackground>
+    </SafeAreaView>
   );
 };
 
 export default SingleChat;
 
 const styles = StyleSheet.create({
-  container: (theme,pd) => ({
+  container: (theme) => ({
     flex: 1,
     backgroundColor: theme === "dark" ? "black" : "white",
     flexDirection: "column",
-    paddingTop: pd.top,
-    paddingBottom:Platform.OS==="ios"?0: pd.bottom,
   }),
   textStyles: (
     theme,
@@ -696,7 +718,8 @@ const styles = StyleSheet.create({
     width: width,
     marginLeft: marginLeft,
     marginRight: marginR,
-    borderRadius: borderRadius,
+    borderRadius: borderRadius === 0 ? height / 2 : borderRadius,
+    alignSelf: "center",
   }),
   body: {
     flex: 1,
@@ -706,32 +729,32 @@ const styles = StyleSheet.create({
   flatListContainer: {
     flex: 1,
   },
-  footer: {
+  footer: () => ({
     flex: 0.15,
     width: "100%",
-    backgroundColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 50,
+    maxHeight: 100,
+  }),
+  textInp: (color, height = 50) => ({
+    height: height,
+    width: "95%",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-evenly",
-    minHeight: 50,
-    maxHeight: 50,
-  },
+    backgroundColor: color.color,
+    borderRadius: 30,
+  }),
   TextInput: (theme) => ({
-    height: 50,
+    minHeight: 50,
     flex: 1,
-    backgroundColor:
-      theme === "dark" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)",
-    borderRadius: 25,
-    borderBlockColor:
-      theme === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)",
-    borderWidth: 0.5,
     padding: 15,
-    margin: 5,
-    color: theme === "dark" ? "white" : "black",
+    color: theme === "dark" ? "#E0E0E0" : "#2D2D2D",
     fontWeight: "bold",
-    justifyContent: "center",
     alignItems: "center",
     alignText: "center",
+    alignSelf: "center",
   }),
   Button: (
     theme,
@@ -765,7 +788,7 @@ const styles = StyleSheet.create({
   }),
   messageLeft: (isEmoji, chatColor) => ({
     backgroundColor: isEmoji ? "transparent" : chatColor.sender,
-    borderRadius: 10,
+    borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 5,
     marginTop: 5,
@@ -776,7 +799,7 @@ const styles = StyleSheet.create({
   }),
   messageRight: (isEmoji, chatColor) => ({
     backgroundColor: isEmoji ? "transparent" : chatColor.receiver,
-    borderRadius: 10,
+    borderRadius: 20,
     paddingHorizontal: 10,
     paddingBottom: 10,
     paddingTop: 5,

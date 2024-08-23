@@ -14,8 +14,7 @@ const Main = () => {
     <View style={styles.container}>
       <StatusBar
         style={theme.theme === "dark" ? "light" : "dark"}
-        backgroundColor={theme.theme === "dark" ? "black" : "white"}
-        translucent={true}
+        backgroundColor={theme.background}
       />
       <Stack.Navigator
         screenOptions={{

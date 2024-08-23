@@ -31,7 +31,7 @@ const Home = ({navigation}) => {
   
 
   return (
-    <SafeAreaView style={styles.container(theme.theme)}>
+    <SafeAreaView style={styles.container(theme)}>
       <Stack.Navigator 
         initialRouteName="Chats"
         screenOptions={{
@@ -74,6 +74,6 @@ export default Home;
 const styles = StyleSheet.create({
   container: (theme) => ({
     flex: 1,
-    backgroundColor: theme === "dark" ? "black" : "white",
+    backgroundColor: theme.background,
   }),
 });

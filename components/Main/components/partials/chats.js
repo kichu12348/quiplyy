@@ -16,7 +16,7 @@ const Chats = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-        <StatusBar style={theme.theme==="dark"?"light":"dark"} backgroundColor={theme.theme==="dark"?"black":"white"}  translucent/>
+        <StatusBar style={theme.theme==="dark"?"light":"dark"} backgroundColor={theme.background}  translucent/>
         <Body moveTo={moveTo}/>
         <Footer moveTo={moveTo}/>
     </SafeAreaView>

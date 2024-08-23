@@ -6,11 +6,11 @@ import { useAuth } from '../../../../contexts/authContext'
 const Footer = ({moveTo}) => {
 
 
-  const {Icons,theme}=useTheme()
+  const {Icons,theme,background}=useTheme()
   const {user}=useAuth()
 
   return (
-    <View style={styles.container(theme)}>
+    <View style={styles.container(background)}>
       <TouchableOpacity
       onPress={()=>moveTo('Stuff')}
       >
@@ -38,7 +38,7 @@ export default Footer
 const styles=StyleSheet.create({
     container:(color)=>({
         flex:0.15,
-        backgroundColor:color==="dark"?"black":"white",
+        backgroundColor:color,
         flexDirection:"row",
         alignItems:"center",
         justifyContent:"space-evenly",
@@ -47,5 +47,6 @@ const styles=StyleSheet.create({
         height:40,
         width:40,
         alignSelf:"center",
+        borderRadius:20,
     }
 })

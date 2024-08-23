@@ -7,9 +7,8 @@ import {
   TouchableOpacity,
   Dimensions,
   Modal,
-  SafeAreaView,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import SafeAreaView from "./utils/safe";
 import { useEffect, useState, useCallback } from "react";
 import { TextInput } from "react-native-gesture-handler";
 import { useTheme } from "../../../../contexts/theme";
@@ -22,8 +21,6 @@ import CreateGroupChat from "./createGroupChat";
 
 const Body = ({ moveTo }) => {
   const theme = useTheme();
-
-  const insets = useSafeAreaInsets();
 
   const { width } = Dimensions.get("window");
   const { setSelectedContact } = useMessager();
@@ -86,7 +83,7 @@ const Body = ({ moveTo }) => {
   const renderList = ({ item }) => {
     return item && item.id ? (
       <TouchableOpacity
-        style={styles.listItem(theme.theme)}
+        style={styles.listItem(theme)}
         onPress={() => {
           isQuerying ? addContact(item.id) : setMessager({ ...item });
         }}
@@ -124,61 +121,33 @@ const Body = ({ moveTo }) => {
     (data) => {
       if (data.id === auth.user.id) return;
       if (sql.contacts.find((e) => e && e?.id === data.id)) return;
-      sql.setContacts((prev) => [
-        ...prev,
-        {
-          id: data.id,
-          username: data.username,
-          roomID: data.roomID,
-          isGroup: data.isGroup,
-          noOfMembers: data.noOfMembers,
-        },
-      ]);
-      setContacts((prev) => [
-        ...prev,
-        {
-          id: data.id,
-          username: data.username,
-          roomID: data.roomID,
-          isGroup: data.isGroup,
-          noOfMembers: data.noOfMembers,
-        },
-      ]);
-      sql.AddContact({
-        id: data.id,
-        username: data.username,
-        roomID: data.roomID,
-        time: Date.now().toString(),
-        isGroup: data.isGroup,
-        noOfMembers: data.noOfMembers,
-      });
+      sql.getContacts();
     },
     [socket]
   );
 
-  const handleUpdateContactSocket = useCallback(data=>{
-    sql.updateContact(data);
-    setContacts(sql.contacts);
-  },[socket])
-  
+  const handleUpdateContactSocket = useCallback(
+    (data) => {
+      sql.updateContact(data);
+      setContacts(sql.contacts);
+    },
+    [socket]
+  );
+
   useEffect(() => {
     socket?.on("addContact", handleAddContactSocket);
     socket?.on("groupCreated", handleAddContactSocket);
-    socket?.on("updateContacT",handleUpdateContactSocket);
+    socket?.on("updateContacT", handleUpdateContactSocket);
     return () => {
       socket?.off("addContact", handleAddContactSocket);
     };
   }, [socket, handleAddContactSocket]);
 
   return (
-    <View
-      style={styles.container(
-        theme.theme === "dark" ? "black" : "white",
-        insets.top
-      )}
-    >
-      <View style={styles.textInputContainer}>
-        <TextInput
+    <SafeAreaView>
+      <View style={styles.textInputContainer(theme)}>
+        <View style={styles.TextInp(theme)}>
+          <TextInput
           placeholder="search...🔍"
           placeholderTextColor={theme.theme === "dark" ? "white" : "black"}
           style={styles.TextInput(theme.theme)}
@@ -194,6 +163,7 @@ const Body = ({ moveTo }) => {
         >
           <Image source={theme.Icons.add} style={styles.Image()} />
         </TouchableOpacity>
+        </View>
       </View>
       <View style={styles.flatListContainer(width)}>
         <FlatList
@@ -210,7 +180,7 @@ const Body = ({ moveTo }) => {
       >
         <CreateGroupChat setIsGpChat={setIsGpChat} />
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -227,22 +197,19 @@ const styles = StyleSheet.create({
   TextInput: (color) => ({
     height: 50,
     width: "80%",
-    backgroundColor:
-      color === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.2)",
-    borderRadius: 25,
     padding: 10,
     color: color === "dark" ? "white" : "black",
     fontWeight: "bold",
   }),
-  listItem: (color) => ({
+  listItem: (theme) => ({
     padding: 20,
-    backgroundColor: "transparent",
-    margin: 0,
-    width: "90%",
+    backgroundColor: theme.theme==="dark"?"#212121":"#e0e0e0", 
+    margin:5,
+    marginLeft: 10,
+    width: "95%",
     alignItems: "center",
     flexDirection: "row",
-    borderColor: color === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)",
-    borderBottomWidth: 0.5,
+    borderRadius: 25,
   }),
   flatListContainer: (width = "100%") => ({
     flex: 1,
@@ -257,14 +224,22 @@ const styles = StyleSheet.create({
   Image: (mt = 0, ml = 0) => ({
     height: 50,
     width: 50,
-    marginTop: mt,
-    marginLeft: ml,
+    borderRadius: 25,
+    alignSelf: "center",
   }),
-  textInputContainer: {
+  textInputContainer:(theme)=>({
     height: 60,
-    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
+  }),
+  TextInp:(theme)=>({
+    height: "100%",
+    width: "95%",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-evenly",
-  },
+    backgroundColor: theme.textInputColor.color,
+    borderRadius: 30,
+  })
 });

@@ -2,13 +2,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   Image,
   FlatList,
   Alert,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import SafeAreaView from "./utils/safe";
 import { useState } from "react";
 import { useTheme } from "../../../../contexts/theme";
 import { useSql } from "../../../../contexts/sqlContext";
@@ -104,9 +103,9 @@ const AddUserToGroup = ({setIsAddUser}) => {
     setSelectedContacts([...selectedContacts, id]);
   };
 
-  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={styles.container(theme, insets)}>
+    <SafeAreaView style={styles.container(theme)}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => setIsAddUser(false)}>
           <Image source={Icons.return} style={styles.Image(50)} />
@@ -136,12 +135,11 @@ const AddUserToGroup = ({setIsAddUser}) => {
 export default AddUserToGroup;
 
 const styles = StyleSheet.create({
-  container: (theme, pd) => ({
+  container: (theme) => ({
     flex: 1,
     justifyContent: "flex-start",
     alignItems: "center",
     backgroundColor: theme === "dark" ? "rgba(0,0,0,1)" : "rgba(255,255,255,1)",
-    paddingTop: pd.top,
   }),
   text: (theme = "dark") => ({
     fontSize: 20,
@@ -152,6 +150,7 @@ const styles = StyleSheet.create({
     width: size,
     height: size,
     marginRight: 10,
+    borderRadius: size / 2,
   }),
   header: {
     width: "100%",
@@ -160,15 +159,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     height: 50,
   },
-  listItem: (color) => ({
+  listItem: (theme) => ({
     padding: 20,
-    backgroundColor: "transparent",
-    margin: 0,
-    width: "90%",
+    backgroundColor: theme==="dark"?"#212121":"#e0e0e0", 
+    margin:5,
+    marginLeft: 10,
+    width: "95%",
     alignItems: "center",
     flexDirection: "row",
-    borderColor: color === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)",
-    borderBottomWidth: 0.5,
+    borderRadius: 25,
   }),
   flatListContainer: (width = "100%") => ({
     flex: 1,

@@ -9,7 +9,7 @@ import {
   StyleSheet,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import SafeAreaView from "./utils/safe";
 import { useTheme } from "../../../../contexts/theme";
 import { useSocket } from "../../../../contexts/socketContext";
 import AddBlogs from "./addBlogs";
@@ -161,25 +161,10 @@ const styles = StyleSheet.create({
     height: "90%",
     padding: 10,
     flexDirection: "column",
-    backgroundColor: theme === "dark" ? "black" : "white",
+    backgroundColor: theme==="dark"?"#212121":"#e0e0e0",
     justifyContent: "space-between",
     alignItems: "flex-start",
     borderRadius: 15,
-    ...Platform.select({
-      ios: {
-        shadowColor: theme === "dark" ? "white" : "black",
-        shadowOffset: {
-          width: 2,
-          height: 2,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 3.84,
-      },
-      android: {
-        elevation: 5,
-        shadowColor: theme === "dark" ? "white" : "black",
-      },
-    }),
   }),
   Blog: {
     flex: 0.5,

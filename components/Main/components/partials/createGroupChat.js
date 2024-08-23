@@ -2,14 +2,13 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   Image,
   FlatList,
   TextInput,
   Alert,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import SafeAreaView from "./utils/safe";
 import { useState } from "react";
 import { useTheme } from "../../../../contexts/theme";
 import { useSql } from "../../../../contexts/sqlContext";
@@ -18,7 +17,7 @@ import axios from "axios";
 import { useAuth } from "../../../../contexts/authContext";
 
 const CreateGroupChat = ({ setIsGpChat }) => {
-  const { theme, Icons } = useTheme();
+  const { theme, Icons,textInputColor,background } = useTheme();
   const { setContacts, AddContact, contacts } = useSql();
   const { socket, isConnected, endPoint } = useSocket();
   const { token } = useAuth();
@@ -124,24 +123,27 @@ const CreateGroupChat = ({ setIsGpChat }) => {
     setSelectedContacts([...selectedContacts, id]);
   };
 
-  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={styles.container(theme,insets)}>
-      <View style={styles.header}>
+    <SafeAreaView >
+      <View style={styles.container(background)}>
+     <View style={styles.header}>
         <TouchableOpacity onPress={() => setIsGpChat(false)}>
           <Image source={Icons.return} style={styles.Image(50)} />
         </TouchableOpacity>
         <Text style={styles.text(theme)}>CreateGroupChat</Text>
       </View>
       <View style={styles.flatListContainer("100%")}>
+        <View style={styles.textInpContainer}>
         <TextInput
           placeholder="Group Name...."
           placeholderTextColor={theme === "dark" ? "white" : "black"}
-          style={styles.TextInput(theme)}
+          style={styles.TextInput(textInputColor,theme)}
           readOnly={!isConnected || !socket}
           value={groupName}
           onChangeText={(text) => setGroupName(text)}
         />
+        </View>
         <FlatList
           renderItem={renderList}
           data={contacts}
@@ -157,6 +159,8 @@ const CreateGroupChat = ({ setIsGpChat }) => {
           </TouchableOpacity>
         </View>
       </View>
+      </View>
+      
     </SafeAreaView>
   );
 };
@@ -164,12 +168,11 @@ const CreateGroupChat = ({ setIsGpChat }) => {
 export default CreateGroupChat;
 
 const styles = StyleSheet.create({
-  container: (theme,pd) => ({
+  container: (backgroundColor) => ({
     flex: 1,
     justifyContent: "flex-start",
     alignItems: "center",
-    backgroundColor: theme === "dark" ? "rgba(0,0,0,1)" : "rgba(255,255,255,1)",
-    paddingTop: pd.top,
+    backgroundColor: backgroundColor,
   }),
   text: (theme = "dark") => ({
     fontSize: 20,
@@ -180,6 +183,7 @@ const styles = StyleSheet.create({
     width: size,
     height: size,
     marginRight: 10,
+    borderRadius: size / 2,
   }),
   header: {
     width: "100%",
@@ -188,15 +192,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     height: 50,
   },
-  listItem: (color) => ({
+  listItem: (theme) => ({
     padding: 20,
-    backgroundColor: "transparent",
-    margin: 0,
-    width: "90%",
+    backgroundColor: theme==="dark"?"#212121":"#e0e0e0", 
+    margin:5,
+    marginLeft: 10,
+    width: "95%",
     alignItems: "center",
     flexDirection: "row",
-    borderColor: color === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)",
-    borderBottomWidth: 0.5,
+    borderRadius: 25,
   }),
   flatListContainer: (width = "100%") => ({
     flex: 1,
@@ -209,16 +213,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "flex-end",
   },
-  TextInput: (color = "dark") => ({
+  TextInput: (textInputColor,theme) => ({
     height: 50,
     width: "90%",
-    backgroundColor:
-      color === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.2)",
+    backgroundColor:textInputColor.color,
     borderRadius: 25,
     padding: 10,
     margin: 10,
     marginTop: 20,
-    color: color === "dark" ? "white" : "black",
+    color: theme==="dark"?"white":"black",
     fontWeight: "bold",
   }),
   footer: {
@@ -235,4 +238,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  textInpContainer:{
+    height: 60,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
+  }
 });

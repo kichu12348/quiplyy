@@ -2,6 +2,7 @@ import * as SQLite from "expo-sqlite";
 import { createContext, useContext, useEffect, useState, useMemo } from "react";
 import { useAuth } from "./authContext";
 import { useSocket } from "./socketContext";
+import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
 const sqlContext = createContext();
 
 function SqlProvider({ children }) {
@@ -132,6 +133,7 @@ function SqlProvider({ children }) {
       dropContactsDB,
       setContacts,
       updateContact,
+      getContacts,
     };
   }, [contacts]);
 

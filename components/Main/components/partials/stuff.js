@@ -1,5 +1,5 @@
 import {Text,StyleSheet,View,TouchableOpacity,Image} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import SafeAreaView from './utils/safe'
 import React from 'react'
 import Music from './musicPlayer'
 import { useTheme } from '../../../../contexts/theme'
@@ -33,7 +33,7 @@ export default Stuff
 const styles = StyleSheet.create({
   container: (theme) => ({
     flex: 1,
-    backgroundColor: theme === "dark" ? "black" : "white",
+    backgroundColor: theme==="dark"?"#212121":"#e0e0e0",
     justifyContent: "center",
     alignItems: "center",
   }),

@@ -7,7 +7,7 @@ import {
   Image,
   Modal,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import SafeAreaView from "./utils/safe";
 import { useTheme } from "../../../../contexts/theme";
 import { useSocket } from "../../../../contexts/socketContext";
 import { Chess } from "chess.js";
@@ -106,7 +106,7 @@ const ChessJs = ({ navigation }) => {
   }, []);
 
   return (
-    <SafeAreaView style={styles.container(theme)}>
+    <SafeAreaView>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -139,7 +139,9 @@ const ChessJs = ({ navigation }) => {
             style={styles.button(false, theme)}
             onPress={resetGame}
           >
-            <Text style={styles.textStyles(theme, 16)}>Reset Game</Text>
+            <Text style={styles.textStyles(theme, 16, "white")}>
+              Reset Game
+            </Text>
           </TouchableOpacity>
           {/* <TouchableOpacity
             style={styles.button(true)}
@@ -182,8 +184,12 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     alignItems: "center",
   }),
-  textStyles: (theme, fts = 20) => ({
-    color: theme === "dark" ? "white" : "black",
+  textStyles: (
+    theme,
+    fts = 20,
+    color = theme === "dark" ? "white" : "black"
+  ) => ({
+    color: color,
     fontSize: fts,
     fontWeight: "bold",
   }),

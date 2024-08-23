@@ -8,7 +8,7 @@ import {
   Text,
   ScrollView,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import SafeAreaView from "./utils/safe";
 import { useTheme } from "../../../../contexts/theme";
 import { useBlog } from "../../../../contexts/BlogContext";
 import readingIMG from "./images/readingIMG.jpg";
