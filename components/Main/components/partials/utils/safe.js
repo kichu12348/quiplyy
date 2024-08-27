@@ -1,6 +1,6 @@
 import { SafeAreaView as SAVSafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
-import { View, Platform, StyleSheet } from 'react-native';
+import { View, Platform, StyleSheet, SafeAreaView as RNSAV} from 'react-native';
 import { useTheme } from '../../../../../contexts/theme';
 
 const SafeAreaView = ({ children, backgroundColor }) => {
@@ -13,9 +13,9 @@ const SafeAreaView = ({ children, backgroundColor }) => {
           {children}
         </SAVSafeAreaView>
       ) : (
-        <View style={styles.container(theme, backgroundColor)}>
+        <RNSAV style={styles.container(theme, backgroundColor)}>
           {children}
-        </View>
+        </RNSAV>
       )}
     </>
   );
@@ -24,8 +24,9 @@ const SafeAreaView = ({ children, backgroundColor }) => {
 export default SafeAreaView;
 
 const styles = StyleSheet.create({
-  container: (theme, backgroundColor) => ({
+  container: (theme, backgroundColor,pdT=0) => ({
     flex: 1,
     backgroundColor: backgroundColor ? backgroundColor : theme.background,
+    paddingTop: pdT,
   }),
 });

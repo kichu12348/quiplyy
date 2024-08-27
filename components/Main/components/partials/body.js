@@ -71,9 +71,13 @@ const Body = ({ moveTo }) => {
       });
   };
 
+  const shortenName = (name) => {
+    return name.length > 20 ? name.slice(0, 20) + "..." : name
+  }
+
   const addContact = (id) => {
     if (!isConnected) return;
-    if (id === auth.user.id) return;
+    if (id === auth?.user?.id) return;
     auth.addContact(id);
     setIsQuerying(false);
     setContacts(sql.contacts);
@@ -103,7 +107,7 @@ const Body = ({ moveTo }) => {
         <Text
           style={styles.textStyles(theme.theme === "dark" ? "white" : "black")}
         >
-          {item.username}
+          {shortenName(item.username)}
         </Text>
       </TouchableOpacity>
     ) : null;
@@ -119,8 +123,9 @@ const Body = ({ moveTo }) => {
 
   const handleAddContactSocket = useCallback(
     (data) => {
-      if (data.id === auth.user.id) return;
-      if (sql.contacts.find((e) => e && e?.id === data.id)) return;
+      if (data.id === auth?.user?.id) return;
+      if(!sql.contacts) return sql.getContacts();
+      if (sql.contacts?.find((e) => e && e?.id === data.id)) return;
       sql.getContacts();
     },
     [socket]

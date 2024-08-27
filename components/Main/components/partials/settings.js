@@ -58,14 +58,19 @@ const Settings = ({ navigation }) => {
     const db = await SQLlite.openDatabaseAsync("messages.db");
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS messages (
-        idx INTEGER PRIMARY KEY AUTOINCREMENT,
+      idx INTEGER PRIMARY KEY AUTOINCREMENT,
         id TEXT,
         sender TEXT,
+        senderName TEXT,
         msg TEXT,
         roomID TEXT,
         isSticker BOOLEAN DEFAULT 0,
         sticker TEXT DEFAULT NULL,
         isDeleted BOOLEAN DEFAULT 0,
+        isGroup BOOLEAN DEFAULT 0,
+        isImage BOOLEAN DEFAULT 0,
+        imageUri TEXT DEFAULT NULL,
+        isDownloaded BOOLEAN DEFAULT 0,
         time TEXT
       );
     `);
@@ -105,8 +110,8 @@ const Settings = ({ navigation }) => {
             const db = await SQLlite.openDatabaseAsync("messages.db");
             await db.execAsync("DROP TABLE IF EXISTS messages");
             await db.execAsync(`
-        CREATE TABLE IF NOT EXISTS messages (
-          idx INTEGER PRIMARY KEY AUTOINCREMENT,
+              CREATE TABLE IF NOT EXISTS messages (
+        idx INTEGER PRIMARY KEY AUTOINCREMENT,
         id TEXT,
         sender TEXT,
         senderName TEXT,
@@ -116,13 +121,16 @@ const Settings = ({ navigation }) => {
         sticker TEXT DEFAULT NULL,
         isDeleted BOOLEAN DEFAULT 0,
         isGroup BOOLEAN DEFAULT 0,
+        isImage BOOLEAN DEFAULT 0,
+        imageUri TEXT DEFAULT NULL,
+        isDownloaded BOOLEAN DEFAULT 0,
         time TEXT
         );
       `);
             res.data.messages.map(async (message) => {
               await db.runAsync(
                 `
-          INSERT INTO messages (id, sender, msg, roomID, isSticker, sticker, isDeleted, time, isGroup, senderName) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO messages (id, sender, msg, roomID, time, isSticker, sticker,isDeleted,isGroup,senderName,isImage,imageUri,isDownloaded) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           `,
                 [
                   message.id,
@@ -135,6 +143,9 @@ const Settings = ({ navigation }) => {
                   message.time,
                   message.isGroup,
                   message.senderName,
+                  message.isImage,
+                  message.imageUri,
+                  true,
                 ]
               );
             });
@@ -242,13 +253,13 @@ const Settings = ({ navigation }) => {
             Dark Mode
           </Text>
           <Switch
-          trackColor={{ false: "#E0E0E0", true: "#4CAF50" }}
+          trackColor={{ false: "#E0E0E0", true: "rgba(0,255,0,0.8)" }}
           thumbColor={"#E0E0E0"}
           value={theme.theme === "dark"}
           onValueChange={() => theme.themeSetting(theme.theme === "dark" ? "light" : "dark")}
           />
         </View>
-        <View style={styles.middle("space-between", "column", "flex-start",20,theme)}>
+        {/* <View style={styles.middle("space-between", "column", "flex-start",20,theme)}>
           <Text style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D")}>
             Chat Background
           </Text>
@@ -268,10 +279,10 @@ const Settings = ({ navigation }) => {
               )
             })}
           </ScrollView>
-        </View>
+        </View> */}
 
 
-        <View style={styles.middle("center", "column", "flex-start", 0,theme)}>
+        <View style={styles.middle("center", "column", "center", 0,theme)}>
         <View style={styles.row}>
           <TouchableOpacity
             style={styles.rowBtn(theme.theme)}
@@ -279,12 +290,12 @@ const Settings = ({ navigation }) => {
           >
             <Text style={styles.text("white")}>Check For Update</Text>
           </TouchableOpacity>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.rowBtn(theme.theme)}
             onPress={() => setIsBackupOpen(true)}
           >
             <Text style={styles.text("white")}>Backup</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
           <View style={styles.centerDiv}>
             <TouchableOpacity
@@ -456,7 +467,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 30,
-    marginHorizontal: 10,
+    marginHorizontal: 0,
     padding: 10,
     minWidth: "10%",
   }),

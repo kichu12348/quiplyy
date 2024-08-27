@@ -11,7 +11,7 @@ import {
   Modal,
   ScrollView,
   TouchableWithoutFeedback,
-  ImageBackground,
+  Alert,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -24,15 +24,18 @@ import { useAuth } from "../../../../contexts/authContext";
 import { BlurView } from "expo-blur";
 import LongPressComponent from "./utils/longPress";
 import AddUserToGroup from "./addUserToGroup";
-import { StatusBar } from "expo-status-bar";
+import {
+  uploadImage,
+  deleteFile,
+  downloadFile,
+  copyFileToDocumentDirectory,
+} from "./utils/fileUpload";
 
 const SingleChat = ({ navigation }) => {
-  const { theme, Icons, chatColor, textInputColor, currentChatTheme } =useTheme();
+  const { theme, Icons, textInputColor } = useTheme();
   const { selectedContact, randomUID, setSelectedContact } = useMessager();
   const { socket, isConnected, isLoading, endPoint } = useSocket();
   const { user, token } = useAuth();
-
-
 
   axios.defaults.baseURL = `${endPoint}/message`;
 
@@ -46,6 +49,11 @@ const SingleChat = ({ navigation }) => {
   const receivedMessageIds = useRef(new Set());
 
   let loaded = false;
+
+
+  const shortenName = (name) => {
+    return name.length > 15 ? name.slice(0, 15) + "..." : name
+  }
 
   const dbPromise = SQLite.openDatabaseAsync("messages.db");
 
@@ -62,6 +70,9 @@ const SingleChat = ({ navigation }) => {
         sticker TEXT DEFAULT NULL,
         isDeleted BOOLEAN DEFAULT 0,
         isGroup BOOLEAN DEFAULT 0,
+        isImage BOOLEAN DEFAULT 0,
+        imageUri TEXT DEFAULT NULL,
+        isDownloaded BOOLEAN DEFAULT 0,
         time TEXT
       );
     `);
@@ -116,13 +127,21 @@ const SingleChat = ({ navigation }) => {
 
   const addMessageToDB = async (db, message) => {
     if (message.isDeleted) {
+      if (message.isImage) {
+        const imageUri = await db.runAsync(
+          `
+          SELECT imageUri FROM messages WHERE id = ?`,
+          [message.id]
+        );
+        if (imageUri) await deleteFile(imageUri);
+      }
       await db.runAsync("DELETE FROM messages WHERE id = ?", [message.id]);
       setMessages((prev) => prev.filter((e) => e.id !== message.id));
       return;
     }
     if (message.isSticker) {
       await db.runAsync(
-        "INSERT INTO messages (id, sender, msg, roomID, time, isSticker, sticker,isDeleted,isGroup,senderName) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO messages (id, sender, msg, roomID, time, isSticker, sticker,isDeleted,isGroup,senderName,isImage,imageUri,isDownloaded) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         [
           message.id,
           message.sender,
@@ -134,12 +153,63 @@ const SingleChat = ({ navigation }) => {
           message.isDeleted,
           message.isGroup,
           message.senderName,
+          message.isImage,
+          message.imageUri,
+          message.isDownloaded,
         ]
       );
       return;
     }
+    if (message.isImage) {
+      if (message.sender === user?.id) {
+        const uri = await copyFileToDocumentDirectory(
+          message.localFileUri
+        );
+        if (!uri) return;
+        await db.runAsync(
+          `INSERT INTO messages (id, sender, msg, roomID, time,isSticker, sticker,isDeleted,isGroup,senderName,isImage,imageUri,isDownloaded) VALUES (?, ?, ?, ?, ?,?,?,?,?,?,?,?,?)`,
+          [
+            message.id,
+            message.sender,
+            message.msg,
+            message.roomID,
+            message.time,
+            message.isSticker,
+            message.sticker,
+            message.isDeleted,
+            message.isGroup,
+            message.senderName,
+            message.isImage,
+            uri,
+            true,
+          ]
+        );
+        return;
+      } else{
+          await db.runAsync(
+            `INSERT INTO messages (id, sender, msg, roomID, time,isSticker, sticker,isDeleted,isGroup,senderName,isImage,imageUri,isDownloaded) VALUES (?, ?, ?, ?, ?,?,?,?,?,?,?,?,?)`,
+            [
+              message.id,
+              message.sender,
+              message.msg,
+              message.roomID,
+              message.time,
+              message.isSticker,
+              message.sticker,
+              message.isDeleted,
+              message.isGroup,
+              message.senderName,
+              message.isImage,
+              message.imageUri,
+              true,
+            ]
+          );
+
+        return;
+      }
+    }
     await db.runAsync(
-      `INSERT INTO messages (id, sender, msg, roomID, time,isSticker, sticker,isDeleted,isGroup,senderName) VALUES (?, ?, ?, ?, ?,?,?,?,?,?)`,
+      `INSERT INTO messages (id, sender, msg, roomID, time,isSticker, sticker,isDeleted,isGroup,senderName,isImage,imageUri,isDownloaded) VALUES (?, ?, ?, ?, ?,?,?,?,?,?,?,?,?)`,
       [
         message.id,
         message.sender,
@@ -151,6 +221,9 @@ const SingleChat = ({ navigation }) => {
         message.isDeleted,
         message.isGroup,
         message.senderName,
+        message.isImage,
+        message.imageUri,
+        message.isDownloaded,
       ]
     );
   };
@@ -164,7 +237,6 @@ const SingleChat = ({ navigation }) => {
         if (user?.id === message.sender) return;
         if (receivedMessageIds.current.has(message.id)) {
           receivedMessageIds.current.delete(message.id);
-          console.log("delete");
           await addMessageToDB(db, message);
         }
 
@@ -173,6 +245,7 @@ const SingleChat = ({ navigation }) => {
           isGroup: selectedContact?.isGroup,
           noOfMembers: selectedContact.noOfMembers,
           sender: message.sender,
+          isImage: message.isImage,
           token,
         });
         return;
@@ -180,13 +253,22 @@ const SingleChat = ({ navigation }) => {
 
       if (!receivedMessageIds.current.has(message.id)) {
         receivedMessageIds.current.add(message.id);
-        await addMessageToDB(db, message);
-        setMessages((prev) => [...prev, message]);
+        if(message.isImage){
+          const {success, uri} = await downloadFile(message.imageUri,endPoint);
+          if(!success) return;
+            message.imageUri = uri;
+            setMessages((prev) => [...prev, message]);
+            await addMessageToDB(db, message);
+        }else{
+          setMessages((prev) => [...prev, message]);
+          await addMessageToDB(db, message);
+        }
         await axios.post("/delete", {
           messageId: message.id,
           isGroup: selectedContact?.isGroup,
           noOfMembers: selectedContact?.noOfMembers,
           sender: message.sender,
+          isImage: message.isImage,
         });
       }
     },
@@ -254,6 +336,9 @@ const SingleChat = ({ navigation }) => {
       isDeleted: false,
       isGroup: selectedContact?.isGroup,
       noOfMembers: selectedContact?.noOfMembers,
+      isImage: false,
+      imageUri: null,
+      isDownloaded: false,
     };
 
     const db = await dbPromise;
@@ -270,7 +355,7 @@ const SingleChat = ({ navigation }) => {
       id: randomUID(),
       sender: user?.id,
       senderName: user.username,
-      msg: msg,
+      msg: msg.trim(),
       roomID: selectedContact?.roomID,
       time: new Date().toISOString(),
       isSticker: false,
@@ -278,6 +363,9 @@ const SingleChat = ({ navigation }) => {
       isDeleted: false,
       isGroup: selectedContact?.isGroup,
       noOfMembers: selectedContact?.noOfMembers,
+      isImage: false,
+      imageUri: null,
+      isDownloaded: false,
     };
 
     setMsg("");
@@ -300,6 +388,8 @@ const SingleChat = ({ navigation }) => {
       isDeleted: true,
       isGroup: selectedContact?.isGroup,
       noOfMembers: selectedContact.noOfMembers,
+      isImage: item.isImage,
+      imageUri: null,
     };
     loaded = true;
     setIsFocused({ focused: false, item: item });
@@ -342,6 +432,51 @@ const SingleChat = ({ navigation }) => {
     socket?.emit("typing", { roomID: selectedContact.roomID, user: user?.id });
   };
 
+  async function uploadFile(endPoint) {
+    const res = await uploadImage(endPoint);
+    if (!res.success && res.err) {
+      Alert.alert(res.err);
+      return;
+    }
+    const message = {
+      id: randomUID(),
+      sender: user?.id,
+      senderName: user.username,
+      msg: "",
+      roomID: selectedContact?.roomID,
+      time: new Date().toISOString(),
+      isSticker: false,
+      sticker: null,
+      isDeleted: false,
+      isGroup: selectedContact?.isGroup,
+      noOfMembers: selectedContact?.noOfMembers,
+      isImage: true,
+      imageUri: res.uri,
+      isDownloaded: false,
+      localFileUri: res.localFileUri,
+    };
+    const newMessage = {
+      id: message.id,
+      sender: message.sender,
+      senderName: message.senderName,
+      msg: message.msg,
+      roomID: message.roomID,
+      time: message.time,
+      isSticker: message.isSticker,
+      sticker: message.sticker,
+      isDeleted: message.isDeleted,
+      isGroup: message.isGroup,
+      noOfMembers: message.noOfMembers,
+      isImage: message.isImage,
+      imageUri: message.localFileUri,
+      isDownloaded: message.isDownloaded,
+    };
+    const db = await dbPromise;
+    await addMessageToDB(db, message);
+    setMessages((prev) => [...prev, newMessage]);
+    socket.emit("message", { message });
+  }
+
   //components
   const RenderList = ({ item }) => {
     return (
@@ -359,16 +494,20 @@ const SingleChat = ({ navigation }) => {
             style={
               item.sender === user?.id
                 ? styles.messageLeft(
-                    item.isSticker ? true : isOnlyEmojis(item.msg),
-                    chatColor
+                    item.isSticker || item.isImage
+                      ? true
+                      : isOnlyEmojis(item.msg),
+                    theme
                   )
                 : styles.messageRight(
-                    item.isSticker ? true : isOnlyEmojis(item.msg),
-                    chatColor
+                    item.isSticker || item.isImage
+                      ? true
+                      : isOnlyEmojis(item.msg),
+                    theme
                   )
             }
           >
-            {item.isSticker ? (
+            {item.isSticker && !item.isImage ? (
               <>
                 {item.isGroup && item.sender !== user?.id ? (
                   <Text
@@ -394,12 +533,10 @@ const SingleChat = ({ navigation }) => {
                   )}
                 />
               </>
-            ) : (
+            ) : !item.isImage && !item.isSticker ? (
               <>
                 {item.isGroup && item.sender !== user?.id ? (
-                  <Text
-                    style={styles.textStyles(theme, 12, "400", "white", 0.8)}
-                  >
+                  <Text style={styles.textStyles(theme, 12, "400", null, 0.8)}>
                     {item.senderName}
                   </Text>
                 ) : null}
@@ -408,11 +545,29 @@ const SingleChat = ({ navigation }) => {
                     theme,
                     isOnlyEmojis(item.msg) ? 60 : 18,
                     "400",
-                    "white"
+                    null
                   )}
                 >
                   {item.msg}
                 </Text>
+              </>
+            ) : (
+              <>
+                {item.isGroup && item.sender !== user?.id ? (
+                  <Text style={styles.textStyles(theme, 12, "400", null, 0.8)}>
+                    {item.senderName}
+                  </Text>
+                ) : null}
+                <Image
+                  source={{ uri: item.imageUri }}
+                  style={styles.Image(
+                    item.sender === user?.id ? 0 : -10,
+                    item.sender === user?.id ? -10 : 0,
+                    200,
+                    200,
+                    10
+                  )}
+                />
               </>
             )}
           </View>
@@ -433,13 +588,12 @@ const SingleChat = ({ navigation }) => {
           <BlurView intensity={300} style={styles.stickerContainer()}>
             <View style={styles.stickerHeader}>
               <TouchableOpacity
-                style={styles.Image(10, 20, 40, 40)}
+                style={styles.Image(10, 20, 40, 40,0,"flex-start")}
                 onPress={() => setIsSticker(false)}
               >
                 <Image
                   source={Icons.return}
-                  style={styles.Image(10, 20, 40, 40)}
-                  onPress={() => setIsSticker(false)}
+                  style={styles.Image(10, 20, 40, 40,0,"flex-start")}
                 />
               </TouchableOpacity>
             </View>
@@ -535,141 +689,151 @@ const SingleChat = ({ navigation }) => {
   }, [messages]);
   return (
     <SafeAreaView>
-      <ImageBackground style={{ flex: 1 }} source={currentChatTheme.image} resizeMode="cover">
-        <StatusBar style="light" backgroundColor={currentChatTheme.statusBarColor} />
-        <View style={styles.header(theme)}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.Image(10, 20)}
-          >
-            <Image source={Icons.return} style={styles.Image()} />
-          </TouchableOpacity>
-
-          <Text style={styles.textStyles(theme)}>
-            {selectedContact ? selectedContact?.username : "Single Chat"}
-          </Text>
-          {!selectedContact?.isGroup ? (
-            <Image
-              source={{
-                uri: `https://api.multiavatar.com/${selectedContact.username}.png?apikey=CglVv3piOwAuoJ`,
-              }}
-              style={styles.Image(20, 10)}
-            />
-          ) : (
-            <>
-              <Image source={Icons.group} style={styles.Image(20, 10)} />
-              <View style={styles.addUserConatiner}>
-                <TouchableOpacity
-                  onPress={() => setIsAddUser(true)}
-                  disabled={!isConnected || isLoading || !socket}
-                >
-                  <Image source={Icons.add} style={styles.Image()} />
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </View>
-        <KeyboardAvoidingView
-          style={styles.body}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          enabled
-          keyboardVerticalOffset={Platform.OS === "ios" ? 45 : 45}
+      <View style={styles.header(theme)}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.Image(10, 20)}
         >
-          <View style={styles.flatListContainer}>
-            <FlatList
-              data={messages}
-              renderItem={RenderList}
-              ref={flatListRef}
-              onLayout={() =>
-                flatListRef.current.scrollToEnd({ animated: true })
-              }
-              onContentSizeChange={() =>
-                flatListRef.current.scrollToEnd({ animated: true })
-              }
-            />
-          </View>
-          <View style={styles.footer(textInputColor)}>
-            <View style={styles.textInp(textInputColor, maxHeight)}>
+          <Image source={Icons.return} style={styles.Image()} />
+        </TouchableOpacity>
+
+        <Text style={styles.textStyles(theme)}>
+          {selectedContact ? shortenName(selectedContact?.username) : "Single Chat"}
+        </Text>
+        {!selectedContact?.isGroup ? (
+          <Image
+            source={{
+              uri: `https://api.multiavatar.com/${selectedContact.username}.png?apikey=CglVv3piOwAuoJ`,
+            }}
+            style={styles.Image(20, 10)}
+          />
+        ) : (
+          <>
+            <Image source={Icons.group} style={styles.Image(20, 10)} />
+            <View style={styles.addUserConatiner}>
               <TouchableOpacity
-                onPress={() => setIsSticker(true)}
-                style={styles.Button(theme, isConnected, 35, 35, 10)}
+                onPress={() => setIsAddUser(true)}
                 disabled={!isConnected || isLoading || !socket}
               >
-                <Image
-                  source={Icons.sticker}
-                  style={styles.Image(0, 0, 35, 35)}
-                />
-              </TouchableOpacity>
-              <TextInput
-                placeholder="Type a message"
-                placeholderTextColor={theme === "dark" ? "#E0E0E0" : "#2D2D2D"}
-                style={styles.TextInput(theme)}
-                readOnly={!isConnected || isLoading || !socket}
-                multiline={true}
-                numberOfLines={4}
-                editable={isConnected && !isLoading && socket}
-                onContentSizeChange={(e) => {
-                  if (
-                    e.nativeEvent.contentSize.height > 50 &&
-                    e.nativeEvent.contentSize.height < 100
-                  ) {
-                    setMaxHeight(e.nativeEvent.contentSize.height);
-                  } else if (e.nativeEvent.contentSize.height > 100) {
-                    setMaxHeight(100);
-                  } else {
-                    setMaxHeight(50);
-                  }
-                }}
-                value={msg}
-                onChangeText={(text) => {
-                  setMsg(text);
-                }}
-              />
-              <TouchableOpacity
-                onPress={sendMessage}
-                style={styles.Button(theme, isConnected, 35, 35, 0, 10)}
-                disabled={
-                  !isConnected || msg.trim() === "" || isLoading || !socket
-                }
-              >
-                <Image
-                  source={Icons.sendBtn}
-                  style={styles.Image(0, 0, 35, 35)}
-                />
+                <Image source={Icons.add} style={styles.Image()} />
               </TouchableOpacity>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-        <Modal
-          visible={isSticker}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setIsSticker(false)}
-          hardwareAccelerated={true}
-        >
-          <StickerComponent />
-        </Modal>
-        <Modal
-          animationType="fade"
-          transparent={true}
-          hardwareAccelerated={true}
-          visible={isFocused.focused}
-        >
-          <BlurItem isFocused={isFocused} />
-        </Modal>
-        <Modal
-          animationType="slide"
-          transparent={true}
-          hardwareAccelerated={true}
-          visible={isAddUser}
-        >
-          <AddUserToGroup
-            setIsAddUser={setIsAddUser}
-            groupId={selectedContact}
-            setCurrentContact={setSelectedContact}
+          </>
+        )}
+      </View>
+      <KeyboardAvoidingView
+        style={styles.body}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        enabled
+        keyboardVerticalOffset={Platform.OS === "ios" ? 45 : 25}
+      >
+        <View style={styles.flatListContainer}>
+          <FlatList
+            data={messages}
+            renderItem={RenderList}
+            ref={flatListRef}
+            onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
+            onContentSizeChange={() =>
+              flatListRef.current.scrollToEnd({ animated: true })
+            }
           />
-        </Modal>
-      </ImageBackground>
+        </View>
+        <View style={styles.footer(textInputColor)}>
+          <View style={styles.textInp(textInputColor, maxHeight)}>
+            {msg.trim() === "" ? (
+              <>
+                <TouchableOpacity
+                  onPress={() => setIsSticker(true)}
+                  style={styles.Button(theme, isConnected, 35, 35, 10)}
+                  disabled={!isConnected || isLoading || !socket}
+                >
+                  <Image
+                    source={Icons.sticker}
+                    style={styles.Image(0, 0, 35, 35)}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => uploadFile(endPoint)}
+                  style={styles.Button(theme, isConnected, 35, 35, 10)}
+                  disabled={!isConnected || isLoading || !socket}
+                >
+                  <Image
+                    source={Icons.upload}
+                    style={styles.Image(0, 0, 35, 35)}
+                  />
+                </TouchableOpacity>
+              </>
+            ) : null}
+
+            <TextInput
+              placeholder="Type a message"
+              placeholderTextColor={theme === "dark" ? "#E0E0E0" : "#2D2D2D"}
+              style={styles.TextInput(theme)}
+              readOnly={!isConnected || isLoading || !socket}
+              multiline={true}
+              numberOfLines={4}
+              editable={isConnected && !isLoading && socket}
+              onContentSizeChange={(e) => {
+                if (
+                  e.nativeEvent.contentSize.height > 50 &&
+                  e.nativeEvent.contentSize.height < 60
+                ) {
+                  setMaxHeight(e.nativeEvent.contentSize.height);
+                } else if (e.nativeEvent.contentSize.height > 60) {
+                  setMaxHeight(60);
+                } else {
+                  setMaxHeight(50);
+                }
+              }}
+              value={msg}
+              onChangeText={(text) => {
+                setMsg(text);
+              }}
+            />
+            <TouchableOpacity
+              onPress={sendMessage}
+              style={styles.Button(theme, isConnected, 35, 35, 0, 10)}
+              disabled={
+                !isConnected || msg.trim() === "" || isLoading || !socket
+              }
+            >
+              <Image
+                source={Icons.sendBtn}
+                style={styles.Image(0, 0, 35, 35)}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+      <Modal
+        visible={isSticker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsSticker(false)}
+        hardwareAccelerated={true}
+      >
+        <StickerComponent />
+      </Modal>
+      <Modal
+        animationType="fade"
+        transparent={true}
+        hardwareAccelerated={true}
+        visible={isFocused.focused}
+      >
+        <BlurItem isFocused={isFocused} />
+      </Modal>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        hardwareAccelerated={true}
+        visible={isAddUser}
+      >
+        <AddUserToGroup
+          setIsAddUser={setIsAddUser}
+          groupId={selectedContact}
+          setCurrentContact={setSelectedContact}
+        />
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -686,10 +850,10 @@ const styles = StyleSheet.create({
     theme,
     fontSize = 20,
     fontWeight = "bold",
-    color = theme === "dark" ? "white" : "black",
+    color = theme === "dark" ? "#E0E0E0" : "#2D2D2D",
     opacity = 1
   ) => ({
-    color: color,
+    color: color !== null ? color : theme === "dark" ? "#E0E0E0" : "#2D2D2D",
     fontSize: fontSize,
     fontWeight: fontWeight,
     opacity: opacity,
@@ -712,14 +876,15 @@ const styles = StyleSheet.create({
     marginR = 0,
     height = 50,
     width = 50,
-    borderRadius = 0
+    borderRadius = 0,
+    alignSelf = "center"
   ) => ({
     height: height,
     width: width,
     marginLeft: marginLeft,
     marginRight: marginR,
     borderRadius: borderRadius === 0 ? height / 2 : borderRadius,
-    alignSelf: "center",
+    alignSelf: alignSelf,
   }),
   body: {
     flex: 1,
@@ -786,9 +951,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: justifyContent,
   }),
-  messageLeft: (isEmoji, chatColor) => ({
-    backgroundColor: isEmoji ? "transparent" : chatColor.sender,
-    borderRadius: 20,
+  messageLeft: (isEmoji, theme) => ({
+    backgroundColor: isEmoji
+      ? "transparent"
+      : theme === "dark"
+      ? "rgba(0, 122, 255, 1)"
+      : "rgba(0,255,0,0.8)", //theme==="dark"?"#388E3C":"#4CAF50"
+    borderRadius: 16,
     paddingHorizontal: 10,
     paddingVertical: 5,
     marginTop: 5,
@@ -797,9 +966,13 @@ const styles = StyleSheet.create({
     marginRight: 10,
     flexDirection: "column",
   }),
-  messageRight: (isEmoji, chatColor) => ({
-    backgroundColor: isEmoji ? "transparent" : chatColor.receiver,
-    borderRadius: 20,
+  messageRight: (isEmoji, theme) => ({
+    backgroundColor: isEmoji
+      ? "transparent"
+      : theme === "dark"
+      ? "#1E1E1E"
+      : "#E0E0E0",
+    borderRadius: 16,
     paddingHorizontal: 10,
     paddingBottom: 10,
     paddingTop: 5,
