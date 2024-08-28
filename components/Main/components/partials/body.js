@@ -9,7 +9,7 @@ import {
   Modal,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback,memo } from "react";
 import { TextInput } from "react-native-gesture-handler";
 import { useTheme } from "../../../../contexts/theme";
 import { useMessager } from "../../../../contexts/messagerContext";
@@ -48,8 +48,14 @@ const Body = ({ moveTo }) => {
 
   const queryUsers = async () => {
     if (!isConnected) return;
+    if(query.trim() === "") {
+      setContacts(sql.contacts);
+      setIsQuerying(false);
+      return;
+    }
     if (query.length < 3) {
       setContacts(sql.contacts);
+      setIsQuerying(false);
       return;
     }
     setIsQuerying(true);
@@ -80,11 +86,11 @@ const Body = ({ moveTo }) => {
     if (id === auth?.user?.id) return;
     auth.addContact(id);
     setIsQuerying(false);
-    setContacts(sql.contacts);
     setQuery("");
+    setContacts(sql.contacts);
   };
 
-  const renderList = ({ item }) => {
+  const RenderList = memo(({ item }) => {
     return item && item.id ? (
       <TouchableOpacity
         style={styles.listItem(theme)}
@@ -111,7 +117,7 @@ const Body = ({ moveTo }) => {
         </Text>
       </TouchableOpacity>
     ) : null;
-  };
+  });
 
   useEffect(() => {
     sql.Contacts();
@@ -123,6 +129,7 @@ const Body = ({ moveTo }) => {
 
   const handleAddContactSocket = useCallback(
     (data) => {
+      
       if (data.id === auth?.user?.id) return;
       if(!sql.contacts) return sql.getContacts();
       if (sql.contacts?.find((e) => e && e?.id === data.id)) return;
@@ -153,7 +160,7 @@ const Body = ({ moveTo }) => {
       <View style={styles.textInputContainer(theme)}>
         <View style={styles.TextInp(theme)}>
           <TextInput
-          placeholder="search...🔍"
+          placeholder="search......"
           placeholderTextColor={theme.theme === "dark" ? "white" : "black"}
           style={styles.TextInput(theme.theme)}
           value={query}
@@ -172,7 +179,7 @@ const Body = ({ moveTo }) => {
       </View>
       <View style={styles.flatListContainer(width)}>
         <FlatList
-          renderItem={renderList}
+          renderItem={({ item }) => <RenderList item={item} />}
           data={contacts}
           keyExtractor={(item) => item.id}
         />
@@ -226,14 +233,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 30,
   }),
-  Image: (mt = 0, ml = 0) => ({
-    height: 50,
-    width: 50,
+  Image: () => ({
+    height: 40,
+    width: 40,
     borderRadius: 25,
     alignSelf: "center",
   }),
   textInputContainer:(theme)=>({
-    height: 60,
+    height: 50,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,

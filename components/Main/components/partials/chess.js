@@ -80,7 +80,6 @@ const ChessJs = ({ navigation }) => {
 
   const makeAIMove = async () => {
     const moves = game.moves();
-    console.log("Moves:", moves);
     if (moves.length > 0) {
       const randomMove = moves[Math.floor(Math.random() * moves.length)];
       await handleMove(randomMove.slice(0, 2), randomMove.slice(2, 4));

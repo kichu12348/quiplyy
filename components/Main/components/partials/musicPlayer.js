@@ -101,7 +101,7 @@ const Music = () => {
     <SafeAreaView style={styles.container(theme.theme)}>
       <View style={styles.stuffContainer}>
         <TouchableOpacity
-          style={styles.soundBox(theme.theme)}
+          style={styles.soundBox(theme)}
           onPress={() => {
             if (isPlaying && isSnowfallPlaying) {
               pauseSound();
@@ -126,7 +126,7 @@ const Music = () => {
             )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.soundBox(theme.theme)}
+          style={styles.soundBox(theme)}
           onPress={() => {
             if (isPlaying && isCalmPlaying) {
               pauseSound();
@@ -151,7 +151,7 @@ const Music = () => {
             )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.soundBox(theme.theme)}
+          style={styles.soundBox(theme)}
           onPress={() => {
             if (isPlaying && isResonancePlaying) {
               pauseSound();
@@ -176,7 +176,7 @@ const Music = () => {
             )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.soundBox(theme.theme)}
+          style={styles.soundBox(theme)}
           onPress={() => {
             if (isPlaying && isWatchingStarPlaying) {
               pauseSound();
@@ -208,11 +208,10 @@ const Music = () => {
 export default Music;
 
 const styles = StyleSheet.create({
-  container: (theme,pdTop=0) => ({
+  container: (theme) => ({
     width: "100%",
     flex: 1,
     backgroundColor: theme === "dark" ? "black" : "white",
-    paddingTop: pdTop,
   }),
   stuffContainer: {
     flex: 1,
@@ -223,7 +222,7 @@ const styles = StyleSheet.create({
   soundBox: (theme) => ({
     height: 100,
     width: "80%",
-    backgroundColor: theme==="dark"?"#212121":"#e0e0e0",
+    backgroundColor: theme.background,
     borderRadius: 15,
     flexDirection: "row",
     justifyContent: "flex-start",
@@ -231,7 +230,7 @@ const styles = StyleSheet.create({
     margin: 10,
     ...Platform.select({
       ios: {
-        shadowColor: theme === "dark" ? "white" : "black",
+        shadowColor: theme.theme === "dark" ? "white" : "black",
         shadowOffset: {
           width: 2,
           height: 2,

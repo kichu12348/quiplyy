@@ -23,7 +23,6 @@ function SqlProvider({ children }) {
       };
       if(newContact.id === auth?.user?.id) return;
       AddContact(newContact);
-      Contacts();
     }
   }, [auth.contacts]);
 
@@ -42,7 +41,6 @@ function SqlProvider({ children }) {
       if(newContact.id === auth?.user?.id) return;
       if (contacts?.length === 0 || !contacts) {
         await AddContact(newContact);
-        Contacts();
         return;
       }
       if (contacts.find(e => contactIds.current.has(newContact.id) && e.noOfMembers > newContact.noOfMembers)) {
@@ -51,7 +49,6 @@ function SqlProvider({ children }) {
       }
       if (contactIds.current.has(newContact.id)) return;
       await AddContact(newContact);
-      Contacts();
     });
   };
 
@@ -63,6 +60,7 @@ function SqlProvider({ children }) {
     const db = await openDatabase();
     const rows = await db.getAllAsync("SELECT * FROM contacts");
     if (contacts?.length === rows?.length) return;
+    contactIds.current.clear();
     rows.forEach((row) => {
       contactIds.current.add(row.id);
     });
@@ -76,7 +74,7 @@ function SqlProvider({ children }) {
       `UPDATE contacts SET username = ?, time = ?, roomID = ?, isGroup = ?, noOfMembers = ? WHERE id = ?`,
       [username, time, roomID, isGroup, noOfMembers, id]
     );
-    Contacts();
+    await Contacts();
   }
 
   async function dropContactsDB() {
@@ -88,6 +86,7 @@ function SqlProvider({ children }) {
 
   async function AddContact(contact) {
     if (contactIds.current.has(contact.id)) return;
+    if(!contact) return;
     try {
       const { id, username, time, roomID, isGroup, noOfMembers } = contact;
       const db = await openDatabase();
@@ -101,6 +100,7 @@ function SqlProvider({ children }) {
         [id, username, time, roomID, isGroup, noOfMembers]
       );
       contactIds.current.add(id);
+      await Contacts();
       return true;
     } catch (e) {
       console.log("sql add error: " + e.message);

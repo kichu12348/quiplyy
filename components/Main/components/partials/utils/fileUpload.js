@@ -1,8 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import axios from 'axios';
-import forge from 'node-forge';
-import { Alert } from 'react-native';
+
 
 async function getImages() {
     try {
@@ -24,18 +23,20 @@ async function getImages() {
 }
 
 async function uploadImageInChunks(fileUri, endPoint) {
-    const chunkSize = 1024 * 512; // 500 KB
+    const chunkSize = 1024 * 1024; // 1MB per chunk
     const maxFileSize = 1024*1024*5 // 5 MB
-    if (fileUri.length > maxFileSize) {
+    
+    const fileInfo = await FileSystem.getInfoAsync(fileUri);
+    const fileSize = fileInfo.size;
+
+    if (fileSize > maxFileSize) {
         return {
             success: false,
             uri: null,
             localFileUri: null,
-            err: 'File size is too large. Please select a file less than 5MB'
+            err: 'File size is too large. Please select a file less than 8MB'
         };
     }
-    const fileInfo = await FileSystem.getInfoAsync(fileUri);
-    const fileSize = fileInfo.size;
     const totalChunks = Math.ceil(fileSize / chunkSize);
     const fileName = fileUri.split('/').pop();
 
@@ -50,7 +51,8 @@ async function uploadImageInChunks(fileUri, endPoint) {
 
         const { done, success, uri } = await uploadChunk(chunk, i, totalChunks, fileName, endPoint);
 
-        if (!success || !done) {
+        if (!success && !done) {// teeny weeny error causing pitch
+            await deleteFileFromServer(fileName, endPoint);
             return {
                 success: false,
                 uri: null,
@@ -71,26 +73,27 @@ async function uploadImageInChunks(fileUri, endPoint) {
 }
 
 async function uploadChunk(chunk, chunkIdx, totalChunks, fileName, endPoint) {
-    try {
-        const res = await axios.post(`${endPoint}/message/uploadFile`, {
-            chunk,
-            chunkIdx,
-            totalChunks,
-            fileName
-        });
-        return {
-            success: res.data.success,
-            done: res.data.done,
-            uri: res.data.uri,
-        };
-    } catch (e) {
-        return {
-            success: false,
-            done: false,
-            uri: null
-        };
-    }
+  try {
+      const res = await axios.post(`${endPoint}/message/uploadFile`, {
+          chunk,
+          chunkIdx,
+          totalChunks,
+          fileName
+      });
+      return {
+          success: res.data.success,
+          done: res.data.done,
+          uri: res.data.uri,
+      };
+  } catch (e) {
+      return {
+          success: false,
+          done: false,
+          uri: null
+      };
+  }
 }
+
 
 export async function uploadImage(endPoint) {
     if (!endPoint) return {
@@ -120,7 +123,7 @@ export async function downloadFile(fileName, endPoint) {
         {
           md5: false,
           headers: {
-            // stuufff
+            // stuufff ill think about later
           }
         }
       );
@@ -175,5 +178,17 @@ export async function copyFileToDocumentDirectory(sourceUri) {
       return null;
     }
   }
+
+
+async function deleteFileFromServer(fileName,endPoint) {
+    try {
+        const res = await axios.post(`${endPoint}/message/deleteFileErr`, {
+            fileName
+        });
+        return res.data.success;
+    } catch (error) {
+        return false;
+    }
+}
 
 

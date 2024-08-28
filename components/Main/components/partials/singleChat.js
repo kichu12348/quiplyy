@@ -14,7 +14,7 @@ import {
   Alert,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState,memo } from "react";
 import axios from "axios";
 import * as SQLite from "expo-sqlite";
 import { useTheme } from "../../../../contexts/theme";
@@ -47,13 +47,12 @@ const SingleChat = ({ navigation }) => {
   const [isAddUser, setIsAddUser] = useState(false);
   const [maxHeight, setMaxHeight] = useState(50);
   const receivedMessageIds = useRef(new Set());
-
-  let loaded = false;
+  const flatListRef = useRef(null);
 
 
   const shortenName = (name) => {
-    return name.length > 15 ? name.slice(0, 15) + "..." : name
-  }
+    return name.length > 10 ? name.slice(0, 10) + "..." : name;
+  };
 
   const dbPromise = SQLite.openDatabaseAsync("messages.db");
 
@@ -141,7 +140,8 @@ const SingleChat = ({ navigation }) => {
     }
     if (message.isSticker) {
       await db.runAsync(
-        "INSERT INTO messages (id, sender, msg, roomID, time, isSticker, sticker,isDeleted,isGroup,senderName,isImage,imageUri,isDownloaded) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        `
+        INSERT INTO messages (id, sender, msg, roomID, time,isSticker, sticker,isDeleted,isGroup,senderName,isImage,imageUri,isDownloaded) VALUES (?, ?, ?, ?, ?,?,?,?,?,?,?,?,?)`,
         [
           message.id,
           message.sender,
@@ -155,16 +155,14 @@ const SingleChat = ({ navigation }) => {
           message.senderName,
           message.isImage,
           message.imageUri,
-          message.isDownloaded,
+          true,
         ]
       );
       return;
     }
     if (message.isImage) {
       if (message.sender === user?.id) {
-        const uri = await copyFileToDocumentDirectory(
-          message.localFileUri
-        );
+        const uri = await copyFileToDocumentDirectory(message.localFileUri);
         if (!uri) return;
         await db.runAsync(
           `INSERT INTO messages (id, sender, msg, roomID, time,isSticker, sticker,isDeleted,isGroup,senderName,isImage,imageUri,isDownloaded) VALUES (?, ?, ?, ?, ?,?,?,?,?,?,?,?,?)`,
@@ -185,25 +183,25 @@ const SingleChat = ({ navigation }) => {
           ]
         );
         return;
-      } else{
-          await db.runAsync(
-            `INSERT INTO messages (id, sender, msg, roomID, time,isSticker, sticker,isDeleted,isGroup,senderName,isImage,imageUri,isDownloaded) VALUES (?, ?, ?, ?, ?,?,?,?,?,?,?,?,?)`,
-            [
-              message.id,
-              message.sender,
-              message.msg,
-              message.roomID,
-              message.time,
-              message.isSticker,
-              message.sticker,
-              message.isDeleted,
-              message.isGroup,
-              message.senderName,
-              message.isImage,
-              message.imageUri,
-              true,
-            ]
-          );
+      } else {
+        await db.runAsync(
+          `INSERT INTO messages (id, sender, msg, roomID, time,isSticker, sticker,isDeleted,isGroup,senderName,isImage,imageUri,isDownloaded) VALUES (?, ?, ?, ?, ?,?,?,?,?,?,?,?,?)`,
+          [
+            message.id,
+            message.sender,
+            message.msg,
+            message.roomID,
+            message.time,
+            message.isSticker,
+            message.sticker,
+            message.isDeleted,
+            message.isGroup,
+            message.senderName,
+            message.isImage,
+            message.imageUri,
+            true,
+          ]
+        );
 
         return;
       }
@@ -253,13 +251,16 @@ const SingleChat = ({ navigation }) => {
 
       if (!receivedMessageIds.current.has(message.id)) {
         receivedMessageIds.current.add(message.id);
-        if(message.isImage){
-          const {success, uri} = await downloadFile(message.imageUri,endPoint);
-          if(!success) return;
-            message.imageUri = uri;
-            setMessages((prev) => [...prev, message]);
-            await addMessageToDB(db, message);
-        }else{
+        if (message.isImage) {
+          const { success, uri } = await downloadFile(
+            message.imageUri,
+            endPoint
+          );
+          if (!success) return;
+          message.imageUri = uri;
+          setMessages((prev) => [...prev, message]);
+          await addMessageToDB(db, message);
+        } else {
           setMessages((prev) => [...prev, message]);
           await addMessageToDB(db, message);
         }
@@ -312,6 +313,7 @@ const SingleChat = ({ navigation }) => {
           }
         }
       }
+      flatListRef.current?.scrollToEnd({ animated: true });
     } catch (e) {
       console.log("error: check message: ", e.message);
     }
@@ -323,7 +325,6 @@ const SingleChat = ({ navigation }) => {
 
   const sendSticker = async (sticker) => {
     if (!isConnected || !selectedContact) return;
-
     const message = {
       id: randomUID(),
       sender: user?.id,
@@ -478,7 +479,8 @@ const SingleChat = ({ navigation }) => {
   }
 
   //components
-  const RenderList = ({ item }) => {
+  const RenderList =memo(({ item }) => {
+    if(!item) return null
     return (
       <View
         style={styles.flatListItem(
@@ -522,6 +524,7 @@ const SingleChat = ({ navigation }) => {
                     {item.senderName}
                   </Text>
                 ) : null}
+                {item.isSticker && !item.isImage ? (
                 <Image
                   source={stickers[item.sticker]}
                   style={styles.Image(
@@ -531,7 +534,7 @@ const SingleChat = ({ navigation }) => {
                     200,
                     10
                   )}
-                />
+                />):null}
               </>
             ) : !item.isImage && !item.isSticker ? (
               <>
@@ -558,6 +561,7 @@ const SingleChat = ({ navigation }) => {
                     {item.senderName}
                   </Text>
                 ) : null}
+                {item.isImage && (
                 <Image
                   source={{ uri: item.imageUri }}
                   style={styles.Image(
@@ -567,14 +571,16 @@ const SingleChat = ({ navigation }) => {
                     200,
                     10
                   )}
-                />
+                />)}
               </>
             )}
           </View>
         </LongPressComponent>
       </View>
     );
-  };
+  });
+
+
 
   const rowLength =
     stickerList.length % 3 === 0
@@ -588,12 +594,12 @@ const SingleChat = ({ navigation }) => {
           <BlurView intensity={300} style={styles.stickerContainer()}>
             <View style={styles.stickerHeader}>
               <TouchableOpacity
-                style={styles.Image(10, 20, 40, 40,0,"flex-start")}
+                style={styles.Image(10, 20, 40, 40, 0, "flex-start")}
                 onPress={() => setIsSticker(false)}
               >
                 <Image
                   source={Icons.return}
-                  style={styles.Image(10, 20, 40, 40,0,"flex-start")}
+                  style={styles.Image(10, 20, 40, 40, 0, "flex-start")}
                 />
               </TouchableOpacity>
             </View>
@@ -677,16 +683,6 @@ const SingleChat = ({ navigation }) => {
     );
   };
 
-  const flatListRef = useRef(null);
-
-  useEffect(() => {
-    if (flatListRef.current && messages.length > 0) {
-      if (loaded) return;
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 200);
-    }
-  }, [messages]);
   return (
     <SafeAreaView>
       <View style={styles.header(theme)}>
@@ -698,7 +694,9 @@ const SingleChat = ({ navigation }) => {
         </TouchableOpacity>
 
         <Text style={styles.textStyles(theme)}>
-          {selectedContact ? shortenName(selectedContact?.username) : "Single Chat"}
+          {selectedContact
+            ? shortenName(selectedContact?.username)
+            : "Single Chat"}
         </Text>
         {!selectedContact?.isGroup ? (
           <Image
@@ -730,7 +728,7 @@ const SingleChat = ({ navigation }) => {
         <View style={styles.flatListContainer}>
           <FlatList
             data={messages}
-            renderItem={RenderList}
+            renderItem={({ item }) => <RenderList item={item} />}
             ref={flatListRef}
             onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
             onContentSizeChange={() =>
@@ -874,8 +872,8 @@ const styles = StyleSheet.create({
   Image: (
     marginLeft = 0,
     marginR = 0,
-    height = 50,
-    width = 50,
+    height = 40,
+    width = 40,
     borderRadius = 0,
     alignSelf = "center"
   ) => ({

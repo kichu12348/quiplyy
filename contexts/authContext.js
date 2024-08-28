@@ -133,11 +133,20 @@ const AuthProvider = ({ children }) => {
 
   const addContact = async (contactId) => {
     if (!isConnected) return;
+    let Data=null;
     await axios
       .post("/addContact", { contactId, token })
       .then(async (res) => {
         if (res.data.success) {
           setContacts(res.data.contact);
+          Data = {
+            id: user?.id,
+            username: user?.username,
+            roomID: res.data.contact.roomID,
+            isGroup: res.data.contact.isGroup,
+            noOfMembers: res.data.contact.noOfMembers,
+            time: res.data.contact.time,
+          };
           socket.emit("contactAdded", {
             contactId,
             data: {
@@ -155,6 +164,7 @@ const AuthProvider = ({ children }) => {
       .catch((e) => {
         return;
       });
+    return Data;
   };
 
   const getContacts = async () => {

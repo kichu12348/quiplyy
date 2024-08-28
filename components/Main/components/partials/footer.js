@@ -14,20 +14,20 @@ const Footer = ({moveTo}) => {
       <TouchableOpacity
       onPress={()=>moveTo('Stuff')}
       >
-        <Image style={styles.Image} source={Icons.stuff}/>
+        <Image style={styles.Image()} source={Icons.stuff}/>
       </TouchableOpacity>
       <TouchableOpacity
       onPress={()=>moveTo('blogPage')} 
       >
-        <Image style={styles.Image} source={Icons.blog}/>
+        <Image style={styles.Image()} source={Icons.blog}/>
       </TouchableOpacity>
       <View>
-        <Image style={styles.Image} source={user?({uri:`https://api.multiavatar.com/${user.username}.png?apikey=CglVv3piOwAuoJ`}):Icons.chat}/>
+        <Image style={styles.Image(true)} source={user?({uri:`https://api.multiavatar.com/${user.username}.png?apikey=CglVv3piOwAuoJ`}):Icons.chat}/>
       </View>
       <TouchableOpacity
       onPress={()=>moveTo('Settings')}
       >
-        <Image style={styles.Image} source={Icons.setting}/>
+        <Image style={styles.Image()} source={Icons.setting}/>
       </TouchableOpacity>
     </View>
   )
@@ -43,10 +43,10 @@ const styles=StyleSheet.create({
         alignItems:"center",
         justifyContent:"space-evenly",
     }),
-    Image:{
+    Image:(round=false)=>({
         height:40,
         width:40,
         alignSelf:"center",
-        borderRadius:20,
-    }
+        borderRadius:round?20:0,
+    })
 })
