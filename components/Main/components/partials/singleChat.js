@@ -435,6 +435,7 @@ const SingleChat = ({ navigation }) => {
 
   async function uploadFile(endPoint) {
     const res = await uploadImage(endPoint);
+    if(!res) return;
     if (!res.success && res.err) {
       Alert.alert(res.err);
       return;
