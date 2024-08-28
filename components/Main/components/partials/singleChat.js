@@ -479,7 +479,7 @@ const SingleChat = ({ navigation }) => {
   }
 
   //components
-  const RenderList =memo(({ item }) => {
+  const RenderList =({ item }) => {
     if(!item) return null
     return (
       <View
@@ -578,7 +578,7 @@ const SingleChat = ({ navigation }) => {
         </LongPressComponent>
       </View>
     );
-  });
+  };
 
 
 
@@ -728,7 +728,7 @@ const SingleChat = ({ navigation }) => {
         <View style={styles.flatListContainer}>
           <FlatList
             data={messages}
-            renderItem={({ item }) => <RenderList item={item} />}
+            renderItem={RenderList}
             ref={flatListRef}
             onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
             onContentSizeChange={() =>
