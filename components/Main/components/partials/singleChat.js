@@ -288,6 +288,7 @@ const SingleChat = ({ navigation }) => {
       const db = await dbPromise;
       await createTableIfNotExists(db);
       await loadMessages(db);
+      flatListRef.current?.scrollToEnd({ animated: true });
       if (!isConnected || !selectedContact) return;
       socket?.emit("joinRoom", { roomID: selectedContact.roomID });
       const res = await axios.post("/check", {
@@ -313,7 +314,6 @@ const SingleChat = ({ navigation }) => {
           }
         }
       }
-      flatListRef.current?.scrollToEnd({ animated: true });
     } catch (e) {
       console.log("error: check message: ", e.message);
     }
