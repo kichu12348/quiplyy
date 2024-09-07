@@ -1,6 +1,5 @@
 import { useState, useContext, createContext, useMemo, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import chatImg from "./images/chatImg.jpg";
 import chatL from "./images/chatL.png";
 import chatD from "./images/chatD.png";
 import settingL from "./images/settingL.png";
@@ -22,30 +21,19 @@ import groupD from "./images/groupD.png";
 import chessD from "./images/chessD.png";
 import chessL from "./images/chessL.png";
 import uploadD from "./images/uploadD.png";
-import chat1 from "./chatImgs/chat2.jpg";
-import chat2 from "./chatImgs/readingIMG.jpg";
-import chat5 from "./chatImgs/chat5.jpg";
 
 const ThemeContext = createContext();
 
 const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState("dark");
-  const [wallPaper, setWallPaper] = useState({
-    uri: chatImg,
-    name: "chatImg",
-  });
+  const[BackGroundForChat, setBackGroundForChat] = useState("Cheese");
+  
   const [background, setBackground] = useState("#121212");
   const [textInputColor, setTextInputColor] = useState({
     border: "#616161",
     color: "rgba(30,30,30,0.8)",
   });
   const [chatMsgColor, setChatMsgColor] = useState({
-    senderMsgColor: "#4CAF50",
-    receiverMsgColor: "#1E1E1E",
-  });
-  const [currentChatTheme, setCurrentChatTheme] = useState({
-    image: chat1,
-    statusBarColor: "rgba(0,0,0,0.8)",
     senderMsgColor: "#4CAF50",
     receiverMsgColor: "#1E1E1E",
   });
@@ -98,48 +86,17 @@ const ThemeProvider = ({ children }) => {
     upload: uploadD,
   };
 
-  const chatTheme = [
-    {
-      image: chat2,
-      statusBarColor: "#20097d",
-    },
-    {
-      image: chat1,
-      statusBarColor: "#090913",
-    },
-    {
-      image: chat5,
-      statusBarColor: "#0c171b",
-    },
-  ];
-  //#0c171b
-
-  const setCurrentChatImage = async (theme) => {
-    try {
-      await AsyncStorage.setItem("currentChatTheme", JSON.stringify(theme));
-      setCurrentChatTheme(theme);
-    } catch (e) {
-      console.log(e);
+  const  chatBackgroundModel=async (item)=>{
+    try{
+      await AsyncStorage.setItem("BackGroundForChat",item);
+      setBackGroundForChat(item);
+    }catch(e){
+      return;
     }
-  };
+  }
 
-  const getCurrentChatTheme = async () => {
-    try {
-      const storedCurrentChatTheme = await AsyncStorage.getItem(
-        "currentChatTheme"
-      );
-      if (storedCurrentChatTheme) {
-        setCurrentChatTheme(JSON.parse(storedCurrentChatTheme));
-      } else {
-        await AsyncStorage.setItem(
-          "currentChatTheme",
-          JSON.stringify(chatTheme[0])
-        );
-      }
-    } catch (e) {
-      setCurrentChatTheme(chatTheme[0]);
-    }
-  };
+
+
 
   const themeSetting = async (theme) => {
     try {
@@ -170,6 +127,10 @@ const ThemeProvider = ({ children }) => {
       try {
         const storedTheme = await AsyncStorage.getItem("theme");
         const chatColor = await AsyncStorage.getItem("chatColor");
+        const BackGroundForChat = await AsyncStorage.getItem("BackGroundForChat");
+        if (BackGroundForChat) {
+          setBackGroundForChat(BackGroundForChat);
+        }
         if (storedTheme) {
           setTheme(storedTheme);
           if (storedTheme === "dark") {
@@ -181,15 +142,10 @@ const ThemeProvider = ({ children }) => {
             setChatColor(JSON.parse(chatColor));
           }
         }
-        const storedWallPaper = await AsyncStorage.getItem("wallPaper");
-        if (storedWallPaper) {
-          setWallPaper(storedWallPaper);
-        }
       } catch (e) {
         console.log(e);
       }
     };
-    getCurrentChatTheme();
     getTheme();
 
     if (theme === "light") {
@@ -215,29 +171,24 @@ const ThemeProvider = ({ children }) => {
     return {
       theme,
       themeSetting,
-      wallPaper,
-      setWallPaper,
       Icons,
       changeChatColor,
       chatColor,
       background,
       textInputColor,
       chatMsgColor,
-      setChatMsgColor,
-      currentChatTheme,
-      chatTheme,
-      setCurrentChatImage,
+      setChatMsgColor, 
+      chatBackgroundModel,
+      BackGroundForChat
     };
   }, [
     theme,
-    wallPaper,
     Icons,
     chatColor,
     background,
     textInputColor,
     chatMsgColor,
-    currentChatTheme,
-    chatTheme
+    BackGroundForChat
   ]);
 
   return (

@@ -34,7 +34,9 @@ const Screen2 = ({ navigation }) => {
         source={readingIMG}
         resizeMode="cover"
       >
-        <ScrollView>
+        <ScrollView
+        showsVerticalScrollIndicator={false}
+        >
             <Text style={styles.textStyles(30)}>{currentBlog.title}</Text>
             <Text style={styles.textStyles(20,'200')}>{currentBlog.body}</Text>
         </ScrollView>

@@ -14,7 +14,7 @@ import {
   Alert,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
-import { useCallback, useEffect, useRef, useState,memo } from "react";
+import { useCallback, useEffect, useRef, useState, memo } from "react";
 import axios from "axios";
 import * as SQLite from "expo-sqlite";
 import { useTheme } from "../../../../contexts/theme";
@@ -30,9 +30,12 @@ import {
   downloadFile,
   copyFileToDocumentDirectory,
 } from "./utils/fileUpload";
+import ImageViewer from "./utils/imageView";
+import { Canvas } from "@react-three/fiber/native";
+import Render3D from "./utils/3dRender";
 
 const SingleChat = ({ navigation }) => {
-  const { theme, Icons, textInputColor } = useTheme();
+  const { theme, Icons, textInputColor, BackGroundForChat } = useTheme();
   const { selectedContact, randomUID, setSelectedContact } = useMessager();
   const { socket, isConnected, isLoading, endPoint } = useSocket();
   const { user, token } = useAuth();
@@ -46,9 +49,10 @@ const SingleChat = ({ navigation }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [isAddUser, setIsAddUser] = useState(false);
   const [maxHeight, setMaxHeight] = useState(50);
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [imageUri, setImageUri] = useState(null);
   const receivedMessageIds = useRef(new Set());
   const flatListRef = useRef(null);
-
 
   const shortenName = (name) => {
     return name.length > 10 ? name.slice(0, 10) + "..." : name;
@@ -401,6 +405,13 @@ const SingleChat = ({ navigation }) => {
       loaded = false;
     }, 500);
   };
+
+  async function deleteMessageForMe(messageId) {
+    const db = await dbPromise;
+    await db.runAsync("DELETE FROM messages WHERE id = ?", [messageId]);
+    setIsFocused({ focused: false, item: null});
+    setMessages((prev) => prev.filter((e) => e.id !== messageId));
+  }
   useEffect(() => {
     if (socket) {
       socket.on("newMessage", handleIncomingMessage);
@@ -420,11 +431,17 @@ const SingleChat = ({ navigation }) => {
     }
   }, [handleIncomingMessage]);
 
-  longPressEventHandle = (state, item) => {
-    if (item.sender !== user?.id) return;
+  const longPressEventHandle = (state, item) => {
+    if (!state) return;
     if (state) {
       setIsFocused({ focused: true, item: item });
     }
+  };
+
+  const onTapOnImage = (state, item) => {
+    if (!item.isImage || !state) return;
+    setIsImageViewerOpen(true);
+    setImageUri(item.imageUri);
   };
 
   const isTypingHandler = (text) => {
@@ -435,7 +452,7 @@ const SingleChat = ({ navigation }) => {
 
   async function uploadFile(endPoint) {
     const res = await uploadImage(endPoint);
-    if(!res) return;
+    if (!res) return;
     if (!res.success && res.err) {
       Alert.alert(res.err);
       return;
@@ -480,8 +497,8 @@ const SingleChat = ({ navigation }) => {
   }
 
   //components
-  const RenderList =({ item }) => {
-    if(!item) return null
+  const RenderList = ({ item }) => {
+    if (!item) return null;
     return (
       <View
         style={styles.flatListItem(
@@ -490,8 +507,14 @@ const SingleChat = ({ navigation }) => {
       >
         <LongPressComponent
           key={item?.id}
-          onLongPress={(state) => longPressEventHandle(state, item)}
+          onLongPress={(state) =>
+            isFocused.focused ? null : longPressEventHandle(state, item)
+          }
           time={500}
+          onTap={(state) => {
+            if (isFocused.focused) return;
+            onTapOnImage(state, item);
+          }}
         >
           <View
             style={
@@ -526,16 +549,17 @@ const SingleChat = ({ navigation }) => {
                   </Text>
                 ) : null}
                 {item.isSticker && !item.isImage ? (
-                <Image
-                  source={stickers[item.sticker]}
-                  style={styles.Image(
-                    item.sender === user?.id ? 0 : -10,
-                    item.sender === user?.id ? -10 : 0,
-                    200,
-                    200,
-                    10
-                  )}
-                />):null}
+                  <Image
+                    source={stickers[item.sticker]}
+                    style={styles.Image(
+                      item.sender === user?.id ? 0 : -10,
+                      item.sender === user?.id ? -10 : 0,
+                      200,
+                      200,
+                      10
+                    )}
+                  />
+                ) : null}
               </>
             ) : !item.isImage && !item.isSticker ? (
               <>
@@ -563,16 +587,17 @@ const SingleChat = ({ navigation }) => {
                   </Text>
                 ) : null}
                 {item.isImage && (
-                <Image
-                  source={{ uri: item.imageUri }}
-                  style={styles.Image(
-                    item.sender === user?.id ? 0 : -10,
-                    item.sender === user?.id ? -10 : 0,
-                    200,
-                    200,
-                    10
-                  )}
-                />)}
+                  <Image
+                    source={{ uri: item.imageUri }}
+                    style={styles.Image(
+                      item.sender === user?.id ? 0 : -10,
+                      item.sender === user?.id ? -10 : 0,
+                      200,
+                      200,
+                      10
+                    )}
+                  />
+                )}
               </>
             )}
           </View>
@@ -580,8 +605,6 @@ const SingleChat = ({ navigation }) => {
       </View>
     );
   };
-
-
 
   const rowLength =
     stickerList.length % 3 === 0
@@ -657,35 +680,67 @@ const SingleChat = ({ navigation }) => {
 
   const BlurItem = ({ isFocused }) => {
     return (
-      <TouchableWithoutFeedback
-        onPress={() => setIsFocused({ focused: false, item: isFocused.item })}
-      >
-        <BlurView
-          intensity={300}
-          style={styles.blurView(
-            isFocused.item?.isSticker ? "center" : "flex-end"
-          )}
-        >
-          <View style={styles.blurContainer}>
-            <RenderList item={isFocused.item} />
-            <View style={styles.blurList(theme)}>
-              <TouchableOpacity
-                style={styles.blurTextContainer}
-                onPress={() => {
-                  deleteMessage(isFocused.item.id, isFocused.item);
-                }}
-              >
-                <Text style={styles.blurText}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </BlurView>
-      </TouchableWithoutFeedback>
+      <>
+        {isFocused.item && (
+          <TouchableWithoutFeedback
+            onPress={() =>
+              setIsFocused({ focused: false, item: isFocused.item })
+            }
+          >
+            <BlurView
+              intensity={300}
+              style={styles.blurView(
+                isFocused.item?.isSticker ? "center" : "flex-end"
+              )}
+            >
+              <View style={styles.blurContainer}>
+                <RenderList item={isFocused.item} />
+                {isFocused.item.sender === user?.id && (
+                  <View style={styles.blurList(theme)}>
+                    <TouchableOpacity
+                      style={styles.blurTextContainer}
+                      onPress={() => {
+                        deleteMessage(isFocused.item.id, isFocused.item);
+                      }}
+                    >
+                      <Text style={styles.blurText("rgba(255,0,0,0.8)")}>
+                        delete for everyone
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                <View style={styles.blurList(theme)}>
+                  <TouchableOpacity
+                    style={styles.blurTextContainer}
+                    onPress={() => {
+                      deleteMessageForMe(isFocused.item.id);
+                    }}
+                  >
+                    <Text style={styles.blurText("rgba(255,255,255,0.8)")}>
+                      delete for me
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </BlurView>
+          </TouchableWithoutFeedback>
+        )}
+      </>
     );
   };
 
   return (
     <SafeAreaView>
+      {/*3d stofff */}
+      <View style={styles.background}>
+        <Canvas
+          style={StyleSheet.absoluteFillObject}
+          camera={{ position: [2, 3, 5], fov: 30 }}
+        >
+          <Render3D item={BackGroundForChat} />
+        </Canvas>
+      </View>
+      {/*3d stofff */}
       <View style={styles.header(theme)}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -731,6 +786,7 @@ const SingleChat = ({ navigation }) => {
             data={messages}
             renderItem={RenderList}
             ref={flatListRef}
+            showsVerticalScrollIndicator={false}
             onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
             onContentSizeChange={() =>
               flatListRef.current.scrollToEnd({ animated: true })
@@ -833,6 +889,17 @@ const SingleChat = ({ navigation }) => {
           setCurrentContact={setSelectedContact}
         />
       </Modal>
+      <Modal
+        animationType="fade"
+        transparent={true}
+        hardwareAccelerated={true}
+        visible={isImageViewerOpen}
+      >
+        <ImageViewer
+          imageUri={imageUri}
+          setIsImageViewerOpen={setIsImageViewerOpen}
+        />
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -845,6 +912,10 @@ const styles = StyleSheet.create({
     backgroundColor: theme === "dark" ? "black" : "white",
     flexDirection: "column",
   }),
+  background: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: -1,
+  },
   textStyles: (
     theme,
     fontSize = 20,
@@ -954,7 +1025,7 @@ const styles = StyleSheet.create({
     backgroundColor: isEmoji
       ? "transparent"
       : theme === "dark"
-      ? "rgba(0, 122, 255, 1)"
+      ? "rgba(0, 122, 255, 0.8)"
       : "rgba(0,255,0,0.8)", //theme==="dark"?"#388E3C":"#4CAF50"
     borderRadius: 16,
     paddingHorizontal: 10,
@@ -969,12 +1040,11 @@ const styles = StyleSheet.create({
     backgroundColor: isEmoji
       ? "transparent"
       : theme === "dark"
-      ? "#1E1E1E"
-      : "#E0E0E0",
+      ? "rgba(30,30,30,0.8)"
+      : "rgba(224,224,224,0.8)", //theme==="dark"?"#388E3C":"#4CAF50"
     borderRadius: 16,
     paddingHorizontal: 10,
-    paddingBottom: 10,
-    paddingTop: 5,
+    paddingVertical: 5,
     marginTop: 5,
     minWidth: 50,
     maxWidth: "80%",
@@ -1039,14 +1109,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.5)",
     height: 50,
-    width: 200,
+    minWidth: 200,
+    padding: 10,
     borderRadius: 20,
   }),
-  blurText: {
+  blurText: (color = "white") => ({
     fontSize: 25,
     fontWeight: "bold",
-    color: "rgba(255,0,0,0.8)",
-  },
+    color: color,
+  }),
   blurTextContainer: {
     width: "100%",
     height: "100%",

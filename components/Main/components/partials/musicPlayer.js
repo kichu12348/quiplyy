@@ -4,11 +4,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  Platform,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
 import { useState, useEffect } from "react";
 import { useTheme } from "../../../../contexts/theme";
+import { Canvas } from "@react-three/fiber/native";
 import { Audio } from "expo-av";
 import snowfallImg from "./audio/images/snowfall.png";
 import calmImg from "./audio/images/calmIMG.jpg";
@@ -18,6 +18,7 @@ import snowfall from "./audio/snowfall.mp3";
 import calm from "./audio/calm.mp3";
 import reso from "./audio/resoH.mp3";
 import watchingStar from "./audio/watchingStar.mp3";
+import Render3D from "./utils/3dRender";
 
 const Music = () => {
   const theme = useTheme();
@@ -30,8 +31,6 @@ const Music = () => {
   const [isCalmPlaying, setIsCalmPlaying] = useState(false);
   const [isResonancePlaying, setIsResonancePlaying] = useState(false);
   const [isWatchingStarPlaying, setIsWatchingStarPlaying] = useState(false);
-
-
 
   useEffect(() => {
     return sound
@@ -78,8 +77,7 @@ const Music = () => {
         setIsCalmPlaying(false);
         setIsSnowfallPlaying(false);
         setIsWatchingStarPlaying(false);
-      }
-      else if(audioFile=== watchingStar){
+      } else if (audioFile === watchingStar) {
         setIsWatchingStarPlaying(true);
         setIsResonancePlaying(false);
         setIsCalmPlaying(false);
@@ -99,6 +97,11 @@ const Music = () => {
 
   return (
     <SafeAreaView style={styles.container(theme.theme)}>
+      <View style={styles.background}>
+        <Canvas style={StyleSheet.absoluteFillObject} camera={{ position: [2, 3, 5], fov: 30 }}>
+          <Render3D item={"Cheese"}/>
+        </Canvas>
+      </View>
       <View style={styles.stuffContainer}>
         <TouchableOpacity
           style={styles.soundBox(theme)}
@@ -213,6 +216,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme === "dark" ? "black" : "white",
   }),
+  background: {
+    ...StyleSheet.absoluteFillObject, 
+    zIndex: -1, 
+  },
   stuffContainer: {
     flex: 1,
     flexDirection: "column",
@@ -222,27 +229,12 @@ const styles = StyleSheet.create({
   soundBox: (theme) => ({
     height: 100,
     width: "80%",
-    backgroundColor: theme.background,
+    backgroundColor: theme.theme === "dark" ? "rgba(15,15,15,0.5)" : "rgba(230,230,230,0.5)",
     borderRadius: 15,
     flexDirection: "row",
     justifyContent: "flex-start",
     alignItems: "center",
     margin: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: theme.theme === "dark" ? "white" : "black",
-        shadowOffset: {
-          width: 2,
-          height: 2,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 3.84,
-      },
-      android: {
-        elevation: 10,
-        shadowColor: theme === "dark" ? "white" : "black",
-      },
-    }),
     padding: 10,
   }),
   audioImage: {

@@ -230,7 +230,9 @@ const Settings = ({ navigation }) => {
           Settings
         </Text>
       </View>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView}
+      showsVerticalScrollIndicator={false}
+      >
         
         <View style={styles.center}>
           <View style={styles.middle("space-between","row","center",20,theme)}>
@@ -259,27 +261,30 @@ const Settings = ({ navigation }) => {
           onValueChange={() => theme.themeSetting(theme.theme === "dark" ? "light" : "dark")}
           />
         </View>
-        {/* <View style={styles.middle("space-between", "column", "flex-start",20,theme)}>
+        <View style={styles.middle("space-between", "column", "flex-start",20,theme)}>
           <Text style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D")}>
-            Chat Background
+            3D Background
           </Text>
           <ScrollView 
           style={styles.container()}
           horizontal={true}
+          showsHorizontalScrollIndicator={false}
           >
-            {theme.chatTheme.map(c=>{
-              return(
-                <TouchableOpacity
-                onPress={()=>theme.setCurrentChatImage(c)}
-                style={styles.Image(10,0,5,100,100)}
-                key={c.statusBarColor}
-                >
-                  <Image source={c.image} style={styles.Image(0,0,5,100,100)}/>
-                </TouchableOpacity>
-              )
-            })}
+            {["Cheese", "Pineapple", "Waffle", "Pizza"].map((item, index) => (
+              <TouchableOpacity
+                key={index} 
+                style={styles.stuffContainer}
+                onPress={() => {
+                  theme.chatBackgroundModel(item);
+                }}
+              >
+                <Text style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D",20,10,10)}>
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </ScrollView>
-        </View> */}
+        </View>
 
 
         <View style={styles.middle("center", "column", "center", 0,theme)}>
@@ -350,11 +355,13 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  text: (color, fts = 20) => ({
+  text: (color, fts = 20,mh=0,mt=0) => ({
     color: color,
     fontSize: fts,
     fontWeight: "bold",
     alignSelf: "center",
+    marginHorizontal: mh,
+    marginTop: mt,
   }),
   header: () => ({
     height: 50,

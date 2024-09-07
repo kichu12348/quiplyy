@@ -6,6 +6,7 @@ const LongPressComponent = ({
   onLongPress,
   time = 500,
   style = { flex: 1 },
+  onTap,
 }) => {
   let isPressed = false;
 
@@ -27,11 +28,20 @@ const LongPressComponent = ({
     onLongPress(false);
   };
 
+  const onTapped = () => {
+    if (isPressed) {
+      isPressed = false;
+      onLongPress(false);
+    }
+    onTap(true);
+  };
+
   return (
     <TouchableWithoutFeedback
       style={style}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
+      onPress={onTap}
     >
       {children}
     </TouchableWithoutFeedback>
