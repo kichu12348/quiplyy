@@ -158,6 +158,13 @@ const Music = () => {
     }
   };
 
+  const resumeSound = async () => {
+    if (sound) {
+      await sound.playAsync();
+      setIsPlaying(true);
+    }
+  }
+
   const pauseSound = async () => {
     if (sound) {
       await sound.pauseAsync();
@@ -175,6 +182,10 @@ const Music = () => {
           onPress={() => {
             if (!item.isDownloaded) {
               downloadSong(item);
+              return;
+            }
+            if(currentPlaying === item.title && !isPlaying){
+              resumeSound();
               return;
             }
             if (isPlaying && currentPlaying === item.title) {
@@ -209,11 +220,24 @@ const Music = () => {
               />
             )}
           <View style={styles.setEnd}>
-            {!item.isDownloaded && (
+            {!item.isDownloaded ?(
               <Image
                 source={theme.Icons.download}
                 style={styles.audioImage(40, 40, 0)}
               />
+            ):(
+              isPlaying && currentPlaying === item.title ? (
+                <Image
+                  source={theme.Icons.pause}
+                  style={styles.audioImage(25, 25, 0,0)}
+                />
+              ):(
+               
+                  <Image
+                    source={theme.Icons.play}
+                    style={styles.audioImage(25, 25, 0,0)}
+                  />
+              )
             )}
           </View>
         </TouchableOpacity>
@@ -269,10 +293,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 10,
   }),
-  audioImage: (h = 80, w = 80, mr = 20) => ({
+  audioImage: (h = 80, w = 80, mr = 20,br=10) => ({
     height: h,
     width: w,
-    borderRadius: 10,
+    borderRadius: br,
     marginRight: mr,
   }),
   text: (theme) => ({

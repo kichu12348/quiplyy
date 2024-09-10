@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useTheme } from "../../../../contexts/theme";
 import { useSocket } from "../../../../contexts/socketContext";
 import {
-  SafeAreaView,
   TouchableOpacity,
   Image,
   TextInput,
@@ -15,6 +14,7 @@ import {
   Platform,
   Alert,
 } from "react-native";
+import SafeAreaView from "./utils/safe";
 
 const AddBlogs = ({ setIsAddBlog, supabase,setBlogs }) => {
   const { theme, Icons, chatColor } = useTheme();
@@ -118,22 +118,7 @@ const styles = StyleSheet.create({
     padding: 10,
     textAlign: textAlign,
     color: theme === "dark" ? "white" : "black",
-    backgroundColor: theme === "dark" ? "black" : "white",
-    ...Platform.select({
-      ios: {
-        shadowColor: theme === "dark" ? "white" : "black",
-        shadowOffset: {
-          width: 2,
-          height: 2,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 3.84,
-      },
-      android: {
-        elevation: 5,
-        shadowColor: theme === "dark" ? "white" : "black",
-      },
-    }),
+    backgroundColor: theme === "dark" ? "rgba(30,30,30,0.8)" : "rgba(255,255,255,0.8)",
   }),
   KeyboardAvoidingView: {
     flex: 1,
