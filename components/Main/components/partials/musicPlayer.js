@@ -191,6 +191,7 @@ const Music = () => {
             if (isPlaying && currentPlaying === item.title) {
               pauseSound();
             } else {
+              setPlaybackStatus(null);
               loadAndPlaySound(item.song, item.title);
             }
           }}
