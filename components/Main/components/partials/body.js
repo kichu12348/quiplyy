@@ -81,10 +81,13 @@ const Body = ({ moveTo }) => {
     return name.length > 20 ? name.slice(0, 20) + "..." : name
   }
 
-  const addContact = (id) => {
+  const addContact =async (id) => {
     if (!isConnected) return;
     if (id === auth?.user?.id) return;
-    auth.addContact(id);
+    const data=await auth.addContact(id);
+    if(data){
+      setMessager(data);
+    }
     setIsQuerying(false);
     setQuery("");
     setContacts(sql.contacts);
@@ -179,6 +182,7 @@ const Body = ({ moveTo }) => {
       </View>
       <View style={styles.flatListContainer(width)}>
         <FlatList
+          showsVerticalScrollIndicator={false}
           renderItem={({ item }) => <RenderList item={item} />}
           data={contacts}
           keyExtractor={(item) => item.id}

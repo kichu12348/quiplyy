@@ -4,33 +4,49 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  FlatList,
+  Alert,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
 import { useState, useEffect } from "react";
 import { useTheme } from "../../../../contexts/theme";
 import { Canvas } from "@react-three/fiber/native";
 import { Audio } from "expo-av";
-import snowfallImg from "./audio/images/snowfall.png";
-import calmImg from "./audio/images/calmIMG.jpg";
-import resoIMG from "./audio/images/resoIMG.png";
-import peace from "./audio/images/peace.jpg";
-import snowfall from "./audio/snowfall.mp3";
-import calm from "./audio/calm.mp3";
-import reso from "./audio/resoH.mp3";
-import watchingStar from "./audio/watchingStar.mp3";
 import Render3D from "./utils/3dRender";
+import * as SQLite from "expo-sqlite";
+import axios from "axios";
+import { useSocket } from "../../../../contexts/socketContext";
+import { downloadSongFromServer } from "./utils/fileUpload";
+
 
 const Music = () => {
   const theme = useTheme();
-
   const [sound, setSound] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackStatus, setPlaybackStatus] = useState(null);
-  const [isBuffering, setIsBuffering] = useState(false);
-  const [isSnowfallPlaying, setIsSnowfallPlaying] = useState(false);
-  const [isCalmPlaying, setIsCalmPlaying] = useState(false);
-  const [isResonancePlaying, setIsResonancePlaying] = useState(false);
-  const [isWatchingStarPlaying, setIsWatchingStarPlaying] = useState(false);
+  const [currentPlaying, setCurrentPlaying] = useState(null);
+  const [songs, setSongs] = useState([]);
+
+  const { endPoint, socket, isConnected } = useSocket();
+  axios.defaults.baseURL = `${endPoint}/song`;
+
+  ///sqlite db
+  const dbPromise = SQLite.openDatabaseAsync("songs.db");
+
+  async function getSongsFromDB(db) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT exists songs(
+        id TEXT PRIMARY KEY,
+        title TEXT,
+        image TEXT,
+        song TEXT,
+        isDownloaded BOOLEAN DEFAULT false
+        )
+      `);
+
+    const rows = await db.getAllAsync(`SELECT * FROM songs`);
+    setSongs(rows);
+  }
 
   useEffect(() => {
     return sound
@@ -44,7 +60,6 @@ const Music = () => {
     if (!sound) return;
 
     const onPlaybackStatusUpdate = (status) => {
-      setIsBuffering(status.isBuffering);
       setPlaybackStatus(status);
     };
 
@@ -55,36 +70,91 @@ const Music = () => {
     };
   }, [sound]);
 
-  const loadAndPlaySound = async (audioFile) => {
+  async function getSongList() {
+    if (!isConnected || !socket) return;
     try {
-      const { sound: newSound } = await Audio.Sound.createAsync(audioFile, {
+      await axios.get("/List").then((res) => {
+        if (res.data.success) {
+          setSongs((prev) => {
+            const newSongs = res.data.songList;
+            const filteredSongs = newSongs.filter(
+              (song) => !prev.find((s) => s.id === song.id)
+            );
+            filteredSongs.map((s) => {
+              s.isDownloaded = false;
+            });
+            return [...prev, ...filteredSongs];
+          });
+        }
+      });
+    } catch (e) {
+      return;
+    }
+  }
+
+
+  async function downloadSong(item) {
+    const { id, title, image, song } = item;
+    try {
+      const {success,songUri,imageUri}=await downloadSongFromServer(endPoint,song, image);
+      if(!success) return;
+      const db = await dbPromise;
+      await db.runAsync(`
+        INSERT INTO songs(id,title,image,song,isDownloaded) VALUES(?,?,?,?,?)
+        `,[
+          id,
+          title,
+          imageUri,
+          songUri,
+          true
+        ]);
+      setSongs((prev) => {
+        const findSong = prev.find((s) => s.id === id);
+        if (!findSong) return [...prev, { 
+          id: id,
+          title: title,
+          image: imageUri,
+          song: songUri,
+          isDownloaded: true,
+        }];
+        findSong.isDownloaded = true;
+        findSong.image = imageUri;
+        findSong.song = songUri;
+        return [...prev];
+      });
+    } catch (e) {
+      return Alert.alert("Error", "Failed to download song");
+    }
+  }
+
+  async function start(){
+    const db = await dbPromise;
+    await getSongsFromDB(db);
+    
+  }
+
+  useEffect(() => {
+    start();
+  }, []);
+
+
+  useEffect(() => {
+    getSongList();
+  }, [socket, isConnected]);
+  
+
+  const loadAndPlaySound = async (audioFile, songTitle) => {
+    try {
+      const { sound: newSound } = await Audio.Sound.createAsync({
+        uri: audioFile,
+      }, {
         shouldPlay: true,
       });
       setSound(newSound);
       setIsPlaying(true);
-      if (audioFile === snowfall) {
-        setIsSnowfallPlaying(true);
-        setIsCalmPlaying(false);
-        setIsResonancePlaying(false);
-        setIsWatchingStarPlaying(false);
-      } else if (audioFile === calm) {
-        setIsCalmPlaying(true);
-        setIsSnowfallPlaying(false);
-        setIsResonancePlaying(false);
-        setIsWatchingStarPlaying(false);
-      } else if (audioFile === reso) {
-        setIsResonancePlaying(true);
-        setIsCalmPlaying(false);
-        setIsSnowfallPlaying(false);
-        setIsWatchingStarPlaying(false);
-      } else if (audioFile === watchingStar) {
-        setIsWatchingStarPlaying(true);
-        setIsResonancePlaying(false);
-        setIsCalmPlaying(false);
-        setIsSnowfallPlaying(false);
-      }
+      setCurrentPlaying(songTitle);
     } catch (error) {
-      console.log("Error loading sound:", error);
+      return;
     }
   };
 
@@ -95,114 +165,79 @@ const Music = () => {
     }
   };
 
+  const renderItem = ({ item, index }) => {
+    if (!item) return null;
+    return (
+      <View style={styles.itemContainer()}>
+        <TouchableOpacity
+          key={`${item.id}-${index}`}
+          style={styles.soundBox(theme)}
+          onPress={() => {
+            if (!item.isDownloaded) {
+              downloadSong(item);
+              return;
+            }
+            if (isPlaying && currentPlaying === item.title) {
+              pauseSound();
+            } else {
+              loadAndPlaySound(item.song, item.title);
+            }
+          }}
+        >
+          {!item.isDownloaded ? (
+            <Image
+              source={{ uri: `${endPoint}/song/song?image=${item.image}` }}
+              style={styles.audioImage()}
+            />
+          ) : (
+            <Image
+              source={{uri:item.image}}
+              style={styles.audioImage()}
+            />
+          )}
+          <Text style={styles.text(theme.theme)}>{item.title}</Text>
+          {currentPlaying === item.title &&
+            playbackStatus?.positionMillis / playbackStatus?.durationMillis !==
+              1 && (
+              <View
+                style={styles.timeStamps(
+                  (playbackStatus?.positionMillis /
+                    playbackStatus?.durationMillis) *
+                    100,
+                  theme.theme
+                )}
+              />
+            )}
+          <View style={styles.setEnd}>
+            {!item.isDownloaded && (
+              <Image
+                source={theme.Icons.download}
+                style={styles.audioImage(40, 40, 0)}
+              />
+            )}
+          </View>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container(theme.theme)}>
       <View style={styles.background}>
-        <Canvas style={StyleSheet.absoluteFillObject} camera={{ position: [2, 3, 5], fov: 30 }}>
-          <Render3D item={"Cheese"}/>
+        <Canvas
+          style={StyleSheet.absoluteFillObject}
+          camera={{ position: [2, 3, 5], fov: 30 }}
+        >
+          <Render3D item={"Cheese"} />
         </Canvas>
       </View>
       <View style={styles.stuffContainer}>
-        <TouchableOpacity
-          style={styles.soundBox(theme)}
-          onPress={() => {
-            if (isPlaying && isSnowfallPlaying) {
-              pauseSound();
-            } else {
-              loadAndPlaySound(snowfall);
-            }
-          }}
-        >
-          <Image source={snowfallImg} style={styles.audioImage} />
-          <Text style={styles.text(theme.theme)}>Snowfall</Text>
-          {isSnowfallPlaying &&
-            playbackStatus?.positionMillis / playbackStatus?.durationMillis !==
-              1 && (
-              <View
-                style={styles.timeStamps(
-                  (playbackStatus?.positionMillis /
-                    playbackStatus?.durationMillis) *
-                    100,
-                  theme.theme
-                )}
-              />
-            )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.soundBox(theme)}
-          onPress={() => {
-            if (isPlaying && isCalmPlaying) {
-              pauseSound();
-            } else {
-              loadAndPlaySound(calm);
-            }
-          }}
-        >
-          <Image source={calmImg} style={styles.audioImage} />
-          <Text style={styles.text(theme.theme)}>Calm</Text>
-          {isCalmPlaying &&
-            playbackStatus?.positionMillis / playbackStatus?.durationMillis !==
-              1 && (
-              <View
-                style={styles.timeStamps(
-                  (playbackStatus?.positionMillis /
-                    playbackStatus?.durationMillis) *
-                    100,
-                  theme.theme
-                )}
-              />
-            )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.soundBox(theme)}
-          onPress={() => {
-            if (isPlaying && isResonancePlaying) {
-              pauseSound();
-            } else {
-              loadAndPlaySound(reso);
-            }
-          }}
-        >
-          <Image source={resoIMG} style={styles.audioImage} />
-          <Text style={styles.text(theme.theme)}>Resonance</Text>
-          {isResonancePlaying &&
-            playbackStatus?.positionMillis / playbackStatus?.durationMillis !==
-              1 && (
-              <View
-                style={styles.timeStamps(
-                  (playbackStatus?.positionMillis /
-                    playbackStatus?.durationMillis) *
-                    100,
-                  theme.theme
-                )}
-              />
-            )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.soundBox(theme)}
-          onPress={() => {
-            if (isPlaying && isWatchingStarPlaying) {
-              pauseSound();
-            } else {
-              loadAndPlaySound(watchingStar);
-            }
-          }}
-        >
-          <Image source={peace} style={styles.audioImage} />
-          <Text style={styles.text(theme.theme)}>Stars</Text>
-          {isWatchingStarPlaying &&
-            playbackStatus?.positionMillis / playbackStatus?.durationMillis !==
-              1 && (
-              <View
-                style={styles.timeStamps(
-                  (playbackStatus?.positionMillis /
-                    playbackStatus?.durationMillis) *
-                    100,
-                  theme.theme
-                )}
-              />
-            )}
-        </TouchableOpacity>
+        <FlatList
+          data={songs}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
+          showsVerticalScrollIndicator={false}
+        />
       </View>
     </SafeAreaView>
   );
@@ -217,32 +252,29 @@ const styles = StyleSheet.create({
     backgroundColor: theme === "dark" ? "black" : "white",
   }),
   background: {
-    ...StyleSheet.absoluteFillObject, 
-    zIndex: -1, 
+    ...StyleSheet.absoluteFillObject,
+    zIndex: -1,
   },
   stuffContainer: {
     flex: 1,
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
   },
   soundBox: (theme) => ({
     height: 100,
     width: "80%",
-    backgroundColor: theme.theme === "dark" ? "rgba(15,15,15,0.5)" : "rgba(230,230,230,0.5)",
+    backgroundColor:
+      theme.theme === "dark" ? "rgba(15,15,15,0.5)" : "rgba(230,230,230,0.5)",
     borderRadius: 15,
     flexDirection: "row",
     justifyContent: "flex-start",
     alignItems: "center",
-    margin: 10,
     padding: 10,
   }),
-  audioImage: {
-    height: 80,
-    width: 80,
+  audioImage: (h = 80, w = 80, mr = 20) => ({
+    height: h,
+    width: w,
     borderRadius: 10,
-    marginRight: 20,
-  },
+    marginRight: mr,
+  }),
   text: (theme) => ({
     color: theme === "dark" ? "white" : "black",
     fontSize: 20,
@@ -257,4 +289,16 @@ const styles = StyleSheet.create({
     backgroundColor: theme === "dark" ? "white" : "black",
     borderRadius: 10,
   }),
+  itemContainer: () => ({
+    height: 100,
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    marginVertical: 10,
+  }),
+  setEnd: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
 });

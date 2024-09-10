@@ -21,6 +21,8 @@ import groupD from "./images/groupD.png";
 import chessD from "./images/chessD.png";
 import chessL from "./images/chessL.png";
 import uploadD from "./images/uploadD.png";
+import downloadD from "./images/donwloadD.png";
+import downloadL from "./images/downloadL.png";
 
 const ThemeContext = createContext();
 
@@ -54,6 +56,7 @@ const ThemeProvider = ({ children }) => {
     group: groupD,
     chess: chessD,
     upload: uploadD,
+    download: downloadD,
   });
 
   const darkIcons = {
@@ -69,6 +72,7 @@ const ThemeProvider = ({ children }) => {
     group: groupD,
     chess: chessD,
     upload: uploadD,
+    download: downloadD,
   };
 
   const lightIcons = {
@@ -84,6 +88,7 @@ const ThemeProvider = ({ children }) => {
     group: groupL,
     chess: chessL,
     upload: uploadD,
+    download: downloadL,
   };
 
   const  chatBackgroundModel=async (item)=>{

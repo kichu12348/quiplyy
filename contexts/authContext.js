@@ -7,11 +7,11 @@ import axios from "axios";
 const AuthContext = createContext();
 
 const AuthProvider = ({ children }) => {
-  
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [contacts, setContacts] = useState(null);
-  const { socket, setIsAuth, isConnected, isAuth, isLoading,endPoint} = useSocket();
+  const { socket, setIsAuth, isConnected, isAuth, isLoading, endPoint } =
+    useSocket();
 
   axios.defaults.baseURL = `${endPoint}/user`;
   //SETTING DATA INTO DB LOCAL
@@ -47,20 +47,17 @@ const AuthProvider = ({ children }) => {
 
   //REMOVES DATA FROM LOCAL DB
   const removeData = async () => {
-    try{
-    const userDb = await SQLite.openDatabaseAsync("user.db");
-    const contactsDb = await SQLite.openDatabaseAsync("contacts.db");
-    const messagesDb = await SQLite.openDatabaseAsync("messages.db");
-    await userDb.execAsync(`DROP TABLE IF EXISTS user`);
-    await contactsDb.execAsync(`DROP TABLE IF EXISTS contacts`);
-    await messagesDb.execAsync(`DROP TABLE IF EXISTS messages`);
-    }catch(e){
+    try {
+      const userDb = await SQLite.openDatabaseAsync("user.db");
+      const contactsDb = await SQLite.openDatabaseAsync("contacts.db");
+      const messagesDb = await SQLite.openDatabaseAsync("messages.db");
+      await userDb.execAsync(`DROP TABLE IF EXISTS user`);
+      await contactsDb.execAsync(`DROP TABLE IF EXISTS contacts`);
+      await messagesDb.execAsync(`DROP TABLE IF EXISTS messages`);
+    } catch (e) {
       return;
     }
-    
   };
-
-  
 
   //LOGINS IN A USER
   const login = async (username, password) => {
@@ -128,43 +125,36 @@ const AuthProvider = ({ children }) => {
     setUser(null);
     setToken(null);
     setIsAuth(false);
-    setContacts(null);
+    setContacts([]);
   };
 
   const addContact = async (contactId) => {
-    if (!isConnected) return;
-    let Data=null;
-    await axios
-      .post("/addContact", { contactId, token })
-      .then(async (res) => {
-        if (res.data.success) {
-          setContacts(res.data.contact);
-          Data = {
+    if (!isConnected) return false;
+    try {
+      const res = await axios.post("/addContact", { contactId, token });
+
+      if (res.data.success) {
+        setContacts(res.data.contact);
+        socket.emit("contactAdded", {
+          contactId,
+          data: {
             id: user?.id,
             username: user?.username,
             roomID: res.data.contact.roomID,
             isGroup: res.data.contact.isGroup,
             noOfMembers: res.data.contact.noOfMembers,
-            time: res.data.contact.time,
-          };
-          socket.emit("contactAdded", {
-            contactId,
-            data: {
-              id: user?.id,
-              username: user?.username,
-              roomID: res.data.contact.roomID,
-              isGroup: res.data.contact.isGroup,
-              noOfMembers: res.data.contact.noOfMembers,
-            },
-          });
-        } else {
-          Alert.alert(res.data.error);
+          },
+        });
+        return res.data.contact;
+      } else {
+        if (res.data.error === "Contact already exists") {
+          return res.data.contact;
         }
-      })
-      .catch((e) => {
-        return;
-      });
-    return Data;
+        Alert.alert(res.data.error);
+      }
+    } catch (e) {
+      return false;
+    }
   };
 
   const getContacts = async () => {

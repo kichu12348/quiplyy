@@ -16,19 +16,14 @@ import { useAuth } from "../../../../contexts/authContext";
 import { useSql } from "../../../../contexts/sqlContext";
 import * as Updates from "expo-updates";
 import { useSocket } from "../../../../contexts/socketContext";
-import * as SQLlite from "expo-sqlite";
-import axios from "axios";
 
 const Settings = ({ navigation }) => {
   const theme = useTheme();
   const auth = useAuth();
   const sql = useSql();
   const socket = useSocket();
-  const [isBackupOpen, setIsBackupOpen] = useState(false);
 
-  axios.defaults.baseURL = `${socket.endPoint}/message`;
-
-  
+  const [modalVisible, setModalVisible] = useState(false);
 
   const checkForUpdate = async () => {
     if (!socket.isConnected) return;
@@ -46,172 +41,70 @@ const Settings = ({ navigation }) => {
     }
   };
 
-  const BackupMessages = async () => {
-    if (!socket.isConnected) {
-      Alert.alert("No Internet Connection");
-      return;
-    }
-    if (socket.isLoading) {
-      Alert.alert("Please wait for the server to connect!");
-      return;
-    }
-    const db = await SQLlite.openDatabaseAsync("messages.db");
-    await db.execAsync(`
-      CREATE TABLE IF NOT EXISTS messages (
-      idx INTEGER PRIMARY KEY AUTOINCREMENT,
-        id TEXT,
-        sender TEXT,
-        senderName TEXT,
-        msg TEXT,
-        roomID TEXT,
-        isSticker BOOLEAN DEFAULT 0,
-        sticker TEXT DEFAULT NULL,
-        isDeleted BOOLEAN DEFAULT 0,
-        isGroup BOOLEAN DEFAULT 0,
-        isImage BOOLEAN DEFAULT 0,
-        imageUri TEXT DEFAULT NULL,
-        isDownloaded BOOLEAN DEFAULT 0,
-        time TEXT
-      );
-    `);
-    const rows = await db.getAllAsync("SELECT * FROM messages");
-    if (rows.length === 0) {
-      Alert.alert("No Messages to Backup");
-      return;
-    }
-    await axios
-      .post("/backup", { messages: rows, token: auth.token })
-      .then((res) => {
-        if (res.data.success) {
-          Alert.alert("Messages Backed Up Successfully");
-        } else {
-          Alert.alert(
-            "Error:",
-            res.data.error.message || "Error Backing Up Messages"
-          );
-        }
-      });
-  };
-
-  const getBackup = async () => {
-    if (!socket.isConnected) {
-      Alert.alert("No Internet Connection");
-      return;
-    }
-    if (socket.isLoading) {
-      Alert.alert("Please wait for the server to connect");
-      return;
-    }
-    await axios
-      .post("/getBackup", { token: auth.token })
-      .then(async (res) => {
-        if (res.data.success) {
-          try {
-            const db = await SQLlite.openDatabaseAsync("messages.db");
-            await db.execAsync("DROP TABLE IF EXISTS messages");
-            await db.execAsync(`
-              CREATE TABLE IF NOT EXISTS messages (
-        idx INTEGER PRIMARY KEY AUTOINCREMENT,
-        id TEXT,
-        sender TEXT,
-        senderName TEXT,
-        msg TEXT,
-        roomID TEXT,
-        isSticker BOOLEAN DEFAULT 0,
-        sticker TEXT DEFAULT NULL,
-        isDeleted BOOLEAN DEFAULT 0,
-        isGroup BOOLEAN DEFAULT 0,
-        isImage BOOLEAN DEFAULT 0,
-        imageUri TEXT DEFAULT NULL,
-        isDownloaded BOOLEAN DEFAULT 0,
-        time TEXT
-        );
-      `);
-            res.data.messages.map(async (message) => {
-              await db.runAsync(
-                `
-          INSERT INTO messages (id, sender, msg, roomID, time, isSticker, sticker,isDeleted,isGroup,senderName,isImage,imageUri,isDownloaded) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-          `,
-                [
-                  message.id,
-                  message.sender,
-                  message.msg,
-                  message.roomID,
-                  message.isSticker,
-                  message.sticker,
-                  message.isDeleted,
-                  message.time,
-                  message.isGroup,
-                  message.senderName,
-                  message.isImage,
-                  message.imageUri,
-                  true,
-                ]
-              );
-            });
-
-            await axios
-              .post("/deleteBackup", { token: auth.token })
-              .then((res) => {
-                if (res.data.success) {
-                  Alert.alert("Messages Restored Successfully");
-                  return;
-                } else {
-                  Alert.alert("Error: Restoring Messages");
-                  return;
-                }
-              })
-              .catch((e) => {
-                Alert.alert("Error Restoring Messages");
-              });
-            return;
-          } catch (e) {
-            Alert.alert("Error Restoring Messages");
-            return;
-          }
-        }
-        Alert.alert(
-          "Error: ",
-          res.data.error.message || "Error Restoring Messages"
-        );
-      })
-      .catch((e) => {
-        Alert.alert("Error Restoring Messages");
-      });
-  };
-
-  const BackupComponent = () => {
+  const Terms = () => {
     return (
-      <SafeAreaView style={styles.backUpcontainer(theme.theme)}>
-        <View style={styles.backUpHeader}>
-          <TouchableOpacity onPress={() => setIsBackupOpen(false)}>
+      <SafeAreaView>
+        <View style={styles.header()}>
+          <TouchableOpacity
+            style={styles.Image(10)}
+            onPress={() => setModalVisible(false)}
+          >
             <Image source={theme.Icons.return} style={styles.Image(0)} />
           </TouchableOpacity>
-          <Text style={styles.text(theme.theme === "dark" ? "white" : "black")}>
-            Back
+          <Text
+            style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D")}
+          >
+            Terms and Conditions
           </Text>
         </View>
-        <View style={styles.body}>
-          <Text style={styles.backUpText}>
-            ⚠️ downloading Backup will replace the current messages.....
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text
+            style={styles.text(
+              theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D",
+              15,
+              10,
+              10,
+              500
+            )}
+          >
+            1. By using this app, you agree to drop your phone every now and
+            then just to remind yourself how precious it is. We accept no
+            responsibility for cracked screens, but we’ll offer a virtual hug!
+            🤗📱{"\n\n"}
+            2. We promise to keep your messages private, just like your secret
+            stash of snacks hidden from your roommates. We will, however, be
+            curious about how you use emojis. 🤫🍕{"\n\n"}
+            3. You agree not to send any messages that would make your grandma
+            question your taste in humor💀. This app endorses any form of Dad
+            jokes. 😃{"\n\n"}
+            4. We reserve the right to temporarily ban you from the app if you
+            send more than 100 consecutive messages about pineapple on pizza.
+            It’s nothing personal, it’s just for the sake of humanity yk. 🍍🍕🚫
+            {"\n\n"}
+            5. By agreeing to these terms, you acknowledge that your typing
+            speed might be scrutinized by our imaginary speed police. Improve at
+            your own risk; no actual fines will be imposed. 🚓⌨️💨{"\n\n"}
+            6. Any attempts to use our app for world domination ⚠️ will be met
+            with a gentle reminder that your true calling might just be in
+            sending funny cat memes. We’re all about balance here. 😺🌍{"\n\n"}
+            7. You agree to use our app to spread positivity, love, and the
+            occasional GIF of a judgemental car. Negative vibes will be met with
+            an infinite loop of Cringeeeeee. 💖🚗😝{"\n\n"}
+            8. If you accidentally send a message to the wrong person, you’ll
+            have to do the digital equivalent of a cringe worthy dance. We
+            promise not to judge much. 💃🤦‍♂️{"\n\n"}
+            9. If you find a typo in our terms, you get a virtual high-five and
+            the honor of knowing you’ve read them more closely than anyone else.
+            🔍✋🎉{"\n\n"}
+            10. By using this app, you agree to embrace random bursts of
+            inspiration and creativity. If a message inspires you to write a
+            poem or create a doodle, consider it a bonus feature of our app!
+            🎨🖋️
           </Text>
-          <View style={styles.centerDiv}>
-            <TouchableOpacity
-              style={styles.button(theme.theme)}
-              onPress={() => BackupMessages()}
-            >
-              <Text style={styles.text("white")}>Backup Messages</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.centerDiv}>
-            <TouchableOpacity
-              style={styles.button(theme.theme)}
-              onPress={() => getBackup()}
-            >
-              <Text style={styles.text("white")}>download Backup</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   };
@@ -226,120 +119,169 @@ const Settings = ({ navigation }) => {
           <Image source={theme.Icons.return} style={styles.Image(0)} />
         </TouchableOpacity>
 
-        <Text style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D")}>
+        <Text
+          style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D")}
+        >
           Settings
         </Text>
       </View>
-      <ScrollView style={styles.scrollView}
-      showsVerticalScrollIndicator={false}
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
       >
-        
         <View style={styles.center}>
-          <View style={styles.middle("space-between","row","center",20,theme)}>
-          <Text style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D")}>
-            {auth.user ? auth.user.username : "User"}
-          </Text>
-          <Image
-            source={
-              auth.user
-                ? {
-                    uri: `https://api.multiavatar.com/${auth.user.username}.png?apikey=CglVv3piOwAuoJ`,
-                  }
-                : theme.Icons.setting
-            }
-            style={styles.Image(10, 20)}
-          />
-        </View>
-        <View style={styles.middle("space-between", "row", "flex-start",20,theme)}>
-          <Text style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D")}>
-            Dark Mode
-          </Text>
-          <Switch
-          trackColor={{ false: "#E0E0E0", true: "rgba(0,255,0,0.8)" }}
-          thumbColor={"#E0E0E0"}
-          value={theme.theme === "dark"}
-          onValueChange={() => theme.themeSetting(theme.theme === "dark" ? "light" : "dark")}
-          />
-        </View>
-        <View style={styles.middle("space-between", "column", "flex-start",20,theme)}>
-          <Text style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D")}>
-            3D Background
-          </Text>
-          <ScrollView 
-          style={styles.container()}
-          horizontal={true}
-          showsHorizontalScrollIndicator={false}
+          <View
+            style={styles.middle("space-between", "row", "center", 20, theme)}
           >
-            {["Cheese", "Pineapple", "Waffle", "Pizza"].map((item, index) => (
+            <Text
+              style={styles.text(
+                theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D"
+              )}
+            >
+              {auth.user ? auth.user.username : "User"}
+            </Text>
+            <Image
+              source={
+                auth.user
+                  ? {
+                      uri: `https://api.multiavatar.com/${auth.user.username}.png?apikey=CglVv3piOwAuoJ`,
+                    }
+                  : theme.Icons.setting
+              }
+              style={styles.Image(10, 20)}
+            />
+          </View>
+          <View
+            style={styles.middle(
+              "space-between",
+              "row",
+              "flex-start",
+              20,
+              theme
+            )}
+          >
+            <Text
+              style={styles.text(
+                theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D"
+              )}
+            >
+              Dark Mode
+            </Text>
+            <Switch
+              trackColor={{ false: "#E0E0E0", true: "rgba(0,255,0,0.8)" }}
+              thumbColor={"#E0E0E0"}
+              value={theme.theme === "dark"}
+              onValueChange={() =>
+                theme.themeSetting(theme.theme === "dark" ? "light" : "dark")
+              }
+            />
+          </View>
+          <View
+            style={styles.middle(
+              "space-between",
+              "column",
+              "flex-start",
+              20,
+              theme
+            )}
+          >
+            <Text
+              style={styles.text(
+                theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D"
+              )}
+            >
+              3D Background
+            </Text>
+            <ScrollView
+              style={styles.container()}
+              horizontal={true}
+              showsHorizontalScrollIndicator={false}
+            >
+              {["Cheese", "Pineapple", "Waffle", "Pizza"].map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.stuffContainer}
+                  onPress={() => {
+                    theme.chatBackgroundModel(item);
+                  }}
+                >
+                  <Text
+                    style={styles.text(
+                      theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D",
+                      20,
+                      10,
+                      10
+                    )}
+                  >
+                    {item}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={styles.middle("center", "column", "center", 0, theme)}>
+            <View style={styles.row}>
               <TouchableOpacity
-                key={index} 
-                style={styles.stuffContainer}
+                style={styles.rowBtn(theme.theme)}
+                onPress={() => checkForUpdate()}
+              >
+                <Text style={styles.text("white")}>Check For Update</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.centerDiv}>
+              <TouchableOpacity
+                style={styles.button(theme.theme)}
                 onPress={() => {
-                  theme.chatBackgroundModel(item);
+                  auth.logOut();
+                  sql.dropContactsDB();
                 }}
               >
-                <Text style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D",20,10,10)}>
-                  {item}
-                </Text>
+                <Text style={styles.text("white")}>Logout</Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-
-        <View style={styles.middle("center", "column", "center", 0,theme)}>
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={styles.rowBtn(theme.theme)}
-            onPress={() => checkForUpdate()}
-          >
-            <Text style={styles.text("white")}>Check For Update</Text>
-          </TouchableOpacity>
-          {/* <TouchableOpacity
-            style={styles.rowBtn(theme.theme)}
-            onPress={() => setIsBackupOpen(true)}
-          >
-            <Text style={styles.text("white")}>Backup</Text>
-          </TouchableOpacity> */}
-        </View>
-          <View style={styles.centerDiv}>
-            <TouchableOpacity
-              style={styles.button(theme.theme)}
-              onPress={() => {
-                auth.logOut();
-                sql.dropContactsDB();
-              }}
-            >
-              <Text style={styles.text("white")}>Logout</Text>
-            </TouchableOpacity>
+            </View>
           </View>
-        </View>
         </View>
         <Modal
           transparent={true}
-          visible={isBackupOpen}
+          visible={modalVisible}
           animationType="slide"
           hardwareAccelerated={true}
         >
-          <BackupComponent />
+          <Terms />
         </Modal>
         <View style={styles.connectionDet}>
           <Text
-            style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D", 15)}
+            style={styles.text(
+              theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D",
+              15
+            )}
           >
-            Connected:{" "}
-            {socket.isConnected && socket.socket ? "Yes" : "No"}
+            v 1.9.0
           </Text>
-          {socket.isConnected && socket.socket ? (
+          <Text
+            style={styles.text(
+              theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D",
+              15
+            )}
+          >
+            Made with ❤️ by Kichu
+          </Text>
+          <TouchableOpacity
+            style={styles.center}
+            onPress={() => {
+              setModalVisible(true);
+            }}
+          >
             <Text
               style={styles.text(
-                theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D",
+                theme.theme==="dark"?"rgba(0,250,255,0.8)": "rgba(0,200,255,1)",
                 15
               )}
-            >connection id: {" "}
-              {socket.socket?.id}
+            >
+              Terms and Conditions 😃
             </Text>
-          ) : null}
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -355,10 +297,10 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  text: (color, fts = 20,mh=0,mt=0) => ({
+  text: (color, fts = 20, mh = 0, mt = 0, w = "bold") => ({
     color: color,
     fontSize: fts,
-    fontWeight: "bold",
+    fontWeight: w,
     alignSelf: "center",
     marginHorizontal: mh,
     marginTop: mt,
@@ -371,7 +313,13 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     marginTop: 20,
   }),
-  Image: (marginR = 0, marginL = 0,borderRadius=20,height=40,width=40) => ({
+  Image: (
+    marginR = 0,
+    marginL = 0,
+    borderRadius = 20,
+    height = 40,
+    width = 40
+  ) => ({
     height: height,
     width: width,
     marginRight: marginR,
@@ -384,8 +332,7 @@ const styles = StyleSheet.create({
     alignItems = "center",
     marginTop = 20,
     theme
-  ) => (
-    {
+  ) => ({
     flexDirection: flexDirection,
     justifyContent: justifyContent,
     alignItems: alignItems,
@@ -394,23 +341,8 @@ const styles = StyleSheet.create({
     width: "90%",
     minHeight: 50,
     padding: 15,
-    backgroundColor: theme.theme=== "dark"?"#212121":"#e0e0e0",
+    backgroundColor: theme.theme === "dark" ? "#212121" : "#e0e0e0",
     borderRadius: 25,
-  }),
-  SelectorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 0,
-    marginTop: 10,
-  },
-  circle: (color = "white", theme) => ({
-    height: 20,
-    width: 20,
-    borderRadius: 10,
-    backgroundColor: color,
-    marginHorizontal: 20,
-    opacity: theme ? 1 : 0,
   }),
   button: (theme, opacity = 1) => ({
     backgroundColor:
@@ -441,26 +373,11 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
   }),
-  backUpcontainer: (theme) => ({
-    flex: 1,
-    backgroundColor: theme === "dark" ? "black" : "white",
-    justifyContent: "center",
-    alignItems: "center",
-  }),
   body: {
     flex: 1,
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
-  },
-  backUpHeader: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    backgroundColor: "transparent",
-    width: "100%",
-    marginTop: 20,
-    marginLeft: 20,
   },
   row: {
     flexDirection: "row",
@@ -478,12 +395,7 @@ const styles = StyleSheet.create({
     padding: 10,
     minWidth: "10%",
   }),
-  backUpText: {
-    fontSize: 15,
-    fontWeight: "400",
-    marginVertical: 20,
-    color: "red",
-  },
+ 
   connectionDet: {
     minHeight: 100,
     flexDirection: "column",
@@ -493,5 +405,5 @@ const styles = StyleSheet.create({
   center: {
     justifyContent: "center",
     alignItems: "center",
-  }
+  },
 });
