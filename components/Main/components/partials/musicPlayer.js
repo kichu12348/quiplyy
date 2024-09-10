@@ -227,7 +227,7 @@ const Music = () => {
                 style={styles.audioImage(40, 40, 0)}
               />
             ):(
-              isPlaying && currentPlaying === item.title ? (
+              isPlaying && currentPlaying === item.title &&playbackStatus?.positionMillis!==playbackStatus?.durationMillis? (
                 <Image
                   source={theme.Icons.pause}
                   style={styles.audioImage(25, 25, 0,0)}
