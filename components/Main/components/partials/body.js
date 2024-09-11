@@ -9,7 +9,7 @@ import {
   Modal,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
-import { useEffect, useState, useCallback,memo } from "react";
+import { useEffect, useState, useCallback,memo,useMemo } from "react";
 import { TextInput } from "react-native-gesture-handler";
 import { useTheme } from "../../../../contexts/theme";
 import { useMessager } from "../../../../contexts/messagerContext";
@@ -21,7 +21,6 @@ import CreateGroupChat from "./createGroupChat";
 
 const Body = ({ moveTo }) => {
   const theme = useTheme();
-
   const { width } = Dimensions.get("window");
   const { setSelectedContact } = useMessager();
   const sql = useSql();
@@ -33,6 +32,7 @@ const Body = ({ moveTo }) => {
   const [query, setQuery] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
   const [isGpChat, setIsGpChat] = useState(false);
+  const [contactImageUris, setContactImageUris] = useState({});
 
   const openGpChat = () => {
     setIsGpChat(true);
@@ -45,6 +45,28 @@ const Body = ({ moveTo }) => {
     setSelectedContact(contact);
     moveTo("SingleChat");
   };
+
+  const getUriFromMap = useCallback((item) => {
+    return contactImageUris[item.id] || `https://api.multiavatar.com/${item.username}.png?apikey=CglVv3piOwAuoJ`;
+  }, [contactImageUris]);
+
+  const getContactImageUri = useCallback(async (contacts) => {
+    const newUris = {};
+    for (const contact of contacts) {
+      if (contact.isGroup) {
+        newUris[contact.id] = theme.Icons.group;
+      } else {
+        const uri = await auth.getProfilePicture(contact.username);
+        newUris[contact.id] = uri || `https://api.multiavatar.com/${contact.username}.png?apikey=CglVv3piOwAuoJ`;
+      }
+    }
+    setContactImageUris(prevUris => ({...prevUris, ...newUris}));
+  }, [auth, theme.Icons.group]);
+
+  useEffect(() => {
+    getContactImageUri(contacts);
+  }, [contacts, getContactImageUri]);
+
 
   const queryUsers = async () => {
     if (!isConnected) return;
@@ -94,6 +116,7 @@ const Body = ({ moveTo }) => {
   };
 
   const RenderList = memo(({ item }) => {
+    const imageUri = useMemo(() => getUriFromMap(item), [item, getUriFromMap]);
     return item && item.id ? (
       <TouchableOpacity
         style={styles.listItem(theme)}
@@ -105,7 +128,7 @@ const Body = ({ moveTo }) => {
         {!item.isGroup ? (
           <Image
             source={{
-              uri: `https://api.multiavatar.com/${item.username}.png?apikey=CglVv3piOwAuoJ`,
+              uri: imageUri,
             }}
             style={styles.Image()}
           />
@@ -193,6 +216,7 @@ const Body = ({ moveTo }) => {
         animationType="slide"
         hardwareAccelerated={true}
         transparent={true}
+        onRequestClose={() => setIsGpChat(false)}
       >
         <CreateGroupChat setIsGpChat={setIsGpChat} />
       </Modal>

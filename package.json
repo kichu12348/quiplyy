@@ -1,6 +1,6 @@
 {
   "name": "quiplyy",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "main": "expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
@@ -17,12 +17,14 @@
     "@react-three/fiber": "^8.17.6",
     "@supabase/supabase-js": "^2.44.0",
     "axios": "^1.7.2",
+    "base64-arraybuffer": "^1.0.2",
     "chess.js": "^1.0.0-beta.8",
     "expo": "~51.0.28",
     "expo-av": "~14.0.7",
     "expo-blur": "~13.0.2",
     "expo-file-system": "^17.0.1",
     "expo-gl": "~14.0.2",
+    "expo-image-manipulator": "~12.0.5",
     "expo-image-picker": "^15.0.7",
     "expo-sqlite": "~14.0.6",
     "expo-status-bar": "~1.12.1",

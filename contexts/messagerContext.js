@@ -1,9 +1,12 @@
-import { useState, useMemo, createContext, useContext, useEffect } from "react";
+import { useState, useMemo, createContext, useContext} from "react";
+import { useAuth } from "./authContext";
 
 
 const MessagerContext = createContext();
 
 const MessagerProvider = ({ children }) => {
+
+  const auth = useAuth();
   
   const [selectedContact, setSelectedContact] = useState(null);
 

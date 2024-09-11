@@ -93,6 +93,7 @@ const Screen1 = ({ navigation }) => {
           data={blogs}
           renderItem={RenderItem}
           keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
         />
       </View>
       <Modal
@@ -100,6 +101,7 @@ const Screen1 = ({ navigation }) => {
         animationType="slide"
         hardwareAccelerated={true}
         visible={isAddBlog}
+        onRequestClose={() => setIsAddBlog(false)}
       >
         <AddBlogs
           setIsAddBlog={setIsAddBlog}

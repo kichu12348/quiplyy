@@ -50,7 +50,7 @@ const Render3D = ({ item }) => {
   return (
     <>
       <ambientLight intensity={0.5} />
-      <mesh rotation={[rotationX, rotationY, rotationZ]} scale={[5, 5, 5]}>
+      <mesh rotation={[rotationX, rotationY, rotationZ]} scale={5}>
         <Suspense fallback={null}>
           <Gltf src={model} />
         </Suspense>

@@ -27,7 +27,7 @@ const Music = () => {
   const [currentPlaying, setCurrentPlaying] = useState(null);
   const [songs, setSongs] = useState([]);
 
-  const { endPoint, socket, isConnected } = useSocket();
+  const { endPoint, socket, isConnected,supabase} = useSocket();
   axios.defaults.baseURL = `${endPoint}/song`;
 
   ///sqlite db
@@ -35,7 +35,7 @@ const Music = () => {
 
   async function getSongsFromDB(db) {
     await db.execAsync(`
-      CREATE TABLE IF NOT exists songs(
+      CREATE TABLE IF NOT EXISTS songs(
         id TEXT PRIMARY KEY,
         title TEXT,
         image TEXT,

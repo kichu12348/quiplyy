@@ -38,7 +38,7 @@ const SingleChat = ({ navigation }) => {
   const { theme, Icons, textInputColor, BackGroundForChat } = useTheme();
   const { selectedContact, randomUID, setSelectedContact } = useMessager();
   const { socket, isConnected, isLoading, endPoint } = useSocket();
-  const { user, token } = useAuth();
+  const { user, token,getProfilePicture } = useAuth();
 
   axios.defaults.baseURL = `${endPoint}/message`;
 
@@ -51,11 +51,21 @@ const SingleChat = ({ navigation }) => {
   const [maxHeight, setMaxHeight] = useState(50);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [imageUri, setImageUri] = useState(null);
+  const [userImageUri, setUserImageUri] = useState(null);
   const receivedMessageIds = useRef(new Set());
   const flatListRef = useRef(null);
 
   const shortenName = (name) => {
     return name.length > 10 ? name.slice(0, 10) + "..." : name;
+  };
+
+
+  const getPfp = async (username) => {
+    if(!username) return;
+    if(selectedContact.isGroup) return;
+    const uri = await getProfilePicture(username);
+    if(!uri) return setUserImageUri(`https://api.multiavatar.com/${username}.png?apikey=CglVv3piOwAuoJ`);
+    setUserImageUri(uri);
   };
 
   const dbPromise = SQLite.openDatabaseAsync("messages.db");
@@ -325,6 +335,7 @@ const SingleChat = ({ navigation }) => {
 
   useEffect(() => {
     startChat();
+    getPfp(selectedContact.username);
   }, [selectedContact, isConnected]);
 
   const sendSticker = async (sticker) => {
@@ -757,7 +768,7 @@ const SingleChat = ({ navigation }) => {
         {!selectedContact?.isGroup ? (
           <Image
             source={{
-              uri: `https://api.multiavatar.com/${selectedContact.username}.png?apikey=CglVv3piOwAuoJ`,
+              uri: userImageUri,
             }}
             style={styles.Image(20, 10)}
           />
@@ -882,6 +893,7 @@ const SingleChat = ({ navigation }) => {
         transparent={true}
         hardwareAccelerated={true}
         visible={isAddUser}
+        onRequestClose={() => setIsAddUser(false)}
       >
         <AddUserToGroup
           setIsAddUser={setIsAddUser}
@@ -894,6 +906,7 @@ const SingleChat = ({ navigation }) => {
         transparent={true}
         hardwareAccelerated={true}
         visible={isImageViewerOpen}
+        onRequestClose={() => setIsImageViewerOpen(false)}
       >
         <ImageViewer
           imageUri={imageUri}

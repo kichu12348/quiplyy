@@ -117,6 +117,7 @@ const AddUserToGroup = ({setIsAddUser}) => {
           renderItem={renderList}
           data={contacts}
           keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
         />
         <View style={styles.footer}>
           <TouchableOpacity

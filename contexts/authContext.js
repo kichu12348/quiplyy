@@ -3,6 +3,7 @@ import { Alert } from "react-native";
 import { useSocket } from "./socketContext";
 import * as SQLite from "expo-sqlite";
 import axios from "axios";
+import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
 
 const AuthContext = createContext();
 
@@ -10,7 +11,8 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [contacts, setContacts] = useState(null);
-  const { socket, setIsAuth, isConnected, isAuth, isLoading, endPoint } =
+  const [profilePicture, setProfilePicture] = useState(null);
+  const { socket, setIsAuth, isConnected, isAuth, isLoading, endPoint,supabase } =
     useSocket();
 
   axios.defaults.baseURL = `${endPoint}/user`;
@@ -68,6 +70,7 @@ const AuthProvider = ({ children }) => {
           await setData(res.data.token, res.data.user);
           setToken(res.data.token);
           setUser(res.data.user);
+          setProfilePicture(`https://api.multiavatar.com/${res.data.user.username}.png?apikey=CglVv3piOwAuoJ`)
           socket?.emit("joinID", { id: res.data.user.id });
           setIsAuth(true);
         } else {
@@ -92,6 +95,7 @@ const AuthProvider = ({ children }) => {
           await setData(res.data.token, res.data.user);
           setToken(res.data.token);
           setUser(res.data.user);
+          setProfilePicture(`https://api.multiavatar.com/${res.data.user.username}.png?apikey=CglVv3piOwAuoJ`)
           socket?.emit("joinID", { id: res.data.user.id });
           setIsAuth(true);
         } else {
@@ -110,6 +114,12 @@ const AuthProvider = ({ children }) => {
     const user = await getData();
     if (!token && isAuth && user) {
       setUser({ username: user.username, id: user.id });
+      const publicUrl = await getProfilePicture(user.username);
+      if (publicUrl) {
+        setProfilePicture(publicUrl);
+      } else {
+      setProfilePicture(`https://api.multiavatar.com/${user.username}.png?apikey=CglVv3piOwAuoJ`)
+      }
       setToken(user.token);
     }
     if (user && socket && isAuth) {
@@ -173,6 +183,20 @@ const AuthProvider = ({ children }) => {
     checkAuth();
   }, [socket, isConnected, isAuth]);
 
+
+  const getProfilePicture = async (username) => {
+    const deta=await supabase.storage.from("profilePictures").download(`${username}.png`);
+    if(!deta.data){
+      return null;
+    }
+    const { data, error } = await supabase.storage.from("profilePictures").getPublicUrl(`${username}.png`);
+    if (error) {
+      return null;
+    }
+    return data.publicUrl;
+  };
+    
+
   const value = useMemo(() => {
     return {
       login,
@@ -185,8 +209,11 @@ const AuthProvider = ({ children }) => {
       setContacts,
       getContacts,
       addContact,
+      profilePicture,
+      setProfilePicture,
+      getProfilePicture
     };
-  }, [user, token, contacts]);
+  }, [user, token, contacts, profilePicture]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

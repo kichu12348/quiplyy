@@ -16,6 +16,11 @@ import { useAuth } from "../../../../contexts/authContext";
 import { useSql } from "../../../../contexts/sqlContext";
 import * as Updates from "expo-updates";
 import { useSocket } from "../../../../contexts/socketContext";
+import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
+import { decode } from "base64-arraybuffer";
+import ImageViewer from "./utils/imageView";
 
 const Settings = ({ navigation }) => {
   const theme = useTheme();
@@ -24,6 +29,8 @@ const Settings = ({ navigation }) => {
   const socket = useSocket();
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [isImageViewerOpen, setImageViewerOpen] = useState(false);
+  const [uri, setUri] = useState(null);
 
   const checkForUpdate = async () => {
     if (!socket.isConnected) return;
@@ -39,6 +46,46 @@ const Settings = ({ navigation }) => {
     } catch (error) {
       Alert.alert("Nuh  uh!!!");
     }
+  };
+
+  const getImage = async () => {
+    try {
+      const { assets } = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (assets.canceled) return;
+      const file = assets[0];
+      if (file.mimeType === "image/gif") return;
+      const uri = file.uri;
+      const manipResult = await manipulateAsync(uri, [], {
+        compress: 0.5,
+        format: SaveFormat.PNG,
+      });
+      return manipResult.uri;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const uploadProfilePicture = async () => {
+    const uri = await getImage();
+    if (!uri) return;
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const { data, error } = await socket.supabase.storage
+      .from("profilePictures")
+      .upload(`${auth?.user?.username}.png`, decode(base64), {
+        contentType: "image/png",
+        upsert: true,
+      });
+    if (error) return Alert.alert("Error", "Failed to upload profile picture");
+    const newUri = await auth.getProfilePicture(auth.user.username);
+    auth.setProfilePicture(newUri);
   };
 
   const Terms = () => {
@@ -140,16 +187,24 @@ const Settings = ({ navigation }) => {
             >
               {auth.user ? auth.user.username : "User"}
             </Text>
-            <Image
-              source={
-                auth.user
-                  ? {
-                      uri: `https://api.multiavatar.com/${auth.user.username}.png?apikey=CglVv3piOwAuoJ`,
-                    }
-                  : theme.Icons.setting
-              }
-              style={styles.Image(10, 20)}
-            />
+            <TouchableOpacity
+              style={styles.center}
+              onPress={() => {
+                setImageViewerOpen(true);
+                setUri(auth.profilePicture);
+              }}
+            >
+              <Image
+                source={
+                  auth.user
+                    ? {
+                        uri: auth.profilePicture,
+                      }
+                    : theme.Icons.setting
+                }
+                style={styles.Image(10, 20)}
+              />
+            </TouchableOpacity>
           </View>
           <View
             style={styles.middle(
@@ -175,6 +230,23 @@ const Settings = ({ navigation }) => {
                 theme.themeSetting(theme.theme === "dark" ? "light" : "dark")
               }
             />
+          </View>
+          <View
+            style={styles.middle("space-between", "row", "center", 20, theme)}
+          >
+            <Text
+              style={styles.text(
+                theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D"
+              )}
+            >
+              Profile Picture
+            </Text>
+            <TouchableOpacity
+              style={styles.center}
+              onPress={() => uploadProfilePicture()}
+            >
+              <Image source={theme.Icons.upload} style={styles.Image()} />
+            </TouchableOpacity>
           </View>
           <View
             style={styles.middle(
@@ -247,8 +319,18 @@ const Settings = ({ navigation }) => {
           visible={modalVisible}
           animationType="slide"
           hardwareAccelerated={true}
+          onRequestClose={() => setModalVisible(false)}
         >
           <Terms />
+        </Modal>
+        <Modal
+          transparent={true}
+          visible={isImageViewerOpen}
+          animationType="slide"
+          hardwareAccelerated={true}
+          onRequestClose={() => setImageViewerOpen(false)}
+        >
+          <ImageViewer imageUri={uri} setIsImageViewerOpen={setImageViewerOpen} />
         </Modal>
         <View style={styles.connectionDet}>
           <Text
@@ -257,7 +339,7 @@ const Settings = ({ navigation }) => {
               15
             )}
           >
-            v 1.9.0
+            v 1.10.0
           </Text>
           <Text
             style={styles.text(
@@ -275,7 +357,9 @@ const Settings = ({ navigation }) => {
           >
             <Text
               style={styles.text(
-                theme.theme==="dark"?"rgba(0,250,255,0.8)": "rgba(0,200,255,1)",
+                theme.theme === "dark"
+                  ? "rgba(0,250,255,0.8)"
+                  : "rgba(0,200,255,1)",
                 15
               )}
             >
@@ -395,7 +479,7 @@ const styles = StyleSheet.create({
     padding: 10,
     minWidth: "10%",
   }),
- 
+
   connectionDet: {
     minHeight: 100,
     flexDirection: "column",
