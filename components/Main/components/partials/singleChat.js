@@ -33,6 +33,7 @@ import {
 import ImageViewer from "./utils/imageView";
 import { Canvas } from "@react-three/fiber/native";
 import Render3D from "./utils/3dRender";
+import ProfileViewer from "./utils/profileViewer";
 
 const SingleChat = ({ navigation }) => {
   const { theme, Icons, textInputColor, BackGroundForChat } = useTheme();
@@ -51,7 +52,7 @@ const SingleChat = ({ navigation }) => {
   const [maxHeight, setMaxHeight] = useState(50);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [imageUri, setImageUri] = useState(null);
-  const [userImageUri, setUserImageUri] = useState(null);
+  const [isProfileViewerOpen, setIsProfileViewerOpen] = useState(false);
   const receivedMessageIds = useRef(new Set());
   const flatListRef = useRef(null);
 
@@ -60,13 +61,7 @@ const SingleChat = ({ navigation }) => {
   };
 
 
-  const getPfp = async (username) => {
-    if(!username) return;
-    if(selectedContact.isGroup) return;
-    const uri = await getProfilePicture(username);
-    if(!uri) return setUserImageUri(`https://api.multiavatar.com/${username}.png?apikey=CglVv3piOwAuoJ`);
-    setUserImageUri(uri);
-  };
+
 
   const dbPromise = SQLite.openDatabaseAsync("messages.db");
 
@@ -335,7 +330,6 @@ const SingleChat = ({ navigation }) => {
 
   useEffect(() => {
     startChat();
-    getPfp(selectedContact.username);
   }, [selectedContact, isConnected]);
 
   const sendSticker = async (sticker) => {
@@ -766,12 +760,19 @@ const SingleChat = ({ navigation }) => {
             : "Single Chat"}
         </Text>
         {!selectedContact?.isGroup ? (
-          <Image
-            source={{
-              uri: userImageUri,
+          <TouchableOpacity
+            onPress={() => {
+              setIsProfileViewerOpen(true);
             }}
             style={styles.Image(20, 10)}
+          >
+          <Image
+            source={{
+              uri:`https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${selectedContact.username}.png`,
+            }}
+            style={styles.Image(0, 0)}
           />
+          </TouchableOpacity>
         ) : (
           <>
             <Image source={Icons.group} style={styles.Image(20, 10)} />
@@ -911,6 +912,20 @@ const SingleChat = ({ navigation }) => {
         <ImageViewer
           imageUri={imageUri}
           setIsImageViewerOpen={setIsImageViewerOpen}
+        />
+      </Modal>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        hardwareAccelerated={true}
+        visible={isProfileViewerOpen}
+        onRequestClose={() => setIsProfileViewerOpen(false)}
+      >
+        <ProfileViewer 
+        username={selectedContact.username}
+        setIsOpen={setIsProfileViewerOpen}
+        imageUri={`https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${selectedContact.username}.png`}
+        messages={messages}
         />
       </Modal>
     </SafeAreaView>

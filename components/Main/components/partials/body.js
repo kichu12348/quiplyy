@@ -32,8 +32,6 @@ const Body = ({ moveTo }) => {
   const [query, setQuery] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
   const [isGpChat, setIsGpChat] = useState(false);
-  const [contactImageUris, setContactImageUris] = useState({});
-
   const openGpChat = () => {
     setIsGpChat(true);
     setQuery("");
@@ -46,27 +44,7 @@ const Body = ({ moveTo }) => {
     moveTo("SingleChat");
   };
 
-  const getUriFromMap = useCallback((item) => {
-    return contactImageUris[item.id] || `https://api.multiavatar.com/${item.username}.png?apikey=CglVv3piOwAuoJ`;
-  }, [contactImageUris]);
-
-  const getContactImageUri = useCallback(async (contacts) => {
-    const newUris = {};
-    for (const contact of contacts) {
-      if (contact.isGroup) {
-        newUris[contact.id] = theme.Icons.group;
-      } else {
-        const uri = await auth.getProfilePicture(contact.username);
-        newUris[contact.id] = uri || `https://api.multiavatar.com/${contact.username}.png?apikey=CglVv3piOwAuoJ`;
-      }
-    }
-    setContactImageUris(prevUris => ({...prevUris, ...newUris}));
-  }, [auth, theme.Icons.group]);
-
-  useEffect(() => {
-    getContactImageUri(contacts);
-  }, [contacts, getContactImageUri]);
-
+ 
 
   const queryUsers = async () => {
     if (!isConnected) return;
@@ -116,7 +94,6 @@ const Body = ({ moveTo }) => {
   };
 
   const RenderList = memo(({ item }) => {
-    const imageUri = useMemo(() => getUriFromMap(item), [item, getUriFromMap]);
     return item && item.id ? (
       <TouchableOpacity
         style={styles.listItem(theme)}
@@ -128,7 +105,7 @@ const Body = ({ moveTo }) => {
         {!item.isGroup ? (
           <Image
             source={{
-              uri: imageUri,
+              uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${item.username.trim()}.png`,
             }}
             style={styles.Image()}
           />

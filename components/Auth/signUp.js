@@ -1,81 +1,164 @@
 import {
   Text,
   StyleSheet,
-  SafeAreaView,
   TextInput,
   KeyboardAvoidingView,
   TouchableOpacity,
   Alert,
   Platform,
-  Image
+  Image,
 } from "react-native";
-import ionTron from './images/ionTron.png'
 import { useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { useAuth } from "../../contexts/authContext";
+import SafeAreaView from "../Main/components/partials/utils/safe";
+import { useTheme } from "../../contexts/theme";
+import * as ImagePicker from "expo-image-picker";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
+import { decode } from "base64-arraybuffer";
+import * as FileSystem from "expo-file-system";
+import { useSocket } from "../../contexts/socketContext";
 
-const SignUp = ({navigation}) => {
-  const Auth = useAuth()
-  
-    const handleMovePage =()=>{
-        navigation.navigate("login")
+const SignUp = ({ navigation }) => {
+  const Auth = useAuth();
+  const { isConnected, supabase, socket} = useSocket()
+  const { theme, textInputColor, Icons, background } = useTheme();
+
+  const handleMovePage = () => {
+    navigation.navigate("login");
+  };
+
+  //states
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [image, setImage] = useState(null);
+
+
+
+
+  const getImage = async () => {
+    try {
+      const { assets } = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (assets.canceled) return;
+      const file = assets[0];
+      if (file.mimeType === "image/gif") return Alert.alert("Gif not supported");
+      const uri = file.uri;
+      const manipResult = await manipulateAsync(uri, [], {
+        compress: 0.5,
+        format: SaveFormat.PNG,
+      });
+      return manipResult.uri;
+    } catch (error) {
+      return null;
     }
+  };
 
-    //states
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
+  const uploadProfilePicture = async () => {
+    if (!isConnected||!socket) return;
+    const uri = await getImage();
+    setImage(uri);
+    if (!uri) return null;
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const { data, error } = await supabase.storage
+      .from("profilePictures")
+      .upload(`${username}.png`, decode(base64), {
+        contentType: "image/png",
+        upsert: true,
+      });
+    if (error) return Alert.alert("Error", "Failed to upload profile picture");
+    Auth.setProfilePicture(uri);
+    return uri;
+  };
 
-    const handleSignUp =()=>{
-        if(username==="" || password==="" || username===undefined || password===undefined || username.trim()==="" || password.trim()===""|| username.length<4 || password.length<4){
-            Alert.alert("Fill the fields")
-          return
-        }
-         Auth.signup(username, password)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  const handleSignUp = async () => {
+    if (
+      username === "" ||
+      password === "" ||
+      username === undefined ||
+      password === undefined ||
+      username.trim() === "" ||
+      password.trim() === "" ||
+      username.length < 4 ||
+      password.length < 4
+    ) {
+      Alert.alert("Fill the fields");
+      return;
     }
-
+    const imageUri = await uploadProfilePicture(image);
+    if(!imageUri) return Alert.alert("Please Select an Image");
+    await Auth.signup(username.trim(), password.trim(),imageUri);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-        <StatusBar behavior="light" backgroundColor="black"/>
+      <StatusBar
+        style={theme === "dark" ? "light" : "dark"}
+        backgroundColor={background}
+      />
       <KeyboardAvoidingView
         style={styles.KeyboardAvoidingView("center")}
-        behavior={Platform.OS==="ios"?"padding":"height"}
-        keyboardVerticalOffset={-150}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? -150 : 0}
       >
-        <Image
-        source={ionTron}
-        style={styles.Image}
-        />
-        <TextInput 
-        style={styles.TextInput} 
-        placeholder="username..." 
-        value={username}
-        placeholderTextColor={"rgba(255,255,255,0.5)"}
-        onChangeText={(text)=>setUsername(text)}
+        <Image source={Icons.logo} style={styles.Image} />
+        <TextInput
+          style={styles.TextInput(textInputColor, theme)}
+          readOnly={image!==null}
+          placeholder="username..."
+          placeholderTextColor={theme === "dark" ? "#E0E0E0" : "#2D2D2D"}
+          value={username}
+          onChangeText={(text) => setUsername(text)}
         />
         <TextInput
-         style={styles.TextInput} 
-         placeholder="password.." 
+          style={styles.TextInput(textInputColor, theme)}
+          placeholder="password.."
           value={password}
-          onChangeText={(text)=>setPassword(text)}
-          placeholderTextColor={"rgba(255,255,255,0.5)"}
+          readOnly={image!==null}
+          onChangeText={(text) => setPassword(text)}
+          placeholderTextColor={theme === "dark" ? "#E0E0E0" : "#2D2D2D"}
           secureTextEntry
-          omSubmitEditing={handleSignUp}
-         />
-        <TouchableOpacity style={styles.textStyle("white", 0, 10)}
-        onPress={handleMovePage} 
-        >
-          <Text style={styles.textStyle()}>
-            already a user ?{" "}
-            <Text style={styles.textStyle("purple")}>Login</Text>
+          onSubmitEditing={handleSignUp}
+        />
+        <TouchableOpacity style={styles.row} onPress={handleMovePage}>
+          <Text
+            style={styles.textStyle(theme === "dark" ? "#E0E0E0" : "#2D2D2D")}
+          >
+            Already registered ?
+          </Text>
+          <Text
+            style={styles.textStyle(
+              theme === "dark" ? "rgba(198,0,198,1)" : "rgba(0,255,0,0.8)"
+            )}
+          >
+            {"  "}Login
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-        style={styles.button}
-        onPress={handleSignUp}
-        >
-          <Text style={styles.textStyle()}>SignUp</Text>
+        <TouchableOpacity style={styles.button(theme)} onPress={handleSignUp}>
+          <Text style={styles.textStyle()}>Sign up</Text>
         </TouchableOpacity>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -85,58 +168,52 @@ const SignUp = ({navigation}) => {
 export default SignUp;
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor:"rgba(0,0,0,1)"
-    },
-    textStyle: (color = "white", marginT = 0, marginB = 0) => ({
-      color: color,
-      fontWeight: "bold",
-      fontSize: 20,
-      marginBottom: marginB,
-      marginTop: marginT,
-    }),
-    KeyboardAvoidingView: (justifyContent) => ({
-      flex: 1,
-      flexDirection: "column",
-      justifyContent: justifyContent,
-      alignItems: "center",
-    }),
-    TextInput: {
-      width: "80%",
-      height: 50,
-      backgroundColor: "rgba(68, 68, 68, 0.8)",
-      padding: 10,
-      borderRadius: 20,
-      fontWeight: "bold",
-      fontSize: 20,
-      marginBottom: 10,
-      color: "white",
-    },
-    button: {
-      height: 50,
-      width: "50%",
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: 20,
-      backgroundColor: "rgba(128,0,128,0.8)",
-      marginBottom: 10,
-      ...Platform.select({
-        ios: {
-          shadowColor: "purple",
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.8,
-          shadowRadius: 4,
-        },
-        android: {
-          elevation: 4,
-          backgroundColor: "rgba(128,0,128,0.8)",
-        },
-      }),
-    },
-    Image:{
-        height:60,
-        width:60,
-        marginBottom:10
-    }
-  });
+  container: {
+    flex: 1,
+  },
+  textStyle: (color = "white", marginT = 0, marginB = 0) => ({
+    color: color,
+    fontWeight: "bold",
+    fontSize: 20,
+    marginBottom: marginB,
+    marginTop: marginT,
+  }),
+  KeyboardAvoidingView: (justifyContent) => ({
+    flex: 1,
+    flexDirection: "column",
+    justifyContent: justifyContent,
+    alignItems: "center",
+  }),
+  TextInput: (c, theme) => ({
+    width: "80%",
+    height: 50,
+    backgroundColor: c.color,
+    padding: 10,
+    borderRadius: 20,
+    fontWeight: "bold",
+    fontSize: 20,
+    marginBottom: 10,
+    color: theme === "dark" ? "#E0E0E0" : "#2D2D2D",
+  }),
+  button: (theme) => ({
+    height: 50,
+    width: "50%",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 25,
+    backgroundColor:
+      theme === "dark" ? "rgba(198,0,198,1)" : "rgba(0,255,0,0.8)",
+    marginBottom: 10,
+  }),
+  Image: {
+    height: 60,
+    width: 60,
+    marginBottom: 10,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+});

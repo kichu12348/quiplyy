@@ -16,11 +16,7 @@ import { useAuth } from "../../../../contexts/authContext";
 import { useSql } from "../../../../contexts/sqlContext";
 import * as Updates from "expo-updates";
 import { useSocket } from "../../../../contexts/socketContext";
-import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
-import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
-import { decode } from "base64-arraybuffer";
-import ImageViewer from "./utils/imageView";
+import ProfileViewer from "./utils/profileViewer";
 
 const Settings = ({ navigation }) => {
   const theme = useTheme();
@@ -30,7 +26,6 @@ const Settings = ({ navigation }) => {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [isImageViewerOpen, setImageViewerOpen] = useState(false);
-  const [uri, setUri] = useState(null);
 
   const checkForUpdate = async () => {
     if (!socket.isConnected) return;
@@ -46,46 +41,6 @@ const Settings = ({ navigation }) => {
     } catch (error) {
       Alert.alert("Nuh  uh!!!");
     }
-  };
-
-  const getImage = async () => {
-    try {
-      const { assets } = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.5,
-      });
-
-      if (assets.canceled) return;
-      const file = assets[0];
-      if (file.mimeType === "image/gif") return;
-      const uri = file.uri;
-      const manipResult = await manipulateAsync(uri, [], {
-        compress: 0.5,
-        format: SaveFormat.PNG,
-      });
-      return manipResult.uri;
-    } catch (error) {
-      return null;
-    }
-  };
-
-  const uploadProfilePicture = async () => {
-    const uri = await getImage();
-    if (!uri) return;
-    const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-    const { data, error } = await socket.supabase.storage
-      .from("profilePictures")
-      .upload(`${auth?.user?.username}.png`, decode(base64), {
-        contentType: "image/png",
-        upsert: true,
-      });
-    if (error) return Alert.alert("Error", "Failed to upload profile picture");
-    const newUri = await auth.getProfilePicture(auth.user.username);
-    auth.setProfilePicture(newUri);
   };
 
   const Terms = () => {
@@ -150,6 +105,25 @@ const Settings = ({ navigation }) => {
             inspiration and creativity. If a message inspires you to write a
             poem or create a doodle, consider it a bonus feature of our app!
             🎨🖋️
+            {"\n\n"}
+            11.By using this app, you agree to occasionally send a message with
+            your eyes closed, just to test your luck. Typos will be celebrated
+            as “artistic expressions.” 🎨🙈✍️
+            {"\n\n"}
+            12. You promise not to let your phone battery die mid-conversation,
+            or else you owe us a virtual pizza as compensation. 🍕🔋😜
+            {"\n\n"}
+            13. You agree to send at least one GIF a week that makes no sense
+            whatsoever. Bonus points if no one can figure it out. 🤔🎥🎉
+            {"\n\n"}
+            14. By continuing to use this app, you agree to sporadically
+            compliment yourself in the mirror while messaging. Self-love is
+            important, and we’re here for it. 🪞💬💖
+            {"\n\n"}
+            15. Our app might or might not let you speak to aliens. If you get a reply, don’t say we didn’t warn you! 👽👾🛸
+            {"\n\n"}
+            16. You agree to send at least one message a day that makes someone smile. If you fail, Chip might just come knocking. 👀🚪
+            {"\n\n"}
           </Text>
         </ScrollView>
       </SafeAreaView>
@@ -177,23 +151,21 @@ const Settings = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.center}>
-          <View
-            style={styles.middle("space-between", "row", "center", 20, theme)}
+          <TouchableOpacity
+            onPress={() => setImageViewerOpen(true)}
+            style={styles.center}
           >
-            <Text
-              style={styles.text(
-                theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D"
-              )}
+            <View
+              style={styles.middle("space-between", "row", "center", 20, theme)}
             >
-              {auth.user ? auth.user.username : "User"}
-            </Text>
-            <TouchableOpacity
-              style={styles.center}
-              onPress={() => {
-                setImageViewerOpen(true);
-                setUri(auth.profilePicture);
-              }}
-            >
+              <Text
+                style={styles.text(
+                  theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D"
+                )}
+              >
+                Profile Settings
+              </Text>
+
               <Image
                 source={
                   auth.user
@@ -204,8 +176,8 @@ const Settings = ({ navigation }) => {
                 }
                 style={styles.Image(10, 20)}
               />
-            </TouchableOpacity>
-          </View>
+            </View>
+          </TouchableOpacity>
           <View
             style={styles.middle(
               "space-between",
@@ -230,23 +202,6 @@ const Settings = ({ navigation }) => {
                 theme.themeSetting(theme.theme === "dark" ? "light" : "dark")
               }
             />
-          </View>
-          <View
-            style={styles.middle("space-between", "row", "center", 20, theme)}
-          >
-            <Text
-              style={styles.text(
-                theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D"
-              )}
-            >
-              Profile Picture
-            </Text>
-            <TouchableOpacity
-              style={styles.center}
-              onPress={() => uploadProfilePicture()}
-            >
-              <Image source={theme.Icons.upload} style={styles.Image()} />
-            </TouchableOpacity>
           </View>
           <View
             style={styles.middle(
@@ -330,7 +285,11 @@ const Settings = ({ navigation }) => {
           hardwareAccelerated={true}
           onRequestClose={() => setImageViewerOpen(false)}
         >
-          <ImageViewer imageUri={uri} setIsImageViewerOpen={setImageViewerOpen} />
+          <ProfileViewer
+            setIsOpen={setImageViewerOpen}
+            imageUri={auth.profilePicture}
+            username={auth.user?.username}
+          />
         </Modal>
         <View style={styles.connectionDet}>
           <Text
@@ -339,7 +298,7 @@ const Settings = ({ navigation }) => {
               15
             )}
           >
-            v 1.10.0
+            v 1.12.0
           </Text>
           <Text
             style={styles.text(

@@ -5,7 +5,7 @@ import { useAuth } from "../../../../contexts/authContext";
 
 const Footer = ({ moveTo }) => {
   const { Icons, background } = useTheme();
-  const { user, profilePicture } = useAuth();
+  const { user, profilePicture } = useAuth();        
 
   return (
     <View style={styles.container(background)}>

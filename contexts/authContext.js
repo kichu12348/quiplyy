@@ -3,7 +3,7 @@ import { Alert } from "react-native";
 import { useSocket } from "./socketContext";
 import * as SQLite from "expo-sqlite";
 import axios from "axios";
-import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AuthContext = createContext();
 
@@ -56,6 +56,7 @@ const AuthProvider = ({ children }) => {
       await userDb.execAsync(`DROP TABLE IF EXISTS user`);
       await contactsDb.execAsync(`DROP TABLE IF EXISTS contacts`);
       await messagesDb.execAsync(`DROP TABLE IF EXISTS messages`);
+      await AsyncStorage.removeItem("bio");
     } catch (e) {
       return;
     }
@@ -70,7 +71,7 @@ const AuthProvider = ({ children }) => {
           await setData(res.data.token, res.data.user);
           setToken(res.data.token);
           setUser(res.data.user);
-          setProfilePicture(`https://api.multiavatar.com/${res.data.user.username}.png?apikey=CglVv3piOwAuoJ`)
+          setProfilePicture(`https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${res.data.user.username}.png`)
           socket?.emit("joinID", { id: res.data.user.id });
           setIsAuth(true);
         } else {
@@ -87,7 +88,7 @@ const AuthProvider = ({ children }) => {
   };
 
   //REGISTERS A NEW USER
-  const signup = async (username, password) => {
+  const signup = async (username, password,imageUri) => {
     await axios
       .post("/signup", { username, password })
       .then(async (res) => {
@@ -95,7 +96,7 @@ const AuthProvider = ({ children }) => {
           await setData(res.data.token, res.data.user);
           setToken(res.data.token);
           setUser(res.data.user);
-          setProfilePicture(`https://api.multiavatar.com/${res.data.user.username}.png?apikey=CglVv3piOwAuoJ`)
+          setProfilePicture(imageUri)
           socket?.emit("joinID", { id: res.data.user.id });
           setIsAuth(true);
         } else {
@@ -114,11 +115,11 @@ const AuthProvider = ({ children }) => {
     const user = await getData();
     if (!token && isAuth && user) {
       setUser({ username: user.username, id: user.id });
-      const publicUrl = await getProfilePicture(user.username);
+      const publicUrl = getProfilePicture(user.username);
       if (publicUrl) {
         setProfilePicture(publicUrl);
       } else {
-      setProfilePicture(`https://api.multiavatar.com/${user.username}.png?apikey=CglVv3piOwAuoJ`)
+      setProfilePicture(`https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${user.username}.png`)
       }
       setToken(user.token);
     }
@@ -184,16 +185,8 @@ const AuthProvider = ({ children }) => {
   }, [socket, isConnected, isAuth]);
 
 
-  const getProfilePicture = async (username) => {
-    const deta=await supabase.storage.from("profilePictures").download(`${username}.png`);
-    if(!deta.data){
-      return null;
-    }
-    const { data, error } = await supabase.storage.from("profilePictures").getPublicUrl(`${username}.png`);
-    if (error) {
-      return null;
-    }
-    return data.publicUrl;
+  const getProfilePicture = (username) => {
+    return `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${username}.png`;
   };
     
 

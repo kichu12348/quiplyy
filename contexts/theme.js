@@ -27,6 +27,8 @@ import playL from "./images/playL.png";
 import playD from "./images/playD.png";
 import pauseL from "./images/pauseL.png";
 import pauseD from "./images/pauseD.png";
+import logoL from "./images/logoL.png";
+import logoD from "./images/logoD.png";
 
 const ThemeContext = createContext();
 
@@ -63,6 +65,7 @@ const ThemeProvider = ({ children }) => {
     download: downloadD,
     play: playD,
     pause: pauseD,
+    logo: logoD,
   });
 
   const darkIcons = {
@@ -81,6 +84,7 @@ const ThemeProvider = ({ children }) => {
     download: downloadD,
     play: playD,
     pause: pauseD,
+    logo: logoD,
   };
 
   const lightIcons = {
@@ -99,6 +103,7 @@ const ThemeProvider = ({ children }) => {
     download: downloadL,
     play: playL,
     pause: pauseL,
+    logo: logoL,
   };
 
   const  chatBackgroundModel=async (item)=>{
