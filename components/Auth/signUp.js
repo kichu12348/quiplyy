@@ -19,9 +19,9 @@ import { decode } from "base64-arraybuffer";
 import * as FileSystem from "expo-file-system";
 import { useSocket } from "../../contexts/socketContext";
 
-const SignUp = ({ navigation }) => {
+export default function SignUp({ navigation }){
   const Auth = useAuth();
-  const { isConnected, supabase, socket} = useSocket()
+  const { isConnected, supabase, socket } = useSocket();
   const { theme, textInputColor, Icons, background } = useTheme();
 
   const handleMovePage = () => {
@@ -32,9 +32,6 @@ const SignUp = ({ navigation }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [image, setImage] = useState(null);
-
-
-
 
   const getImage = async () => {
     try {
@@ -47,7 +44,8 @@ const SignUp = ({ navigation }) => {
 
       if (assets.canceled) return;
       const file = assets[0];
-      if (file.mimeType === "image/gif") return Alert.alert("Gif not supported");
+      if (file.mimeType === "image/gif")
+        return Alert.alert("Gif not supported");
       const uri = file.uri;
       const manipResult = await manipulateAsync(uri, [], {
         compress: 0.5,
@@ -60,7 +58,7 @@ const SignUp = ({ navigation }) => {
   };
 
   const uploadProfilePicture = async () => {
-    if (!isConnected||!socket) return;
+    if (!isConnected || !socket) return;
     const uri = await getImage();
     setImage(uri);
     if (!uri) return null;
@@ -73,26 +71,10 @@ const SignUp = ({ navigation }) => {
         contentType: "image/png",
         upsert: true,
       });
-    if (error) return Alert.alert("Error", "Failed to upload profile picture");
+    if (error) return Alert.alert("Error: Failed to upload profile picture");
     Auth.setProfilePicture(uri);
     return uri;
   };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   const handleSignUp = async () => {
     if (
@@ -109,8 +91,8 @@ const SignUp = ({ navigation }) => {
       return;
     }
     const imageUri = await uploadProfilePicture(image);
-    if(!imageUri) return Alert.alert("Please Select an Image");
-    await Auth.signup(username.trim(), password.trim(),imageUri);
+    if (!imageUri) return Alert.alert("Please Select an Image");
+    await Auth.signup(username.trim(), password.trim(), imageUri);
   };
 
   return (
@@ -127,18 +109,18 @@ const SignUp = ({ navigation }) => {
         <Image source={Icons.logo} style={styles.Image} />
         <TextInput
           style={styles.TextInput(textInputColor, theme)}
-          readOnly={image!==null}
+          readOnly={image !== null}
           placeholder="username..."
           placeholderTextColor={theme === "dark" ? "#E0E0E0" : "#2D2D2D"}
           value={username}
-          onChangeText={(text) => setUsername(text)}
+          onChangeText={(text) => setUsername(text.trim())}
         />
         <TextInput
           style={styles.TextInput(textInputColor, theme)}
           placeholder="password.."
           value={password}
-          readOnly={image!==null}
-          onChangeText={(text) => setPassword(text)}
+          readOnly={image !== null}
+          onChangeText={(text) => setPassword(text.trim())}
           placeholderTextColor={theme === "dark" ? "#E0E0E0" : "#2D2D2D"}
           secureTextEntry
           onSubmitEditing={handleSignUp}
@@ -165,7 +147,6 @@ const SignUp = ({ navigation }) => {
   );
 };
 
-export default SignUp;
 
 const styles = StyleSheet.create({
   container: {

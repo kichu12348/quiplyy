@@ -12,8 +12,16 @@ const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [contacts, setContacts] = useState(null);
   const [profilePicture, setProfilePicture] = useState(null);
-  const { socket, setIsAuth, isConnected, isAuth, isLoading, endPoint,supabase } =
-    useSocket();
+  const [story, setStory] = useState(null);
+  const {
+    socket,
+    setIsAuth,
+    isConnected,
+    isAuth,
+    isLoading,
+    endPoint,
+    supabase,
+  } = useSocket();
 
   axios.defaults.baseURL = `${endPoint}/user`;
   //SETTING DATA INTO DB LOCAL
@@ -71,7 +79,9 @@ const AuthProvider = ({ children }) => {
           await setData(res.data.token, res.data.user);
           setToken(res.data.token);
           setUser(res.data.user);
-          setProfilePicture(`https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${res.data.user.username}.png`)
+          setProfilePicture(
+            `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${res.data.user.username}.png`
+          );
           socket?.emit("joinID", { id: res.data.user.id });
           setIsAuth(true);
         } else {
@@ -88,7 +98,7 @@ const AuthProvider = ({ children }) => {
   };
 
   //REGISTERS A NEW USER
-  const signup = async (username, password,imageUri) => {
+  const signup = async (username, password, imageUri) => {
     await axios
       .post("/signup", { username, password })
       .then(async (res) => {
@@ -96,7 +106,7 @@ const AuthProvider = ({ children }) => {
           await setData(res.data.token, res.data.user);
           setToken(res.data.token);
           setUser(res.data.user);
-          setProfilePicture(imageUri)
+          setProfilePicture(imageUri);
           socket?.emit("joinID", { id: res.data.user.id });
           setIsAuth(true);
         } else {
@@ -110,16 +120,37 @@ const AuthProvider = ({ children }) => {
       });
   };
 
+  const getStory = async (id) => {
+    const { data, error } = await supabase
+      .from("story")
+      .select("*")
+      .eq("id", id);
+    if (error || data.length === 0) return;
+    const currentTime = new Date().getTime();
+    const storyTime = data[0].time;
+    if (currentTime - storyTime > 86400000) {
+      await supabase.storage.from("stories").remove([`${id}.png`]);
+      await supabase.from("story").delete().eq("id", id);
+      return;
+    }
+    setStory(
+      `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/stories/${id}.png`
+    );
+  };
+
   //ION KNOW WHY THIS IS
   const checkAuth = async () => {
     const user = await getData();
     if (!token && isAuth && user) {
       setUser({ username: user.username, id: user.id });
       const publicUrl = getProfilePicture(user.username);
+      await getStory(user.id);
       if (publicUrl) {
         setProfilePicture(publicUrl);
       } else {
-      setProfilePicture(`https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${user.username}.png`)
+        setProfilePicture(
+          `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${user.username}.png`
+        );
       }
       setToken(user.token);
     }
@@ -184,11 +215,9 @@ const AuthProvider = ({ children }) => {
     checkAuth();
   }, [socket, isConnected, isAuth]);
 
-
   const getProfilePicture = (username) => {
     return `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${username}.png`;
   };
-    
 
   const value = useMemo(() => {
     return {
@@ -204,9 +233,11 @@ const AuthProvider = ({ children }) => {
       addContact,
       profilePicture,
       setProfilePicture,
-      getProfilePicture
+      getProfilePicture,
+      story,
+      setStory,
     };
-  }, [user, token, contacts, profilePicture]);
+  }, [user, story, token, contacts, profilePicture]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

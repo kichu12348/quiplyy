@@ -8,24 +8,35 @@ import {
   Modal,
   ScrollView,
   Switch,
+  TextInput,
+  Dimensions,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTheme } from "../../../../contexts/theme";
 import { useAuth } from "../../../../contexts/authContext";
 import { useSql } from "../../../../contexts/sqlContext";
 import * as Updates from "expo-updates";
 import { useSocket } from "../../../../contexts/socketContext";
-import ProfileViewer from "./utils/profileViewer";
+import { LinearGradient } from "expo-linear-gradient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import LongPressComponent from "./utils/longPress";
+import { decode } from "base64-arraybuffer";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
+import * as FileSystem from "expo-file-system";
+import * as ImagePicker from "expo-image-picker";
+import ImageViewer from "./utils/imageView";
 
 const Settings = ({ navigation }) => {
   const theme = useTheme();
   const auth = useAuth();
   const sql = useSql();
   const socket = useSocket();
+  const { width } = Dimensions.get("window");
 
   const [modalVisible, setModalVisible] = useState(false);
   const [isImageViewerOpen, setImageViewerOpen] = useState(false);
+  const [bio, setBio] = useState("");
 
   const checkForUpdate = async () => {
     if (!socket.isConnected) return;
@@ -42,6 +53,100 @@ const Settings = ({ navigation }) => {
       Alert.alert("Nuh  uh!!!");
     }
   };
+
+  const getImage = async () => {
+    try {
+      const { assets } = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (assets.canceled) return;
+      const file = assets[0];
+      if (file.mimeType === "image/gif") return;
+      const uri = file.uri;
+      const manipResult = await manipulateAsync(uri, [], {
+        compress: 0.5,
+        format: SaveFormat.PNG,
+      });
+      return manipResult.uri;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const uploadProfilePicture = async (state) => {
+    if (!state || !socket.isConnected) return;
+    const uri = await getImage();
+    if (!uri) return;
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const { data, error } = await socket.supabase.storage
+      .from("profilePictures")
+      .upload(`${auth?.user?.username}.png`, decode(base64), {
+        contentType: "image/png",
+        upsert: true,
+      });
+    if (error) return Alert.alert("Error", "Failed to upload profile picture");
+    auth.setProfilePicture(uri);
+  };
+
+  async function setBioOnServer() {
+    if (!socket.isConnected) return;
+
+    try {
+      // Check if the user bio exists
+      const { data: check, error: selectError } = await socket.supabase
+        .from("userBio")
+        .select("id, bio")
+        .eq("id", auth.user.id);
+      if (selectError) return Alert.alert("Error", "Failed to update bio");
+
+      if (check[0]?.bio === bio.trim()) return;
+
+      // Upsert (update or insert) the bio for the user
+      const { data, error } = await socket.supabase.from("userBio").upsert({
+        id: auth.user.id,
+        bio: bio.trim(),
+        username: auth.user.username,
+      });
+
+      await AsyncStorage.setItem("bio", bio.trim());
+      if (error) return Alert.alert("Error", "Failed to update bio");
+    } catch (err) {
+      Alert.alert("Error", err.message || "Failed to update bio");
+    }
+  }
+
+  async function getBio() {
+    try {
+      const bio = await AsyncStorage.getItem("bio");
+      if (bio) setBio(bio);
+
+      if (!socket.isConnected) return;
+
+      const { data, error } = await socket.supabase
+        .from("userBio")
+        .select("bio")
+        .eq("id", auth.user.id);
+      if (error) return console.log(error.message);
+      setBio((prev) => {
+        if (prev !== data[0]?.bio) {
+          return data[0]?.bio;
+        }
+        return prev;
+      });
+    } catch (err) {
+      return;
+    }
+  }
+
+  useEffect(() => {
+    getBio();
+  }, [socket.isConnected, auth?.user?.username]);
 
   const Terms = () => {
     return (
@@ -120,9 +225,11 @@ const Settings = ({ navigation }) => {
             compliment yourself in the mirror while messaging. Self-love is
             important, and we’re here for it. 🪞💬💖
             {"\n\n"}
-            15. Our app might or might not let you speak to aliens. If you get a reply, don’t say we didn’t warn you! 👽👾🛸
+            15. Our app might or might not let you speak to aliens. If you get a
+            reply, don’t say we didn’t warn you! 👽👾🛸
             {"\n\n"}
-            16. You agree to send at least one message a day that makes someone smile. If you fail, Chip might just come knocking. 👀🚪
+            16. You agree to send at least one message a day that makes someone
+            smile. If you fail, Chip might just come knocking. 👀🚪
             {"\n\n"}
           </Text>
         </ScrollView>
@@ -151,33 +258,89 @@ const Settings = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.center}>
-          <TouchableOpacity
-            onPress={() => setImageViewerOpen(true)}
-            style={styles.center}
-          >
+          <View style={styles.center}>
             <View
-              style={styles.middle("space-between", "row", "center", 20, theme)}
+              style={styles.middle("center", "column", "center", 20, theme)}
             >
+              <LongPressComponent
+                style={styles.circle(160)}
+                onLongPress={(state) => uploadProfilePicture(state)}
+                time={500}
+                onTap={() => setImageViewerOpen(true)}
+              >
+                <LinearGradient
+                  style={styles.circle(155)}
+                  colors={[
+                    "#FFC0CB",
+                    "#FF69B4",
+                    "#FF1493",
+                    "#FF69B4",
+                    "#FFC0CB",
+                  ]}
+                >
+                  <View style={styles.circle(150, theme.background)}>
+                    <Image
+                      source={
+                        auth.user
+                          ? {
+                              uri: auth.profilePicture,
+                            }
+                          : theme.Icons.setting
+                      }
+                      style={styles.circle(150)}
+                    />
+                  </View>
+                </LinearGradient>
+              </LongPressComponent>
+              <View style={styles.space(20)} />
               <Text
                 style={styles.text(
-                  theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D"
+                  theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D",
+                  20,
+                  0
                 )}
               >
-                Profile Settings
+                {auth.user?.username}
               </Text>
-
-              <Image
-                source={
-                  auth.user
-                    ? {
-                        uri: auth.profilePicture,
-                      }
-                    : theme.Icons.setting
+              <View style={styles.space(20)} />
+              <View style={styles.left}>
+                <Text
+                  style={styles.text(
+                    theme.theme === "dark"
+                      ? "rgba(224,224,224,0.5)"
+                      : "rgba(45,45,45,0.5)",
+                    16,
+                    0,
+                    0,
+                    600
+                  )}
+                >
+                  {bio?bio.length:0}/300
+                </Text>
+              </View>
+              <View style={styles.space(10)} />
+              <TextInput
+                style={styles.textInputStyle(
+                  theme.textInputColor,
+                  theme.theme,
+                  width * 0.8
+                )}
+                multiline={true}
+                numberOfLines={4}
+                readOnly={!socket.isConnected}
+                value={bio}
+                onChangeText={(text) => {
+                  if (!socket.isConnected || bio?.length>300) return;
+                  setBio(text);
+                }}
+                onBlur={() => setBioOnServer()}
+                placeholder="bio...."
+                placeholderTextColor={
+                  theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D"
                 }
-                style={styles.Image(10, 20)}
               />
             </View>
-          </TouchableOpacity>
+          </View>
           <View
             style={styles.middle(
               "space-between",
@@ -285,10 +448,10 @@ const Settings = ({ navigation }) => {
           hardwareAccelerated={true}
           onRequestClose={() => setImageViewerOpen(false)}
         >
-          <ProfileViewer
-            setIsOpen={setImageViewerOpen}
+          <ImageViewer
+            setIsImageViewerOpen={setImageViewerOpen}
             imageUri={auth.profilePicture}
-            username={auth.user?.username}
+            isProfilePicture={true}
           />
         </Modal>
         <View style={styles.connectionDet}>
@@ -298,7 +461,7 @@ const Settings = ({ navigation }) => {
               15
             )}
           >
-            v 1.12.0
+            v 1.16.0
           </Text>
           <Text
             style={styles.text(
@@ -448,5 +611,33 @@ const styles = StyleSheet.create({
   center: {
     justifyContent: "center",
     alignItems: "center",
+  },
+  circle: (size, bg = "transparent") => ({
+    height: size,
+    width: size,
+    borderRadius: size / 2,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: bg,
+  }),
+  space: (space) => ({
+    height: space,
+    width: "100%",
+  }),
+  textInputStyle: (c, t, w) => ({
+    height: 160,
+    width: w,
+    backgroundColor: c.color,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: c.border,
+    padding: 10,
+    color: t === "dark" ? "#E0E0E0" : "#2D2D2D",
+    fontSize: 16,
+    textAlignVertical: "top",
+  }),
+  left: {
+    alignSelf: "flex-start",
+    width: "80%",
   },
 });

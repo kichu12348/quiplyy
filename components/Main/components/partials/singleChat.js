@@ -768,7 +768,7 @@ const SingleChat = ({ navigation }) => {
           >
           <Image
             source={{
-              uri:`https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${selectedContact.username}.png`,
+              uri:`https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${selectedContact.username.trim()}.png`,
             }}
             style={styles.Image(0, 0)}
           />
@@ -924,13 +924,14 @@ const SingleChat = ({ navigation }) => {
         <ProfileViewer 
         username={selectedContact.username}
         setIsOpen={setIsProfileViewerOpen}
-        imageUri={`https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${selectedContact.username}.png`}
+        imageUri={`https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${selectedContact.username.trim()}.png`}
         messages={messages}
         />
       </Modal>
     </SafeAreaView>
   );
 };
+
 
 export default SingleChat;
 

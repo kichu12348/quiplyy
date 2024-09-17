@@ -7,9 +7,10 @@ import {
   TouchableOpacity,
   Dimensions,
   Modal,
+  Alert,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
-import { useEffect, useState, useCallback,memo,useMemo } from "react";
+import { useEffect, useState, useCallback, memo, useMemo } from "react";
 import { TextInput } from "react-native-gesture-handler";
 import { useTheme } from "../../../../contexts/theme";
 import { useMessager } from "../../../../contexts/messagerContext";
@@ -18,6 +19,12 @@ import { useAuth } from "../../../../contexts/authContext";
 import axios from "axios";
 import { useSocket } from "../../../../contexts/socketContext";
 import CreateGroupChat from "./createGroupChat";
+import { LinearGradient } from "expo-linear-gradient";
+import ImageViewer from "./utils/imageView";
+import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
+import { decode } from "base64-arraybuffer";
 
 const Body = ({ moveTo }) => {
   const theme = useTheme();
@@ -25,10 +32,12 @@ const Body = ({ moveTo }) => {
   const { setSelectedContact } = useMessager();
   const sql = useSql();
   const auth = useAuth();
-  const { socket, isConnected, endPoint } = useSocket();
+  const { socket, isConnected, endPoint, supabase } = useSocket();
   axios.defaults.baseURL = `${endPoint}/user`;
 
   const [contacts, setContacts] = useState(sql.contacts);
+  const [isStory, setIsStory] = useState(false);
+  const [isStoryUri, setIsStoryUri] = useState(null);
   const [query, setQuery] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
   const [isGpChat, setIsGpChat] = useState(false);
@@ -44,11 +53,9 @@ const Body = ({ moveTo }) => {
     moveTo("SingleChat");
   };
 
- 
-
   const queryUsers = async () => {
     if (!isConnected) return;
-    if(query.trim() === "") {
+    if (query.trim() === "") {
       setContacts(sql.contacts);
       setIsQuerying(false);
       return;
@@ -78,14 +85,14 @@ const Body = ({ moveTo }) => {
   };
 
   const shortenName = (name) => {
-    return name.length > 20 ? name.slice(0, 20) + "..." : name
-  }
+    return name.length > 20 ? name.slice(0, 20) + "..." : name;
+  };
 
-  const addContact =async (id) => {
+  const addContact = async (id) => {
     if (!isConnected) return;
     if (id === auth?.user?.id) return;
-    const data=await auth.addContact(id);
-    if(data){
+    const data = await auth.addContact(id);
+    if (data) {
       setMessager(data);
     }
     setIsQuerying(false);
@@ -93,7 +100,92 @@ const Body = ({ moveTo }) => {
     setContacts(sql.contacts);
   };
 
+  const getImage = async () => {
+    try {
+      const { assets } = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [9,16], //potrait
+        quality: 0.5,
+      });
+
+      if (assets.canceled) return;
+      const file = assets[0];
+      if (file.mimeType === "image/gif") return;
+      const uri = file.uri;
+      const manipResult = await manipulateAsync(uri, [], {
+        compress: 0.5,
+        format: SaveFormat.PNG,
+      });
+      return manipResult.uri;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const uploadStory = async () => {
+    if (!isConnected) return;
+    const uri = await getImage();
+    if (!uri) return;
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const { data, error } = await supabase.storage
+      .from("stories")
+      .upload(`${auth.user?.id}.png`, decode(base64), {
+        contentType: "image/png",
+        upsert: true,
+      });
+      if (error) return Alert.alert("Error", "Failed to upload story");
+    const { error: err } = await supabase
+      .from("story")
+      .upsert({
+        id: auth.user?.id,
+        storyUri: auth.user?.id,
+        username: auth.user?.username,
+        time: new Date().getTime(),
+      });
+    if (error || err) return Alert.alert("Error", "Failed to upload story");
+    auth.setStory(uri);
+  };
+
   const RenderList = memo(({ item }) => {
+    const [storyUri, setStoryUri] = useState(null);
+
+    async function getStory() {
+      if (!isConnected) return;
+      const { data, error } = await supabase
+        .from("story")
+        .select("*")
+        .eq("id", item.id);
+      if (error) return;
+      if (data.length === 0) return;
+      const currentTime = new Date().getTime();
+      const storyTime = data[0].time;
+      const elapsedTime = currentTime - storyTime;
+      if (elapsedTime > 86400000) {
+        await supabase.from("story").delete().eq("id", item.id);
+        await supabase.storage.from("stories").remove([`${item.id}.png`]);
+        return;
+      }
+      setStoryUri(data[0].storyUri);
+    }
+
+    useEffect(() => {
+      getStory();
+    }, []);
+
+    const openStory = () => {
+      if (!storyUri) return;
+      setIsStory(true);
+      setIsStoryUri(
+        `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/stories/${storyUri}.png`
+      );
+      setTimeout(() => {
+        setIsStory(false);
+      }, 20000);
+    };
+
     return item && item.id ? (
       <TouchableOpacity
         style={styles.listItem(theme)}
@@ -103,14 +195,38 @@ const Body = ({ moveTo }) => {
         key={item.id}
       >
         {!item.isGroup ? (
-          <Image
-            source={{
-              uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${item.username.trim()}.png`,
-            }}
-            style={styles.Image()}
-          />
+          <TouchableOpacity
+            style={styles.centerDiv}
+            disabled={!isConnected || !storyUri}
+            onPress={openStory}
+          >
+            <LinearGradient
+              colors={
+                storyUri
+                  ? [
+                      "#FFC0CB",
+                      "#90EE90",
+                      "#32CD32",
+                      "#228B22",
+                      "#32CD32",
+                      "#90EE90",
+                    ]
+                  : ["transparent", "transparent"]
+              }
+              style={styles.circle(55, "transparent", storyUri)}
+            >
+              <View style={styles.circle(50, theme.background)}>
+                <Image
+                  source={{
+                    uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${item.username.trim()}.png`,
+                  }}
+                  style={styles.Image(0, 50)}
+                />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
         ) : (
-          <Image source={theme.Icons.group} style={styles.Image()} />
+          <Image source={theme.Icons.group} style={styles.Image(0, 50)} />
         )}
 
         <Text
@@ -132,9 +248,8 @@ const Body = ({ moveTo }) => {
 
   const handleAddContactSocket = useCallback(
     (data) => {
-      
       if (data.id === auth?.user?.id) return;
-      if(!sql.contacts) return sql.getContacts();
+      if (!sql.contacts) return sql.getContacts();
       if (sql.contacts?.find((e) => e && e?.id === data.id)) return;
       sql.getContacts();
     },
@@ -163,21 +278,38 @@ const Body = ({ moveTo }) => {
       <View style={styles.textInputContainer(theme)}>
         <View style={styles.TextInp(theme)}>
           <TextInput
-          placeholder="search......"
-          placeholderTextColor={theme.theme === "dark" ? "white" : "black"}
-          style={styles.TextInput(theme.theme)}
-          value={query}
-          onChangeText={(text) => setQuery(text)}
-          onChange={() => queryUsers()}
-          readOnly={!isConnected || !socket}
-        />
-        <TouchableOpacity
-          style={styles.Image(10)}
-          disabled={!isConnected || !socket}
-          onPress={openGpChat}
-        >
-          <Image source={theme.Icons.add} style={styles.Image()} />
-        </TouchableOpacity>
+            placeholder="search......"
+            placeholderTextColor={theme.theme === "dark" ? "white" : "black"}
+            style={styles.TextInput(theme.theme)}
+            value={query}
+            onChangeText={(text) => {
+              if (!isConnected) return;
+              if (query.trim() === "" || query.length < 3)
+                setContacts(sql.contacts);
+              setQuery(text);
+              queryUsers();
+            }}
+            readOnly={!isConnected || !socket}
+          />
+          {query.trim() === "" && (
+            <>
+              <TouchableOpacity
+                style={styles.Image(10)}
+                disabled={!isConnected}
+                onPress={uploadStory}
+              >
+                <Image source={theme.Icons.upload} style={styles.Image()} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.Image(10)}
+                disabled={!isConnected || !socket}
+                onPress={openGpChat}
+              >
+                <Image source={theme.Icons.add} style={styles.Image()} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
       <View style={styles.flatListContainer(width)}>
@@ -197,6 +329,20 @@ const Body = ({ moveTo }) => {
       >
         <CreateGroupChat setIsGpChat={setIsGpChat} />
       </Modal>
+      <Modal
+        visible={isStory}
+        animationType="fade"
+        hardwareAccelerated={true}
+        transparent={true}
+        onRequestClose={() => setIsStory(false)}
+      >
+        <ImageViewer
+          imageUri={isStoryUri}
+          setIsImageViewerOpen={setIsStory}
+          isProfilePicture={true}
+          isStory={true}
+        />
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -213,15 +359,15 @@ const styles = StyleSheet.create({
   }),
   TextInput: (color) => ({
     height: 50,
-    width: "80%",
+    flex: 1,
     padding: 10,
     color: color === "dark" ? "white" : "black",
     fontWeight: "bold",
   }),
   listItem: (theme) => ({
-    padding: 20,
-    backgroundColor: theme.theme==="dark"?"#212121":"#e0e0e0", 
-    margin:5,
+    padding: 10,
+    backgroundColor: theme.theme === "dark" ? "#212121" : "#e0e0e0",
+    margin: 5,
     marginLeft: 10,
     width: "95%",
     alignItems: "center",
@@ -238,19 +384,20 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 30,
   }),
-  Image: () => ({
-    height: 40,
-    width: 40,
+  Image: (mr = 0, s = 40) => ({
+    height: s,
+    width: s,
     borderRadius: 25,
     alignSelf: "center",
+    marginRight: mr,
   }),
-  textInputContainer:(theme)=>({
+  textInputContainer: (theme) => ({
     height: 50,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
   }),
-  TextInp:(theme)=>({
+  TextInp: (theme) => ({
     height: "100%",
     width: "95%",
     flexDirection: "row",
@@ -258,5 +405,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-evenly",
     backgroundColor: theme.textInputColor.color,
     borderRadius: 30,
-  })
+  }),
+  circle: (r, c = "transparent") => ({
+    height: r,
+    width: r,
+    borderRadius: r / 2,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: c,
+  }),
+  centerDiv: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });

@@ -1,5 +1,5 @@
 import React from "react";
-import { TouchableWithoutFeedback } from "react-native";
+import { TouchableWithoutFeedback} from "react-native";
 
 const LongPressComponent = ({
   children,
@@ -28,13 +28,6 @@ const LongPressComponent = ({
     onLongPress(false);
   };
 
-  const onTapped = () => {
-    if (isPressed) {
-      isPressed = false;
-      onLongPress(false);
-    }
-    onTap(true);
-  };
 
   return (
     <TouchableWithoutFeedback

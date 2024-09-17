@@ -1,4 +1,4 @@
-import { Text, StyleSheet, Image } from "react-native";
+import { Text, StyleSheet, Image,View } from "react-native";
 import { useEffect } from "react";
 import floatingBot from "./images/floatingBoot.gif";
 import { useSocket } from "../../contexts/socketContext";
@@ -8,7 +8,7 @@ import { StatusBar } from "expo-status-bar";
 
 const Loading = ({ navigation }) => {
   const socket = useSocket();
-  const {theme,background}=useTheme();
+  const { theme, background } = useTheme();
   useEffect(() => {
     if (socket.isAuth) {
       navigation.replace("homePage");
@@ -23,8 +23,10 @@ const Loading = ({ navigation }) => {
         style={theme === "dark" ? "light" : "dark"}
         backgroundColor={background}
       />
-      <Image style={styles.Image} source={floatingBot} />
-      <Text style={styles.textStyle}>Server is Loading...</Text>
+      <View style={styles.centerDiv}>
+        <Image style={styles.Image} source={floatingBot} />
+        <Text style={styles.textStyle}>Server is Loading...</Text>
+      </View>
     </SafeAreaView>
   );
 };
@@ -42,5 +44,11 @@ const styles = StyleSheet.create({
     fontSize: 25,
     fontWeight: "bold",
     color: "white",
+  },
+  centerDiv: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "column",
   },
 });

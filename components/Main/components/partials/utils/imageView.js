@@ -8,6 +8,7 @@ const ImageViewer = ({
   imageUri,
   setIsImageViewerOpen,
   isProfilePicture = false,
+  isStory = false,
 }) => {
   const { Icons } = useTheme();
 
@@ -44,7 +45,7 @@ const ImageViewer = ({
           <Image
             source={{ uri: imageUri }}
             style={styles.image}
-            resizeMode="contain"
+            resizeMode={!isStory ? "contain" : "cover"}
           />
         )}
       </View>
