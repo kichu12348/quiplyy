@@ -304,19 +304,7 @@ const Settings = ({ navigation }) => {
               </Text>
               <View style={styles.space(20)} />
               <View style={styles.left}>
-                <Text
-                  style={styles.text(
-                    theme.theme === "dark"
-                      ? "rgba(224,224,224,0.5)"
-                      : "rgba(45,45,45,0.5)",
-                    16,
-                    0,
-                    0,
-                    600
-                  )}
-                >
-                  {bio?bio.length:0}/300
-                </Text>
+                
               </View>
               <View style={styles.space(10)} />
               <TextInput
@@ -330,7 +318,7 @@ const Settings = ({ navigation }) => {
                 readOnly={!socket.isConnected}
                 value={bio}
                 onChangeText={(text) => {
-                  if (!socket.isConnected || bio?.length>300) return;
+                  if (!socket.isConnected) return;
                   setBio(text);
                 }}
                 onBlur={() => setBioOnServer()}

@@ -16,60 +16,58 @@ import axios from "axios";
 import { useAuth } from "../../../../contexts/authContext";
 import { useMessager } from "../../../../contexts/messagerContext";
 
-const AddUserToGroup = ({setIsAddUser}) => {
+const AddUserToGroup = ({ setIsAddUser }) => {
   const { theme, Icons } = useTheme();
   const { updateContact, contacts } = useSql();
   const { socket, isConnected, endPoint } = useSocket();
   const { token } = useAuth();
-  const {selectedContact,setSelectedContact}=useMessager();
+  const { selectedContact, setSelectedContact } = useMessager();
 
   axios.defaults.baseURL = `${endPoint}/user`;
 
   //states
   const [selectedContacts, setSelectedContacts] = useState([]);
 
-
   const createGroupChat = async () => {
-    try{
+    try {
       if (!isConnected || !socket) return;
-    if (selectedContacts.length === 0) return setIsAddUser(false);
+      if (selectedContacts.length === 0) return setIsAddUser(false);
 
-    await axios
-      .post("/addUsersToGroup", {
-        token,
-        users: selectedContacts,
-        groupId: selectedContact.id,
-      })
-      .then((res) => {
-        if (res.data.success) {
-          const updatedContact = {
-            id: selectedContact.id,
-            username: selectedContact.username,
-            isGroup: true,
-            noOfMembers: res.data.members,
-            roomID: selectedContact.roomID,
-            time: selectedContact.time,
-          };
-          setSelectedContact(updatedContact);
-          updateContact(updatedContact);
+      await axios
+        .post("/addUsersToGroup", {
+          token,
+          users: selectedContacts,
+          groupId: selectedContact.id,
+        })
+        .then((res) => {
+          if (res.data.success) {
+            const updatedContact = {
+              id: selectedContact.id,
+              username: selectedContact.username,
+              isGroup: true,
+              noOfMembers: res.data.members,
+              roomID: selectedContact.roomID,
+              time: selectedContact.time,
+            };
+            setSelectedContact(updatedContact);
+            updateContact(updatedContact);
 
-          socket.emit("updateContact", {
-            updateContact: updatedContact,
-            contacts: selectedContacts,
-          });
+            socket.emit("updateContact", {
+              updateContact: updatedContact,
+              contacts: selectedContacts,
+            });
 
+            setIsAddUser(false);
+            return;
+          }
           setIsAddUser(false);
-          return;
-        }
-        setIsAddUser(false);
-      })
-      .catch((err) => {
-        Alert.alert("Error", err.message);
-      });
-    }catch(err){
-      console.log("adding users to gp err:"+err.message)
+        })
+        .catch((err) => {
+          Alert.alert("Error", err.message);
+        });
+    } catch (err) {
+      console.log("adding users to gp err:" + err.message);
     }
-    
   };
 
   const renderList = ({ item }) => {
@@ -81,7 +79,7 @@ const AddUserToGroup = ({setIsAddUser}) => {
       >
         <Image
           source={{
-            uri: `https://api.multiavatar.com/${item.username}.png?apikey=CglVv3piOwAuoJ`,
+            uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${item.username.trim()}.png`,
           }}
           style={styles.Image()}
         />
@@ -102,7 +100,6 @@ const AddUserToGroup = ({setIsAddUser}) => {
     }
     setSelectedContacts([...selectedContacts, id]);
   };
-
 
   return (
     <SafeAreaView style={styles.container(theme)}>
@@ -162,8 +159,8 @@ const styles = StyleSheet.create({
   },
   listItem: (theme) => ({
     padding: 20,
-    backgroundColor: theme==="dark"?"#212121":"#e0e0e0", 
-    margin:5,
+    backgroundColor: theme === "dark" ? "#212121" : "#e0e0e0",
+    margin: 5,
     marginLeft: 10,
     width: "95%",
     alignItems: "center",

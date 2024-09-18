@@ -29,6 +29,7 @@ import pauseL from "./images/pauseL.png";
 import pauseD from "./images/pauseD.png";
 import logoL from "./images/logoL.png";
 import logoD from "./images/logoD.png";
+import story from "./images/story.png";
 
 const ThemeContext = createContext();
 
@@ -49,24 +50,7 @@ const ThemeProvider = ({ children }) => {
     sender: "rgba(0, 122, 255, 1)",
     receiver: "rgba(0,255,0,0.8)",
   });
-  const [Icons, setIcons] = useState({
-    chat: chatD,
-    setting: settingD,
-    stuff: stuffD,
-    return: returnD,
-    sendBtn: sendBtnD,
-    sticker: stickerD,
-    blog: blogD,
-    add: addD,
-    tick: tickD,
-    group: groupD,
-    chess: chessD,
-    upload: uploadD,
-    download: downloadD,
-    play: playD,
-    pause: pauseD,
-    logo: logoD,
-  });
+
 
   const darkIcons = {
     chat: chatD,
@@ -85,6 +69,7 @@ const ThemeProvider = ({ children }) => {
     play: playD,
     pause: pauseD,
     logo: logoD,
+    story: story,
   };
 
   const lightIcons = {
@@ -104,7 +89,13 @@ const ThemeProvider = ({ children }) => {
     play: playL,
     pause: pauseL,
     logo: logoL,
+    story: story,
   };
+
+
+  const [Icons, setIcons] = useState(darkIcons);
+
+ 
 
   const  chatBackgroundModel=async (item)=>{
     try{

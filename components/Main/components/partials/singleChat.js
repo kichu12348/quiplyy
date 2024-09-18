@@ -39,7 +39,7 @@ const SingleChat = ({ navigation }) => {
   const { theme, Icons, textInputColor, BackGroundForChat } = useTheme();
   const { selectedContact, randomUID, setSelectedContact } = useMessager();
   const { socket, isConnected, isLoading, endPoint } = useSocket();
-  const { user, token,getProfilePicture } = useAuth();
+  const { user, token} = useAuth();
 
   axios.defaults.baseURL = `${endPoint}/message`;
 

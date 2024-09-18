@@ -4,7 +4,7 @@ import { useTheme } from "../../../../contexts/theme";
 import { useAuth } from "../../../../contexts/authContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSocket } from "../../../../contexts/socketContext";
-import ImageViewer from "./utils/imageView";
+import CustomModal from "./utils/customModal";
 
 const Footer = ({ moveTo }) => {
   const { Icons, background } = useTheme();
@@ -24,35 +24,34 @@ const Footer = ({ moveTo }) => {
           disabled={!isConnected || !story}
           onPress={() => {
             setShowImage(true);
-            setTimeout(() => setShowImage(false), 20000);
           }}
         >
           <LinearGradient
             colors={
               story
                 ? [
-                    "#FFC0CB",
-                    "#90EE90",
-                    "#32CD32",
-                    "#228B22",
-                    "#32CD32",
-                    "#90EE90",
+                    "#FF8C00" /* Dark Orange */,
+                    "#FFB600" /* Bright Yellow */,
+                    "#FF5733" /* Fiery Red-Orange */,
+                    "#C70039" /* Dark Red */,
+                    "#900C3F" /* Deep Magenta */,
+                    "#581845" /* Dark Purple */,
                   ]
                 : ["transparent", "transparent"]
             }
             style={styles.circle(45)}
           >
-            <View style={styles.circle(40,background)}>
-            <Image
-              style={styles.Image(true)}
-              source={
-                user
-                  ? {
-                      uri: profilePicture,
-                    }
-                  : Icons.chat
-              }
-            />
+            <View style={styles.circle(40, background)}>
+              <Image
+                style={styles.Image(true)}
+                source={
+                  user
+                    ? {
+                        uri: profilePicture,
+                      }
+                    : Icons.chat
+                }
+              />
             </View>
           </LinearGradient>
         </TouchableOpacity>
@@ -60,25 +59,14 @@ const Footer = ({ moveTo }) => {
       <TouchableOpacity onPress={() => moveTo("Settings")}>
         <Image style={styles.Image()} source={Icons.setting} />
       </TouchableOpacity>
-      <Modal
+      <CustomModal
         visible={showImage}
-        transparent={true}
-        animationType="fade"
-        hardwareAccelerated={true}
         onRequestClose={() => setShowImage(false)}
-      >
-        <ImageViewer
-          imageUri={story}
-          setIsImageViewerOpen={setShowImage}
-          isProfilePicture={true}
-          isStory={true}
-        />
-      </Modal>
+        ImageUri={story}
+      />
     </View>
   );
 };
-
-
 
 export default Footer;
 
@@ -96,7 +84,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     borderRadius: round ? 20 : 0,
   }),
-  circle: (r,bg="transparent") => ({
+  circle: (r, bg = "transparent") => ({
     height: r,
     width: r,
     borderRadius: r / 2,

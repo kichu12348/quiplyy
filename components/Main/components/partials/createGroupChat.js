@@ -17,7 +17,7 @@ import axios from "axios";
 import { useAuth } from "../../../../contexts/authContext";
 
 const CreateGroupChat = ({ setIsGpChat }) => {
-  const { theme, Icons,textInputColor,background } = useTheme();
+  const { theme, Icons, textInputColor, background } = useTheme();
   const { setContacts, AddContact, contacts } = useSql();
   const { socket, isConnected, endPoint } = useSocket();
   const { token } = useAuth();
@@ -74,14 +74,14 @@ const CreateGroupChat = ({ setIsGpChat }) => {
           setIsGpChat(false);
           socket.emit("groupChatCreated", {
             contacts: selectedContacts,
-            data:{
+            data: {
               id: res.data.contact.id,
               username: res.data.contact.username,
               roomID: res.data.contact.roomID,
               time: res.data.contact.time,
               isGroup: res.data.contact.isGroup,
               noOfMembers: res.data.contact.noOfMembers,
-            }
+            },
           });
           return;
         }
@@ -101,7 +101,7 @@ const CreateGroupChat = ({ setIsGpChat }) => {
       >
         <Image
           source={{
-            uri: `https://api.multiavatar.com/${item.username}.png?apikey=CglVv3piOwAuoJ`,
+            uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${item.username.trim()}.png`,
           }}
           style={styles.Image()}
         />
@@ -123,45 +123,43 @@ const CreateGroupChat = ({ setIsGpChat }) => {
     setSelectedContacts([...selectedContacts, id]);
   };
 
-
   return (
-    <SafeAreaView >
+    <SafeAreaView>
       <View style={styles.container(background)}>
-     <View style={styles.header}>
-        <TouchableOpacity onPress={() => setIsGpChat(false)}>
-          <Image source={Icons.return} style={styles.Image(50)} />
-        </TouchableOpacity>
-        <Text style={styles.text(theme)}>CreateGroupChat</Text>
-      </View>
-      <View style={styles.flatListContainer("100%")}>
-        <View style={styles.textInpContainer}>
-        <TextInput
-          placeholder="Group Name...."
-          placeholderTextColor={theme === "dark" ? "white" : "black"}
-          style={styles.TextInput(textInputColor,theme)}
-          readOnly={!isConnected || !socket}
-          value={groupName}
-          onChangeText={(text) => setGroupName(text)}
-        />
-        </View>
-        <FlatList
-          renderItem={renderList}
-          data={contacts}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-        />
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.button}
-            disabled={!isConnected || !socket}
-            onPress={createGroupChat}
-          >
-            <Text style={styles.text()}>create</Text>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setIsGpChat(false)}>
+            <Image source={Icons.return} style={styles.Image(50)} />
           </TouchableOpacity>
+          <Text style={styles.text(theme)}>CreateGroupChat</Text>
+        </View>
+        <View style={styles.flatListContainer("100%")}>
+          <View style={styles.textInpContainer}>
+            <TextInput
+              placeholder="Group Name...."
+              placeholderTextColor={theme === "dark" ? "white" : "black"}
+              style={styles.TextInput(textInputColor, theme)}
+              readOnly={!isConnected || !socket}
+              value={groupName}
+              onChangeText={(text) => setGroupName(text)}
+            />
+          </View>
+          <FlatList
+            renderItem={renderList}
+            data={contacts}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+          />
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={styles.button}
+              disabled={!isConnected || !socket}
+              onPress={createGroupChat}
+            >
+              <Text style={styles.text()}>create</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-      </View>
-      
     </SafeAreaView>
   );
 };
@@ -195,8 +193,8 @@ const styles = StyleSheet.create({
   },
   listItem: (theme) => ({
     padding: 20,
-    backgroundColor: theme==="dark"?"#212121":"#e0e0e0", 
-    margin:5,
+    backgroundColor: theme === "dark" ? "#212121" : "#e0e0e0",
+    margin: 5,
     marginLeft: 10,
     width: "95%",
     alignItems: "center",
@@ -214,15 +212,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "flex-end",
   },
-  TextInput: (textInputColor,theme) => ({
+  TextInput: (textInputColor, theme) => ({
     height: 50,
     width: "90%",
-    backgroundColor:textInputColor.color,
+    backgroundColor: textInputColor.color,
     borderRadius: 25,
     padding: 10,
     margin: 10,
     marginTop: 20,
-    color: theme==="dark"?"white":"black",
+    color: theme === "dark" ? "white" : "black",
     fontWeight: "bold",
   }),
   footer: {
@@ -239,10 +237,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  textInpContainer:{
+  textInpContainer: {
     height: 60,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
-  }
+  },
 });

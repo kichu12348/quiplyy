@@ -20,11 +20,11 @@ import axios from "axios";
 import { useSocket } from "../../../../contexts/socketContext";
 import CreateGroupChat from "./createGroupChat";
 import { LinearGradient } from "expo-linear-gradient";
-import ImageViewer from "./utils/imageView";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import { decode } from "base64-arraybuffer";
+import CustomModal from "./utils/customModal";
 
 const Body = ({ moveTo }) => {
   const theme = useTheme();
@@ -105,7 +105,7 @@ const Body = ({ moveTo }) => {
       const { assets } = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [9,16], //potrait
+        aspect: [9, 16], //potrait
         quality: 0.5,
       });
 
@@ -136,15 +136,13 @@ const Body = ({ moveTo }) => {
         contentType: "image/png",
         upsert: true,
       });
-      if (error) return Alert.alert("Error", "Failed to upload story");
-    const { error: err } = await supabase
-      .from("story")
-      .upsert({
-        id: auth.user?.id,
-        storyUri: auth.user?.id,
-        username: auth.user?.username,
-        time: new Date().getTime(),
-      });
+    if (error) return Alert.alert("Error", "Failed to upload story");
+    const { error: err } = await supabase.from("story").upsert({
+      id: auth.user?.id,
+      storyUri: auth.user?.id,
+      username: auth.user?.username,
+      time: new Date().getTime(),
+    });
     if (error || err) return Alert.alert("Error", "Failed to upload story");
     auth.setStory(uri);
   };
@@ -181,9 +179,6 @@ const Body = ({ moveTo }) => {
       setIsStoryUri(
         `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/stories/${storyUri}.png`
       );
-      setTimeout(() => {
-        setIsStory(false);
-      }, 20000);
     };
 
     return item && item.id ? (
@@ -204,12 +199,12 @@ const Body = ({ moveTo }) => {
               colors={
                 storyUri
                   ? [
-                      "#FFC0CB",
-                      "#90EE90",
-                      "#32CD32",
-                      "#228B22",
-                      "#32CD32",
-                      "#90EE90",
+                      "#FF8C00" /* Dark Orange */,
+                      "#FFB600" /* Bright Yellow */,
+                      "#FF5733" /* Fiery Red-Orange */,
+                      "#C70039" /* Dark Red */,
+                      "#900C3F" /* Deep Magenta */,
+                      "#581845" /* Dark Purple */,
                     ]
                   : ["transparent", "transparent"]
               }
@@ -294,11 +289,11 @@ const Body = ({ moveTo }) => {
           {query.trim() === "" && (
             <>
               <TouchableOpacity
-                style={styles.Image(10)}
+                style={styles.centerDivSpace(10)}
                 disabled={!isConnected}
                 onPress={uploadStory}
               >
-                <Image source={theme.Icons.upload} style={styles.Image()} />
+                <Image source={theme.Icons.story} style={styles.Image(0,35)} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -329,20 +324,11 @@ const Body = ({ moveTo }) => {
       >
         <CreateGroupChat setIsGpChat={setIsGpChat} />
       </Modal>
-      <Modal
+      <CustomModal
         visible={isStory}
-        animationType="fade"
-        hardwareAccelerated={true}
-        transparent={true}
         onRequestClose={() => setIsStory(false)}
-      >
-        <ImageViewer
-          imageUri={isStoryUri}
-          setIsImageViewerOpen={setIsStory}
-          isProfilePicture={true}
-          isStory={true}
-        />
-      </Modal>
+        ImageUri={isStoryUri}
+      />
     </SafeAreaView>
   );
 };
@@ -418,4 +404,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  centerDivSpace:(space)=>({
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight:space,
+  }),
 });

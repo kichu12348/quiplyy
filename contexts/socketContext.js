@@ -4,7 +4,6 @@ import NetInfo from "@react-native-community/netinfo";
 import * as SQLite from "expo-sqlite";
 import { createClient } from "@supabase/supabase-js";
 
-
 const SocketContext = createContext();
 
 const SocketProvider = ({ children }) => {
@@ -12,6 +11,7 @@ const SocketProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuth, setIsAuth] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [allMessages, setAllMessages] = useState([]);
 
   const endPoint = "https://quiplyserver.onrender.com"; //https://quiplyserver.onrender.com
   const SUPABASE_URL = "https://vevcjimdxdaprqrdbptj.supabase.co";
@@ -36,7 +36,43 @@ const SocketProvider = ({ children }) => {
     }
   };
 
+  const getMessageFromDB = async () => {
+    const db = await SQLite.openDatabaseAsync("messages.db");
+    await db.execAsync(`CREATE TABLE IF NOT EXISTS messages (
+        idx INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT,
+        sender TEXT,
+        senderName TEXT,
+        msg TEXT,
+        roomID TEXT,
+        isSticker BOOLEAN DEFAULT 0,
+        sticker TEXT DEFAULT NULL,
+        isDeleted BOOLEAN DEFAULT 0,
+        isGroup BOOLEAN DEFAULT 0,
+        isImage BOOLEAN DEFAULT 0,
+        imageUri TEXT DEFAULT NULL,
+        isDownloaded BOOLEAN DEFAULT 0,
+        time TEXT
+      );`);
+
+    const messages = await db.getAllAsync("SELECT * FROM messages");
+    setAllMessages(messages);
+  };
+
+  function deleteMessageFromState(id) {
+    setAllMessages((prev) => {
+      return prev.filter((msg) => msg.id !== id);
+    });
+  }
+
+  function addMessageToState(msg) {
+    setAllMessages((prev) => {
+      return [...prev, msg];
+    });
+  }
+
   useEffect(() => {
+    getMessageFromDB();
     const attemptConnection = () => {
       if (!isLoading) return;
       NetInfo.fetch().then((state) => {
@@ -76,8 +112,12 @@ const SocketProvider = ({ children }) => {
       isConnected,
       endPoint,
       supabase,
+      setAllMessages,
+      allMessages,
+      deleteMessageFromState,
+      addMessageToState,
     };
-  }, [socket, isLoading, isAuth, isConnected]);
+  }, [socket, isLoading, isAuth, isConnected, allMessages]);
 
   return (
     <SocketContext.Provider value={value}>{children}</SocketContext.Provider>

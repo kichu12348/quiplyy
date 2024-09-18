@@ -14,10 +14,8 @@ import { Canvas } from "@react-three/fiber/native";
 import { Audio } from "expo-av";
 import Render3D from "./utils/3dRender";
 import * as SQLite from "expo-sqlite";
-import axios from "axios";
 import { useSocket } from "../../../../contexts/socketContext";
-import { downloadSongFromServer } from "./utils/fileUpload";
-
+import * as FileSystem from "expo-file-system";
 
 const Music = () => {
   const theme = useTheme();
@@ -27,8 +25,7 @@ const Music = () => {
   const [currentPlaying, setCurrentPlaying] = useState(null);
   const [songs, setSongs] = useState([]);
 
-  const { endPoint, socket, isConnected,supabase} = useSocket();
-  axios.defaults.baseURL = `${endPoint}/song`;
+  const { socket, isConnected, supabase } = useSocket();
 
   ///sqlite db
   const dbPromise = SQLite.openDatabaseAsync("songs.db");
@@ -46,6 +43,46 @@ const Music = () => {
 
     const rows = await db.getAllAsync(`SELECT * FROM songs`);
     setSongs(rows);
+  }
+
+  async function downloadSong(item) {
+    const { id, title, image, song } = item;
+    try {
+      const fileUri = `${FileSystem.documentDirectory}${song}`;
+      const imageUri = `${FileSystem.documentDirectory}${image}`;
+      const serverUri = `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public`;
+      const songRes = await FileSystem.downloadAsync(
+        `${serverUri}/songs/${song}`,
+        fileUri
+      );
+      const imageRes = await FileSystem.downloadAsync(
+        `${serverUri}/songImg/${image}`,
+        imageUri
+      );
+      if (
+        !songRes ||
+        !imageRes ||
+        songRes.status !== 200 ||
+        imageRes.status !== 200
+      )
+        return Alert.alert("Error", "Could not download song");
+      const db = await dbPromise;
+      await db.runAsync(
+        `INSERT OR REPLACE INTO songs (id, title, image, song, isDownloaded) VALUES (?, ?, ?, ?, ?)`,
+        [id, title, imageRes.uri, songRes.uri, true]
+      );
+      setSongs((prev) => {
+        const sng = prev.find((s) => s.id === id);
+        if (sng) {
+          sng.isDownloaded = true;
+          sng.image = imageRes.uri;
+          sng.song = songRes.uri;
+        }
+        return [...prev];
+      });
+    } catch (e) {
+      Alert.alert("Error", "Could not download song");
+    }
   }
 
   useEffect(() => {
@@ -71,85 +108,49 @@ const Music = () => {
   }, [sound]);
 
   async function getSongList() {
-    if (!isConnected || !socket) return;
+    if (!isConnected) return;
     try {
-      await axios.get("/List").then((res) => {
-        if (res.data.success) {
-          setSongs((prev) => {
-            const newSongs = res.data.songList;
-            const filteredSongs = newSongs.filter(
-              (song) => !prev.find((s) => s.id === song.id)
-            );
-            filteredSongs.map((s) => {
-              s.isDownloaded = false;
-            });
-            return [...prev, ...filteredSongs];
-          });
-        }
+      const { data, error } = await supabase.from("songs").select("*");
+      if (error) return;
+      setSongs((prev) => {
+        const newSongs = data;
+        const filteredSongs = newSongs.filter(
+          (song) => !prev.find((s) => s.id === song.id)
+        );
+        filteredSongs.map((s) => {
+          s.isDownloaded = false;
+        });
+        return [...prev, ...filteredSongs];
       });
     } catch (e) {
       return;
     }
   }
 
-
-  async function downloadSong(item) {
-    const { id, title, image, song } = item;
-    try {
-      const {success,songUri,imageUri}=await downloadSongFromServer(endPoint,song, image);
-      if(!success) return;
-      const db = await dbPromise;
-      await db.runAsync(`
-        INSERT INTO songs(id,title,image,song,isDownloaded) VALUES(?,?,?,?,?)
-        `,[
-          id,
-          title,
-          imageUri,
-          songUri,
-          true
-        ]);
-      setSongs((prev) => {
-        const findSong = prev.find((s) => s.id === id);
-        if (!findSong) return [...prev, { 
-          id: id,
-          title: title,
-          image: imageUri,
-          song: songUri,
-          isDownloaded: true,
-        }];
-        findSong.isDownloaded = true;
-        findSong.image = imageUri;
-        findSong.song = songUri;
-        return [...prev];
-      });
-    } catch (e) {
-      return Alert.alert("Error", "Failed to download song");
-    }
-  }
-
-  async function start(){
+  async function start() {
     const db = await dbPromise;
     await getSongsFromDB(db);
-    
+    await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
   }
 
   useEffect(() => {
     start();
   }, []);
 
-
   useEffect(() => {
     getSongList();
   }, [socket, isConnected]);
-  
 
   const loadAndPlaySound = async (audioFile, songTitle) => {
     try {
-      const { sound: newSound } = await Audio.Sound.createAsync({
-        uri: audioFile,
-      }, {
-        shouldPlay: true,
-      });
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        {
+          uri: audioFile,
+        },
+        {
+          shouldPlay: true,
+        }
+      );
       setSound(newSound);
       setIsPlaying(true);
       setCurrentPlaying(songTitle);
@@ -163,7 +164,7 @@ const Music = () => {
       await sound.playAsync();
       setIsPlaying(true);
     }
-  }
+  };
 
   const pauseSound = async () => {
     if (sound) {
@@ -173,7 +174,7 @@ const Music = () => {
   };
 
   const renderItem = ({ item, index }) => {
-    if (!item) return null;
+    if (!item || !item.title) return null;
     return (
       <View style={styles.itemContainer()}>
         <TouchableOpacity
@@ -184,7 +185,7 @@ const Music = () => {
               downloadSong(item);
               return;
             }
-            if(currentPlaying === item.title && !isPlaying){
+            if (currentPlaying === item.title && !isPlaying) {
               resumeSound();
               return;
             }
@@ -198,14 +199,13 @@ const Music = () => {
         >
           {!item.isDownloaded ? (
             <Image
-              source={{ uri: `${endPoint}/song/song?image=${item.image}` }}
+              source={{
+                uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/songImg/${item.image}`,
+              }}
               style={styles.audioImage()}
             />
           ) : (
-            <Image
-              source={{uri:item.image}}
-              style={styles.audioImage()}
-            />
+            <Image source={{ uri: item.image }} style={styles.audioImage()} />
           )}
           <Text style={styles.text(theme.theme)}>{item.title}</Text>
           {currentPlaying === item.title &&
@@ -221,24 +221,24 @@ const Music = () => {
               />
             )}
           <View style={styles.setEnd}>
-            {!item.isDownloaded ?(
+            {!item.isDownloaded ? (
               <Image
                 source={theme.Icons.download}
                 style={styles.audioImage(40, 40, 0)}
               />
-            ):(
-              isPlaying && currentPlaying === item.title &&playbackStatus?.positionMillis!==playbackStatus?.durationMillis? (
-                <Image
-                  source={theme.Icons.pause}
-                  style={styles.audioImage(25, 25, 0,0)}
-                />
-              ):(
-               
-                  <Image
-                    source={theme.Icons.play}
-                    style={styles.audioImage(25, 25, 0,0)}
-                  />
-              )
+            ) : isPlaying &&
+              currentPlaying === item.title &&
+              playbackStatus?.positionMillis !==
+                playbackStatus?.durationMillis ? (
+              <Image
+                source={theme.Icons.pause}
+                style={styles.audioImage(25, 25, 0, 0)}
+              />
+            ) : (
+              <Image
+                source={theme.Icons.play}
+                style={styles.audioImage(25, 25, 0, 0)}
+              />
             )}
           </View>
         </TouchableOpacity>
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 10,
   }),
-  audioImage: (h = 80, w = 80, mr = 20,br=10) => ({
+  audioImage: (h = 80, w = 80, mr = 20, br = 10) => ({
     height: h,
     width: w,
     borderRadius: br,
