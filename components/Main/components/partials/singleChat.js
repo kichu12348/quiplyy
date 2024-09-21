@@ -431,6 +431,10 @@ const SingleChat = ({ navigation }) => {
     if (!state) return;
     if (state) {
       setIsFocused({ focused: true, item: item });
+      flatListRef.current.scrollToIndex({
+        index: messages.indexOf(item),
+        animated: true,
+      });
     }
   };
 
