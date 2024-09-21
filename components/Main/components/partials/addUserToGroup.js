@@ -79,7 +79,7 @@ const AddUserToGroup = ({ setIsAddUser }) => {
       >
         <Image
           source={{
-            uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${item.username.trim()}.png`,
+            uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${item.username.trim()}.jpg`,
           }}
           style={styles.Image()}
         />

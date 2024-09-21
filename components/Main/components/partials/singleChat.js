@@ -9,20 +9,16 @@ import {
   Platform,
   FlatList,
   Modal,
-  ScrollView,
-  TouchableWithoutFeedback,
   Alert,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
-import { useCallback, useEffect, useRef, useState, memo } from "react";
+import { useCallback, useEffect, useRef, useState} from "react";
 import axios from "axios";
 import * as SQLite from "expo-sqlite";
 import { useTheme } from "../../../../contexts/theme";
 import { useMessager } from "../../../../contexts/messagerContext";
 import { useSocket } from "../../../../contexts/socketContext";
 import { useAuth } from "../../../../contexts/authContext";
-import { BlurView } from "expo-blur";
-import LongPressComponent from "./utils/longPress";
 import AddUserToGroup from "./addUserToGroup";
 import {
   uploadImage,
@@ -34,12 +30,16 @@ import ImageViewer from "./utils/imageView";
 import { Canvas } from "@react-three/fiber/native";
 import Render3D from "./utils/3dRender";
 import ProfileViewer from "./utils/profileViewer";
+import StickerComponent from "./chatComps/stickerComp";
+import BlurItem from "./chatComps/blurItem";
+
+import RenderList from "./chatComps/renderList";
 
 const SingleChat = ({ navigation }) => {
   const { theme, Icons, textInputColor, BackGroundForChat } = useTheme();
   const { selectedContact, randomUID, setSelectedContact } = useMessager();
   const { socket, isConnected, isLoading, endPoint } = useSocket();
-  const { user, token} = useAuth();
+  const { user, token } = useAuth();
 
   axios.defaults.baseURL = `${endPoint}/message`;
 
@@ -59,9 +59,6 @@ const SingleChat = ({ navigation }) => {
   const shortenName = (name) => {
     return name.length > 10 ? name.slice(0, 10) + "..." : name;
   };
-
-
-
 
   const dbPromise = SQLite.openDatabaseAsync("messages.db");
 
@@ -285,13 +282,7 @@ const SingleChat = ({ navigation }) => {
     [isConnected, selectedContact, user?.id]
   );
 
-  function isOnlyEmojis(text) {
-    const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
-    const trimmedText = text.replace(/\s+/g, "");
-    const emojiMatches = trimmedText.match(emojiRegex);
-    return emojiMatches && emojiMatches.length === [...trimmedText].length;
-  }
-
+ 
   const startChat = async () => {
     try {
       const db = await dbPromise;
@@ -414,7 +405,7 @@ const SingleChat = ({ navigation }) => {
   async function deleteMessageForMe(messageId) {
     const db = await dbPromise;
     await db.runAsync("DELETE FROM messages WHERE id = ?", [messageId]);
-    setIsFocused({ focused: false, item: null});
+    setIsFocused({ focused: false, item: null });
     setMessages((prev) => prev.filter((e) => e.id !== messageId));
   }
   useEffect(() => {
@@ -500,239 +491,8 @@ const SingleChat = ({ navigation }) => {
     setMessages((prev) => [...prev, newMessage]);
     socket.emit("message", { message });
   }
+ 
 
-  //components
-  const RenderList = ({ item }) => {
-    if (!item) return null;
-    return (
-      <View
-        style={styles.flatListItem(
-          item.sender === user?.id ? "flex-end" : "flex-start"
-        )}
-      >
-        <LongPressComponent
-          key={item?.id}
-          onLongPress={(state) =>
-            isFocused.focused ? null : longPressEventHandle(state, item)
-          }
-          time={500}
-          onTap={(state) => {
-            if (isFocused.focused) return;
-            onTapOnImage(state, item);
-          }}
-        >
-          <View
-            style={
-              item.sender === user?.id
-                ? styles.messageLeft(
-                    item.isSticker || item.isImage
-                      ? true
-                      : isOnlyEmojis(item.msg),
-                    theme
-                  )
-                : styles.messageRight(
-                    item.isSticker || item.isImage
-                      ? true
-                      : isOnlyEmojis(item.msg),
-                    theme
-                  )
-            }
-          >
-            {item.isSticker && !item.isImage ? (
-              <>
-                {item.isGroup && item.sender !== user?.id ? (
-                  <Text
-                    style={styles.textStyles(
-                      theme,
-                      15,
-                      "400",
-                      theme === "dark" ? "white" : "black",
-                      0.8
-                    )}
-                  >
-                    {item.senderName}
-                  </Text>
-                ) : null}
-                {item.isSticker && !item.isImage ? (
-                  <Image
-                    source={stickers[item.sticker]}
-                    style={styles.Image(
-                      item.sender === user?.id ? 0 : -10,
-                      item.sender === user?.id ? -10 : 0,
-                      200,
-                      200,
-                      10
-                    )}
-                  />
-                ) : null}
-              </>
-            ) : !item.isImage && !item.isSticker ? (
-              <>
-                {item.isGroup && item.sender !== user?.id ? (
-                  <Text style={styles.textStyles(theme, 12, "400", null, 0.8)}>
-                    {item.senderName}
-                  </Text>
-                ) : null}
-                <Text
-                  style={styles.textStyles(
-                    theme,
-                    isOnlyEmojis(item.msg) ? 60 : 18,
-                    "400",
-                    null
-                  )}
-                >
-                  {item.msg}
-                </Text>
-              </>
-            ) : (
-              <>
-                {item.isGroup && item.sender !== user?.id ? (
-                  <Text style={styles.textStyles(theme, 12, "400", null, 0.8)}>
-                    {item.senderName}
-                  </Text>
-                ) : null}
-                {item.isImage && (
-                  <Image
-                    source={{ uri: item.imageUri }}
-                    style={styles.Image(
-                      item.sender === user?.id ? 0 : -10,
-                      item.sender === user?.id ? -10 : 0,
-                      200,
-                      200,
-                      10
-                    )}
-                  />
-                )}
-              </>
-            )}
-          </View>
-        </LongPressComponent>
-      </View>
-    );
-  };
-
-  const rowLength =
-    stickerList.length % 3 === 0
-      ? stickerList.length / 3
-      : Math.floor(stickerList.length / 3) + 1;
-
-  const StickerComponent = () => {
-    return (
-      <TouchableWithoutFeedback onPress={() => setIsSticker(false)}>
-        <View style={styles.stickerModal}>
-          <BlurView intensity={300} style={styles.stickerContainer()}>
-            <View style={styles.stickerHeader}>
-              <TouchableOpacity
-                style={styles.Image(10, 20, 40, 40, 0, "flex-start")}
-                onPress={() => setIsSticker(false)}
-              >
-                <Image
-                  source={Icons.return}
-                  style={styles.Image(10, 20, 40, 40, 0, "flex-start")}
-                />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.stickers}>
-              <ScrollView scrollEnabled={true} style={styles.ScrollView}>
-                {stickerList.length > 0
-                  ? (() => {
-                      const stickerItems = [];
-                      for (let index = 0; index < rowLength; index++) {
-                        const stickerRow = [
-                          stickerList[index * 3],
-                          stickerList[index * 3 + 1] || null,
-                          stickerList[index * 3 + 2] || null,
-                        ];
-
-                        stickerItems.push(
-                          <View key={`row-${index}`} style={styles.rows}>
-                            <StickerItem stickersL={stickerRow} />
-                          </View>
-                        );
-                      }
-                      return stickerItems;
-                    })()
-                  : null}
-              </ScrollView>
-            </View>
-          </BlurView>
-        </View>
-      </TouchableWithoutFeedback>
-    );
-  };
-
-  const StickerItem = ({ stickersL }) => {
-    return (
-      <>
-        {stickersL.map((sticker, index) => {
-          return sticker ? (
-            <TouchableOpacity
-              key={sticker.id}
-              onPress={() => sendSticker(sticker.name)}
-            >
-              <Image
-                source={stickers[sticker.name]}
-                style={styles.Image(10, 10, 100, 100, 20)}
-              />
-            </TouchableOpacity>
-          ) : (
-            <View key={`empty-${index}`} />
-          );
-        })}
-      </>
-    );
-  };
-
-  const BlurItem = ({ isFocused }) => {
-    return (
-      <>
-        {isFocused.item && (
-          <TouchableWithoutFeedback
-            onPress={() =>
-              setIsFocused({ focused: false, item: isFocused.item })
-            }
-          >
-            <BlurView
-              intensity={300}
-              style={styles.blurView(
-                isFocused.item?.isSticker ? "center" : "flex-end"
-              )}
-            >
-              <View style={styles.blurContainer}>
-                <RenderList item={isFocused.item} />
-                {isFocused.item.sender === user?.id && (
-                  <View style={styles.blurList(theme)}>
-                    <TouchableOpacity
-                      style={styles.blurTextContainer}
-                      onPress={() => {
-                        deleteMessage(isFocused.item.id, isFocused.item);
-                      }}
-                    >
-                      <Text style={styles.blurText("rgba(255,0,0,0.8)")}>
-                        delete for everyone
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-                <View style={styles.blurList(theme)}>
-                  <TouchableOpacity
-                    style={styles.blurTextContainer}
-                    onPress={() => {
-                      deleteMessageForMe(isFocused.item.id);
-                    }}
-                  >
-                    <Text style={styles.blurText("rgba(255,255,255,0.8)")}>
-                      delete for me
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </BlurView>
-          </TouchableWithoutFeedback>
-        )}
-      </>
-    );
-  };
 
   return (
     <SafeAreaView>
@@ -766,12 +526,12 @@ const SingleChat = ({ navigation }) => {
             }}
             style={styles.Image(20, 10)}
           >
-          <Image
-            source={{
-              uri:`https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${selectedContact.username.trim()}.png`,
-            }}
-            style={styles.Image(0, 0)}
-          />
+            <Image
+              source={{
+                uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${selectedContact.username.trim()}.jpg`,
+              }}
+              style={styles.Image(0, 0)}
+            />
           </TouchableOpacity>
         ) : (
           <>
@@ -796,7 +556,15 @@ const SingleChat = ({ navigation }) => {
         <View style={styles.flatListContainer}>
           <FlatList
             data={messages}
-            renderItem={RenderList}
+            renderItem={({ item }) => (
+              <RenderList
+                item={item}
+                isFocused={isFocused}
+                longPressEventHandle={longPressEventHandle}
+                onTapOnImage={onTapOnImage}
+                stickers={stickers}
+              />
+            )}
             ref={flatListRef}
             showsVerticalScrollIndicator={false}
             onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
@@ -879,7 +647,12 @@ const SingleChat = ({ navigation }) => {
         onRequestClose={() => setIsSticker(false)}
         hardwareAccelerated={true}
       >
-        <StickerComponent />
+        <StickerComponent 
+          setIsSticker={setIsSticker} 
+          sendSticker={sendSticker} 
+          stickerList={stickerList} 
+          stickers={stickers}
+        />
       </Modal>
       <Modal
         animationType="fade"
@@ -887,7 +660,15 @@ const SingleChat = ({ navigation }) => {
         hardwareAccelerated={true}
         visible={isFocused.focused}
       >
-        <BlurItem isFocused={isFocused} />
+        <BlurItem 
+        isFocused={isFocused}
+        setIsFocused={setIsFocused}
+        longPressEventHandle={longPressEventHandle}
+        onTapOnImage={onTapOnImage}
+        stickers={stickers}
+        deleteMessage={deleteMessage}
+        deleteMessageForMe={deleteMessageForMe}
+         />
       </Modal>
       <Modal
         animationType="slide"
@@ -921,17 +702,16 @@ const SingleChat = ({ navigation }) => {
         visible={isProfileViewerOpen}
         onRequestClose={() => setIsProfileViewerOpen(false)}
       >
-        <ProfileViewer 
-        username={selectedContact.username}
-        setIsOpen={setIsProfileViewerOpen}
-        imageUri={`https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${selectedContact.username.trim()}.png`}
-        messages={messages}
+        <ProfileViewer
+          username={selectedContact.username}
+          setIsOpen={setIsProfileViewerOpen}
+          imageUri={`https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${selectedContact.username.trim()}.jpg`}
+          messages={messages}
         />
       </Modal>
     </SafeAreaView>
   );
 };
-
 
 export default SingleChat;
 
@@ -1040,45 +820,6 @@ const styles = StyleSheet.create({
     padding: 10,
     marginLeft: marginLeft,
     marginRight: marginR,
-  }),
-  flatListItem: (justifyContent = "flex-start") => ({
-    padding: 0,
-    backgroundColor: "transparent",
-    margin: 0,
-    width: "100%",
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: justifyContent,
-  }),
-  messageLeft: (isEmoji, theme) => ({
-    backgroundColor: isEmoji
-      ? "transparent"
-      : theme === "dark"
-      ? "rgba(0, 122, 255, 0.8)"
-      : "rgba(0,255,0,0.8)", //theme==="dark"?"#388E3C":"#4CAF50"
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginTop: 5,
-    minWidth: 50,
-    maxWidth: "80%",
-    marginRight: 10,
-    flexDirection: "column",
-  }),
-  messageRight: (isEmoji, theme) => ({
-    backgroundColor: isEmoji
-      ? "transparent"
-      : theme === "dark"
-      ? "rgba(30,30,30,0.8)"
-      : "rgba(224,224,224,0.8)", //theme==="dark"?"#388E3C":"#4CAF50"
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginTop: 5,
-    minWidth: 50,
-    maxWidth: "80%",
-    marginLeft: 10,
-    flexDirection: "column",
   }),
   stickerModal: {
     flex: 1,

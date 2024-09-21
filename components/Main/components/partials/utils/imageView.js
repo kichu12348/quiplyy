@@ -3,6 +3,12 @@ import React from "react";
 import { useTheme } from "../../../../../contexts/theme";
 import SafeAreaView from "./safe";
 import * as MediaLibrary from "expo-media-library";
+import { PanGestureHandler } from "react-native-gesture-handler";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from "react-native-reanimated";
 
 const ImageViewer = ({
   imageUri,
@@ -25,31 +31,75 @@ const ImageViewer = ({
       );
   }
 
+  //animation
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+
+  React.useEffect(() => {
+    translateX.value = withSpring(0);
+    translateY.value = withSpring(0);
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+    ],
+  }));
+
+  const onGestureEvent = (event) => {
+    translateX.value = event.nativeEvent.translationX;
+    translateY.value = event.nativeEvent.translationY;
+  };
+
+  const onHandlerStateChange = (event) => {
+    if (event.nativeEvent.state === 5) {
+      if (
+        Math.abs(translateY.value) > 100 ||
+        Math.abs(translateX.value) > 100
+      ) {
+        setIsImageViewerOpen(false);
+        translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
+      } else {
+        translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
+      }
+    }
+  };
+
   return (
-    <SafeAreaView>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton()}
-          onPress={() => setIsImageViewerOpen(false)}
-        >
-          <Image source={Icons.return} style={styles.backIcon} />
-        </TouchableOpacity>
-        {!isProfilePicture && (
-          <TouchableOpacity style={styles.backButton()} onPress={saveImage}>
-            <Image source={Icons.download} style={styles.backIcon} />
-          </TouchableOpacity>
-        )}
-      </View>
-      <View style={styles.imageContainer}>
-        {imageUri && (
-          <Image
-            source={{ uri: imageUri }}
-            style={styles.image}
-            resizeMode={!isStory ? "contain" : "cover"}
-          />
-        )}
-      </View>
-    </SafeAreaView>
+    <PanGestureHandler
+      onGestureEvent={onGestureEvent}
+      onHandlerStateChange={onHandlerStateChange}
+    >
+      <Animated.View style={[styles.container,animatedStyle]}>
+        <SafeAreaView>
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton()}
+              onPress={() => setIsImageViewerOpen(false)}
+            >
+              <Image source={Icons.return} style={styles.backIcon} />
+            </TouchableOpacity>
+            {!isProfilePicture && (
+              <TouchableOpacity style={styles.backButton()} onPress={saveImage}>
+                <Image source={Icons.download} style={styles.backIcon} />
+              </TouchableOpacity>
+            )}
+          </View>
+          <View style={styles.imageContainer}>
+            {imageUri && (
+              <Image
+                source={{ uri: imageUri }}
+                style={styles.image}
+                resizeMode={!isStory ? "contain" : "cover"}
+              />
+            )}
+          </View>
+        </SafeAreaView>
+      </Animated.View>
+    </PanGestureHandler>
   );
 };
 
@@ -82,5 +132,8 @@ const styles = StyleSheet.create({
     width: "95%",
     alignSelf: "center",
     borderRadius: 10,
+  },
+  container: {
+    flex: 1,
   },
 });

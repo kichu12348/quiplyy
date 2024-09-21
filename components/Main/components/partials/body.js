@@ -102,22 +102,34 @@ const Body = ({ moveTo }) => {
 
   const getImage = async () => {
     try {
+      const maxSize = 8 * 1024 * 1024;
       const { assets } = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [9, 16], //potrait
+        aspects: [9, 16], //potrait
         quality: 0.5,
       });
 
       if (assets.canceled) return;
       const file = assets[0];
       if (file.mimeType === "image/gif") return;
+      if (file.fileSize > maxSize) {
+        Alert.alert("Error", "Image size should be less than 8MB");
+        return null;
+      }
       const uri = file.uri;
-      const manipResult = await manipulateAsync(uri, [], {
-        compress: 0.5,
-        format: SaveFormat.PNG,
-      });
-      return manipResult.uri;
+      
+      const manipResult = await manipulateAsync(
+        uri,
+        [],
+        { compress: 0.5, format: SaveFormat.JPEG }
+      );
+      
+      if (file.fileSize > maxSize) {
+        Alert.alert("Error", "Image size should be less than 8MB");
+        return null;
+      }
+      const popedName=manipResult.uri.split("/").pop().split(".")[1];
+      return { uri, popedName };
     } catch (error) {
       return null;
     }
@@ -127,24 +139,24 @@ const Body = ({ moveTo }) => {
     if (!isConnected) return;
     const uri = await getImage();
     if (!uri) return;
-    const base64 = await FileSystem.readAsStringAsync(uri, {
+    const base64 = await FileSystem.readAsStringAsync(uri.uri, {
       encoding: FileSystem.EncodingType.Base64,
     });
     const { data, error } = await supabase.storage
       .from("stories")
-      .upload(`${auth.user?.id}.png`, decode(base64), {
-        contentType: "image/png",
+      .upload(`${auth.user?.id}.${uri.popedName}`, decode(base64), {
+        contentType: `image/${uri.popedName}`,
         upsert: true,
       });
     if (error) return Alert.alert("Error", "Failed to upload story");
     const { error: err } = await supabase.from("story").upsert({
       id: auth.user?.id,
-      storyUri: auth.user?.id,
+      storyUri: `${auth.user?.id}.${uri.popedName}`,
       username: auth.user?.username,
       time: new Date().getTime(),
     });
     if (error || err) return Alert.alert("Error", "Failed to upload story");
-    auth.setStory(uri);
+    auth.setStory(uri.uri);
   };
 
   const RenderList = memo(({ item }) => {
@@ -152,21 +164,11 @@ const Body = ({ moveTo }) => {
 
     async function getStory() {
       if (!isConnected) return;
-      const { data, error } = await supabase
-        .from("story")
-        .select("*")
-        .eq("id", item.id);
-      if (error) return;
-      if (data.length === 0) return;
-      const currentTime = new Date().getTime();
-      const storyTime = data[0].time;
-      const elapsedTime = currentTime - storyTime;
-      if (elapsedTime > 86400000) {
-        await supabase.from("story").delete().eq("id", item.id);
-        await supabase.storage.from("stories").remove([`${item.id}.png`]);
-        return;
-      }
-      setStoryUri(data[0].storyUri);
+      const { allStories } = auth;
+      if (!allStories || allStories.length === 0) return;
+      const story = allStories.find((e) => e.id === item.id);
+      if (!story) return;
+      setStoryUri(story.storyUri);
     }
 
     useEffect(() => {
@@ -177,7 +179,7 @@ const Body = ({ moveTo }) => {
       if (!storyUri) return;
       setIsStory(true);
       setIsStoryUri(
-        `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/stories/${storyUri}.png`
+        `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/stories/${storyUri}`
       );
     };
 
@@ -213,7 +215,7 @@ const Body = ({ moveTo }) => {
               <View style={styles.circle(50, theme.background)}>
                 <Image
                   source={{
-                    uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${item.username.trim()}.png`,
+                    uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${item.username.trim()}.jpg`,
                   }}
                   style={styles.Image(0, 50)}
                 />
@@ -293,7 +295,7 @@ const Body = ({ moveTo }) => {
                 disabled={!isConnected}
                 onPress={uploadStory}
               >
-                <Image source={theme.Icons.story} style={styles.Image(0,35)} />
+                <Image source={theme.Icons.story} style={styles.Image(0, 35)} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -404,9 +406,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  centerDivSpace:(space)=>({
+  centerDivSpace: (space) => ({
     justifyContent: "center",
     alignItems: "center",
-    marginRight:space,
+    marginRight: space,
   }),
 });

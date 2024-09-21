@@ -4,6 +4,7 @@ import { useSocket } from "./socketContext";
 import * as SQLite from "expo-sqlite";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
 
 const AuthContext = createContext();
 
@@ -13,6 +14,7 @@ const AuthProvider = ({ children }) => {
   const [contacts, setContacts] = useState(null);
   const [profilePicture, setProfilePicture] = useState(null);
   const [story, setStory] = useState(null);
+  const [allStories, setAllStories] = useState([]);
   const {
     socket,
     setIsAuth,
@@ -80,7 +82,7 @@ const AuthProvider = ({ children }) => {
           setToken(res.data.token);
           setUser(res.data.user);
           setProfilePicture(
-            `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${res.data.user.username}.png`
+            `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${res.data.user.username}.jpg`
           );
           socket?.emit("joinID", { id: res.data.user.id });
           setIsAuth(true);
@@ -120,22 +122,30 @@ const AuthProvider = ({ children }) => {
       });
   };
 
-  const getStory = async (id) => {
-    const { data, error } = await supabase
-      .from("story")
-      .select("*")
-      .eq("id", id);
+  //get all stories
+  const getAllStories = async (user) => {
+    const { data, error } = await supabase.from("story").select("*");
     if (error || data.length === 0) return;
     const currentTime = new Date().getTime();
-    const storyTime = data[0].time;
-    if (currentTime - storyTime > 86400000) {
-      await supabase.storage.from("stories").remove([`${id}.png`]);
-      await supabase.from("story").delete().eq("id", id);
-      return;
-    }
-    setStory(
-      `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/stories/${id}.png`
-    );
+    data.map(async (story) => {
+      const storyTime = story.time;
+      if (currentTime - storyTime > 86400000) {
+        await supabase.storage.from("stories").remove([`${story.storyUri}`]);
+        await supabase.from("story").delete().eq("id", story.id);
+        return;
+      }
+      if (story.id === user.id) {
+        setStory(
+          `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/stories/${story.storyUri}`
+        );
+        return;
+      }
+      setAllStories((prev) => {
+        const check = prev.find((item) => item.id === story.id);
+        if (check) return prev;
+        return [...prev, story];
+      });
+    });
   };
 
   //ION KNOW WHY THIS IS
@@ -144,12 +154,12 @@ const AuthProvider = ({ children }) => {
     if (!token && isAuth && user) {
       setUser({ username: user.username, id: user.id });
       const publicUrl = getProfilePicture(user.username);
-      await getStory(user.id);
+      await getAllStories(user);
       if (publicUrl) {
         setProfilePicture(publicUrl);
       } else {
         setProfilePicture(
-          `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${user.username}.png`
+          `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${user.username}.jpg`
         );
       }
       setToken(user.token);
@@ -216,7 +226,7 @@ const AuthProvider = ({ children }) => {
   }, [socket, isConnected, isAuth]);
 
   const getProfilePicture = (username) => {
-    return `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${username}.png`;
+    return `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${username}.jpg`;
   };
 
   const value = useMemo(() => {
@@ -236,8 +246,9 @@ const AuthProvider = ({ children }) => {
       getProfilePicture,
       story,
       setStory,
+      allStories,
     };
-  }, [user, story, token, contacts, profilePicture]);
+  }, [user, story, token, contacts, profilePicture, allStories]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -83,7 +83,11 @@ const CustomModal = ({ visible, onRequestClose, ImageUri, time=20000 }) => {
         >
           <Animated.View style={[styles.modalContainer, animatedStyle]}>
             <View style={styles.bg(background)}>
-            <Image source={{ uri: ImageUri }} style={styles.Image} />
+            <Image 
+            source={{ uri: ImageUri }} 
+            style={styles.Image} 
+            resizeMode="cover"
+            />
             </View>
           </Animated.View>
         </PanGestureHandler>

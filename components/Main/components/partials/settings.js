@@ -69,7 +69,7 @@ const Settings = ({ navigation }) => {
       const uri = file.uri;
       const manipResult = await manipulateAsync(uri, [], {
         compress: 0.5,
-        format: SaveFormat.PNG,
+        format: SaveFormat.JPEG,
       });
       return manipResult.uri;
     } catch (error) {
@@ -86,8 +86,8 @@ const Settings = ({ navigation }) => {
     });
     const { data, error } = await socket.supabase.storage
       .from("profilePictures")
-      .upload(`${auth?.user?.username}.png`, decode(base64), {
-        contentType: "image/png",
+      .upload(`${auth?.user?.username}.${uri.split('.').pop()}`, decode(base64), {
+        contentType: `image/${uri.split('.').pop()}`,
         upsert: true,
       });
     if (error) return Alert.alert("Error", "Failed to upload profile picture");

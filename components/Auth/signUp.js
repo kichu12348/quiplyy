@@ -49,7 +49,7 @@ export default function SignUp({ navigation }){
       const uri = file.uri;
       const manipResult = await manipulateAsync(uri, [], {
         compress: 0.5,
-        format: SaveFormat.PNG,
+        format: SaveFormat.JPEG,
       });
       return manipResult.uri;
     } catch (error) {
@@ -67,7 +67,7 @@ export default function SignUp({ navigation }){
     });
     const { data, error } = await supabase.storage
       .from("profilePictures")
-      .upload(`${username}.png`, decode(base64), {
+      .upload(`${username}.${uri.split('.').pop()}`, decode(base64), {
         contentType: "image/png",
         upsert: true,
       });
