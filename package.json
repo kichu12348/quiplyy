@@ -1,6 +1,6 @@
 {
   "name": "quiplyy",
-  "version": "1.16.2",
+  "version": "1.16.6",
   "main": "expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
