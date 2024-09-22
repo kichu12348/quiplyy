@@ -86,7 +86,7 @@ const CustomModal = ({ visible, onRequestClose, ImageUri, time=20000 }) => {
             <Image 
             source={{ uri: ImageUri }} 
             style={styles.Image} 
-            resizeMode="cover"
+            resizeMode="contain"
             />
             </View>
           </Animated.View>

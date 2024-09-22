@@ -35,8 +35,8 @@ const ThemeContext = createContext();
 
 const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState("dark");
-  const[BackGroundForChat, setBackGroundForChat] = useState("Cheese");
-  
+  const [BackGroundForChat, setBackGroundForChat] = useState("Cheese");
+
   const [background, setBackground] = useState("#121212");
   const [textInputColor, setTextInputColor] = useState({
     border: "#616161",
@@ -50,7 +50,6 @@ const ThemeProvider = ({ children }) => {
     sender: "rgba(0, 122, 255, 1)",
     receiver: "rgba(0,255,0,0.8)",
   });
-
 
   const darkIcons = {
     chat: chatD,
@@ -92,22 +91,16 @@ const ThemeProvider = ({ children }) => {
     story: story,
   };
 
-
   const [Icons, setIcons] = useState(darkIcons);
 
- 
-
-  const  chatBackgroundModel=async (item)=>{
-    try{
-      await AsyncStorage.setItem("BackGroundForChat",item);
+  const chatBackgroundModel = async (item) => {
+    try {
+      await AsyncStorage.setItem("BackGroundForChat", item);
       setBackGroundForChat(item);
-    }catch(e){
+    } catch (e) {
       return;
     }
-  }
-
-
-
+  };
 
   const themeSetting = async (theme) => {
     try {
@@ -138,7 +131,9 @@ const ThemeProvider = ({ children }) => {
       try {
         const storedTheme = await AsyncStorage.getItem("theme");
         const chatColor = await AsyncStorage.getItem("chatColor");
-        const BackGroundForChat = await AsyncStorage.getItem("BackGroundForChat");
+        const BackGroundForChat = await AsyncStorage.getItem(
+          "BackGroundForChat"
+        );
         if (BackGroundForChat) {
           setBackGroundForChat(BackGroundForChat);
         }
@@ -188,9 +183,11 @@ const ThemeProvider = ({ children }) => {
       background,
       textInputColor,
       chatMsgColor,
-      setChatMsgColor, 
+      setChatMsgColor,
       chatBackgroundModel,
-      BackGroundForChat
+      BackGroundForChat,
+      lightIcons,
+      darkIcons,
     };
   }, [
     theme,
@@ -199,7 +196,7 @@ const ThemeProvider = ({ children }) => {
     background,
     textInputColor,
     chatMsgColor,
-    BackGroundForChat
+    BackGroundForChat,
   ]);
 
   return (
