@@ -103,6 +103,7 @@ const SocketProvider = ({ children }) => {
     }
   }, [socket]);
 
+
   const value = useMemo(() => {
     return {
       socket,

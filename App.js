@@ -12,6 +12,7 @@ import Main from "./components/Main/main";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { enableScreens } from "react-native-screens";
 
+
 enableScreens();
 
 export default function App() {

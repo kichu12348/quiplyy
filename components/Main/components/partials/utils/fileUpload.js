@@ -1,10 +1,12 @@
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import axios from "axios";
+import { decode } from "base64-arraybuffer";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 
 async function getImages() {
   try {
-    let result = await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
       aspect: [4, 3],
@@ -13,91 +15,38 @@ async function getImages() {
     if (result.canceled) {
       return null;
     }
-    if (!result.canceled) {
+    if (result.assets[0].mimeType === "image/gif") {
       return result.assets[0].uri;
     }
+    const fileUri = result.assets[0].uri;
+    const manipResult = await manipulateAsync(fileUri, [], {
+      compress: 0.5,
+      format: SaveFormat.JPEG,
+    });
+    return manipResult.uri;
   } catch (error) {
     return null;
   }
 }
 
-async function uploadImageInChunks(fileUri, endPoint) {
-  const chunkSize = 1024 * 1024; // 1MB per chunk
-  const maxFileSize = 1024 * 1024 * 5; // 5 MB
-
-  const fileInfo = await FileSystem.getInfoAsync(fileUri);
-  const fileSize = fileInfo.size;
-
-  if (fileSize > maxFileSize) {
-    return {
-      success: false,
-      uri: null,
-      localFileUri: null,
-      err: "File size is too large. Please select a file less than 8MB",
-    };
-  }
-  const totalChunks = Math.ceil(fileSize / chunkSize);
+async function uploadImageInChunks(fileUri, supabase) {
   const fileName = fileUri.split("/").pop();
-
-  for (let i = 0; i < totalChunks; i++) {
-    const start = i * chunkSize;
-    const end = Math.min(start + chunkSize, fileSize);
-    const chunk = await FileSystem.readAsStringAsync(fileUri, {
-      encoding: FileSystem.EncodingType.Base64,
-      position: start,
-      length: end - start,
+  const base64 = await FileSystem.readAsStringAsync(fileUri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  const { data, error } = await supabase.storage
+    .from("images")
+    .upload(fileName, decode(base64), {
+      contentType: `image/${fileName.split(".").pop()}`,
+      upsert: false,
     });
-
-    const { done, success, uri } = await uploadChunk(
-      chunk,
-      i,
-      totalChunks,
-      fileName,
-      endPoint
-    );
-
-    if (!success && !done) {
-      // teeny weeny error causing pitch
-      await deleteFileFromServer(fileName, endPoint);
-      return {
-        success: false,
-        uri: null,
-        localFileUri: null,
-        err: "Failed to upload file",
-      };
-    }
-
-    if (done && i === totalChunks - 1) {
-      return {
-        success: true,
-        uri: uri,
-        localFileUri: fileUri,
-        err: null,
-      };
-    }
+  if (error) {
+    return null;
   }
-}
-
-async function uploadChunk(chunk, chunkIdx, totalChunks, fileName, endPoint) {
-  try {
-    const res = await axios.post(`${endPoint}/message/uploadFile`, {
-      chunk,
-      chunkIdx,
-      totalChunks,
-      fileName,
-    });
-    return {
-      success: res.data.success,
-      done: res.data.done,
-      uri: res.data.uri,
-    };
-  } catch (e) {
-    return {
-      success: false,
-      done: false,
-      uri: null,
-    };
-  }
+  return {
+    uri: fileName,
+    localFileUri: fileUri,
+  };
 }
 
 export async function uploadImage(endPoint) {
@@ -108,35 +57,23 @@ export async function uploadImage(endPoint) {
   return res;
 }
 
-export async function downloadFile(fileName, endPoint) {
+export async function downloadFile(fileName) {
   const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-  const downloadUrl = `${endPoint}/message/downloadFile?fileName=${encodeURIComponent(
-    fileName
-  )}`;
+  const downloadUrl = `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/images/${fileName}`;
 
   try {
-    const downloadResult = await FileSystem.downloadAsync(
-      downloadUrl,
-      fileUri,
-      {
-        md5: false,
-        headers: {
-          // stuufff ill think about later
-        },
-      }
-    );
+    const downloadResult = await FileSystem.downloadAsync(downloadUrl, fileUri);
 
     if (downloadResult.status === 200) {
       return {
         success: true,
         uri: fileUri,
       };
-    } else {
-      return {
-        success: false,
-        uri: null,
-      };
     }
+    return {
+      success: false,
+      uri: null,
+    };
   } catch (error) {
     return {
       success: false,
@@ -174,16 +111,5 @@ export async function copyFileToDocumentDirectory(sourceUri) {
     return destinationUri;
   } catch (error) {
     return null;
-  }
-}
-
-async function deleteFileFromServer(fileName, endPoint) {
-  try {
-    const res = await axios.post(`${endPoint}/message/deleteFileErr`, {
-      fileName,
-    });
-    return res.data.success;
-  } catch (error) {
-    return false;
   }
 }

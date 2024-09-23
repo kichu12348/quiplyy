@@ -12,7 +12,7 @@ import {
   Alert,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
-import { useCallback, useEffect, useRef, useState} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import * as SQLite from "expo-sqlite";
 import { useTheme } from "../../../../contexts/theme";
@@ -38,7 +38,7 @@ import RenderList from "./chatComps/renderList";
 const SingleChat = ({ navigation }) => {
   const { theme, Icons, textInputColor, BackGroundForChat } = useTheme();
   const { selectedContact, randomUID, setSelectedContact } = useMessager();
-  const { socket, isConnected, isLoading, endPoint } = useSocket();
+  const { socket, isConnected, isLoading, endPoint, supabase } = useSocket();
   const { user, token } = useAuth();
 
   axios.defaults.baseURL = `${endPoint}/message`;
@@ -258,10 +258,7 @@ const SingleChat = ({ navigation }) => {
       if (!receivedMessageIds.current.has(message.id)) {
         receivedMessageIds.current.add(message.id);
         if (message.isImage) {
-          const { success, uri } = await downloadFile(
-            message.imageUri,
-            endPoint
-          );
+          const { success, uri } = await downloadFile(message.imageUri);
           if (!success) return;
           message.imageUri = uri;
           setMessages((prev) => [...prev, message]);
@@ -282,7 +279,6 @@ const SingleChat = ({ navigation }) => {
     [isConnected, selectedContact, user?.id]
   );
 
- 
   const startChat = async () => {
     try {
       const db = await dbPromise;
@@ -450,8 +446,8 @@ const SingleChat = ({ navigation }) => {
     socket?.emit("typing", { roomID: selectedContact.roomID, user: user?.id });
   };
 
-  async function uploadFile(endPoint) {
-    const res = await uploadImage(endPoint);
+  async function uploadFile() {
+    const res = await uploadImage(supabase);
     if (!res) return;
     if (!res.success && res.err) {
       Alert.alert(res.err);
@@ -495,8 +491,6 @@ const SingleChat = ({ navigation }) => {
     setMessages((prev) => [...prev, newMessage]);
     socket.emit("message", { message });
   }
- 
-
 
   return (
     <SafeAreaView>
@@ -651,10 +645,10 @@ const SingleChat = ({ navigation }) => {
         onRequestClose={() => setIsSticker(false)}
         hardwareAccelerated={true}
       >
-        <StickerComponent 
-          setIsSticker={setIsSticker} 
-          sendSticker={sendSticker} 
-          stickerList={stickerList} 
+        <StickerComponent
+          setIsSticker={setIsSticker}
+          sendSticker={sendSticker}
+          stickerList={stickerList}
           stickers={stickers}
         />
       </Modal>
@@ -664,15 +658,15 @@ const SingleChat = ({ navigation }) => {
         hardwareAccelerated={true}
         visible={isFocused.focused}
       >
-        <BlurItem 
-        isFocused={isFocused}
-        setIsFocused={setIsFocused}
-        longPressEventHandle={longPressEventHandle}
-        onTapOnImage={onTapOnImage}
-        stickers={stickers}
-        deleteMessage={deleteMessage}
-        deleteMessageForMe={deleteMessageForMe}
-         />
+        <BlurItem
+          isFocused={isFocused}
+          setIsFocused={setIsFocused}
+          longPressEventHandle={longPressEventHandle}
+          onTapOnImage={onTapOnImage}
+          stickers={stickers}
+          deleteMessage={deleteMessage}
+          deleteMessageForMe={deleteMessageForMe}
+        />
       </Modal>
       <Modal
         animationType="slide"
