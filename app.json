@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "quiplyy",
-    "slug": "quiplyy",
-    "version": "1.17.0",
+    "slug": "kichu12348/quiplyy",
+    "version": "1.18.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -14,14 +14,18 @@
     },
     "ios": {
       "supportsTablet": true,
-      "jsEngine": "jsc"
+      "jsEngine": "jsc",
+      "infoPlist": {
+      "UIBackgroundModes": ["audio"]
+    }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "package": "com.kichu12348.quiplyy"
+      "package": "com.kichu12348.quiplyy",
+      "permissions": ["WAKE_LOCK"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -36,16 +40,6 @@
     },
     "updates": {
       "url": "https://u.expo.dev/d4288b3d-885d-4907-b976-b55e20a87bb3"
-    },
-    "plugins": [
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/icon.png",
-          "color": "rgba(0, 0, 0, 0.8)",
-          "defaultChannel": "default"
-        }
-      ]
-    ]
+    }
   }
 }

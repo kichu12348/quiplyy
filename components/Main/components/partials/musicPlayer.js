@@ -11,7 +11,7 @@ import {
 import SafeAreaView from "./utils/safe";
 import { useState, useEffect } from "react";
 import { useTheme } from "../../../../contexts/theme";
-import { Audio } from "expo-av";
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from "expo-av";
 import SoundBars from "./utils/soundBars";
 import * as SQLite from "expo-sqlite";
 import { useSocket } from "../../../../contexts/socketContext";
@@ -217,7 +217,14 @@ const Music = () => {
   async function start() {
     const db = await dbPromise;
     await getSongsFromDB(db);
-    await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+    await Audio.setAudioModeAsync({
+      staysActiveInBackground: true,
+      playsInSilentModeIOS: true,
+      interruptionModeIOS: InterruptionModeIOS.DuckOthers,
+      interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
+      shouldDuckAndroid: true,
+      playThroughEarpieceAndroid: true,
+    });
   }
 
   useEffect(() => {

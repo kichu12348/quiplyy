@@ -4,11 +4,6 @@ import { useSocket } from "./socketContext";
 import * as SQLite from "expo-sqlite";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  setupNotifications,
-  setupBackgroundFetch,
-} from "../backgroundtasks/backgroundTask.js";
-
 const AuthContext = createContext();
 
 const AuthProvider = ({ children }) => {
@@ -174,10 +169,7 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-  useEffect(() => {
-    setupNotifications(user);
-    setupBackgroundFetch(user);
-  }, [user]);
+
 
   //CLEARS ALL DATA AND SIGNS OUT
   const logOut = async () => {

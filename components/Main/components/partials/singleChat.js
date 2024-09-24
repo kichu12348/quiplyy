@@ -793,7 +793,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 15,
     color: theme === "dark" ? "#E0E0E0" : "#2D2D2D",
-    fontWeight: "bold",
+    fontWeight: "400",
     alignItems: "center",
     alignText: "center",
     alignSelf: "center",

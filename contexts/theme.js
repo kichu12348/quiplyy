@@ -30,6 +30,8 @@ import pauseD from "./images/pauseD.png";
 import logoL from "./images/logoL.png";
 import logoD from "./images/logoD.png";
 import story from "./images/story.png";
+import aiL from "./images/aiL.png";
+import aiD from "./images/aiD.png";
 
 const ThemeContext = createContext();
 
@@ -69,6 +71,7 @@ const ThemeProvider = ({ children }) => {
     pause: pauseD,
     logo: logoD,
     story: story,
+    ai: aiD,
   };
 
   const lightIcons = {
@@ -89,6 +92,7 @@ const ThemeProvider = ({ children }) => {
     pause: pauseL,
     logo: logoL,
     story: story,
+    ai: aiL,
   };
 
   const [Icons, setIcons] = useState(darkIcons);

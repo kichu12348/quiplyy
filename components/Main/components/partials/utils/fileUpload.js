@@ -63,7 +63,6 @@ export async function downloadFile(fileName) {
 
   try {
     const downloadResult = await FileSystem.downloadAsync(downloadUrl, fileUri);
-
     if (downloadResult.status === 200) {
       return {
         success: true,

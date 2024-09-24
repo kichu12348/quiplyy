@@ -449,7 +449,7 @@ const Settings = ({ navigation }) => {
               15
             )}
           >
-            v 1.17.0
+            v 1.18.0
           </Text>
           <Text
             style={styles.text(
@@ -457,7 +457,7 @@ const Settings = ({ navigation }) => {
               15
             )}
           >
-            Made with ❤️ by Kichu
+            Made wiz ❤️ by Kichu
           </Text>
           <TouchableOpacity
             style={styles.center}

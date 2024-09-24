@@ -290,6 +290,7 @@ const Body = ({ moveTo }) => {
           />
           {query.trim() === "" && (
             <>
+
               <TouchableOpacity
                 style={styles.centerDivSpace(10)}
                 disabled={!isConnected}
@@ -297,7 +298,15 @@ const Body = ({ moveTo }) => {
               >
                 <Image source={theme.Icons.story} style={styles.Image(0, 35)} />
               </TouchableOpacity>
-
+              <TouchableOpacity
+                style={styles.centerDivSpace(10)}
+                disabled={!isConnected}
+                onPress={()=>{
+                  moveTo("AiChat")
+                }}
+              >
+                <Image source={theme.Icons.ai} style={styles.Image(0, 35)} />
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.Image(10)}
                 disabled={!isConnected || !socket}

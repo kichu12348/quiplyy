@@ -8,6 +8,7 @@ import Blog from "./partials/blogs";
 import Settings from "./partials/settings";
 import SingleChat from "./partials/singleChat";
 import ChessJs from "./partials/chess";
+import AiChat from "./partials/aiChat";
 import { useTheme } from "../../../contexts/theme";
 import { useAuth } from "../../../contexts/authContext";
 import { useSocket } from "../../../contexts/socketContext";
@@ -63,6 +64,10 @@ const Home = ({navigation}) => {
         <Stack.Screen
           name="ChessJs"
           component={ChessJs}
+        />
+        <Stack.Screen
+          name="AiChat"
+          component={AiChat}
         />
       </Stack.Navigator>
     </SafeAreaView>
