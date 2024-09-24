@@ -20,7 +20,7 @@
     "axios": "^1.7.2",
     "base64-arraybuffer": "^1.0.2",
     "chess.js": "^1.0.0-beta.8",
-    "expo": "~51.0.28",
+    "expo": "~51.0.34",
     "expo-av": "~14.0.7",
     "expo-blur": "~13.0.2",
     "expo-file-system": "^17.0.1",
