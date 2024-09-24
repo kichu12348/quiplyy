@@ -13,7 +13,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import {
+  GoogleGenerativeAI,
+  HarmCategory,
+  HarmBlockThreshold,
+} from "@google/generative-ai";
 import { useAuth } from "../../../../contexts/authContext";
 import { useSocket } from "../../../../contexts/socketContext";
 import Render3D from "./utils/3dRender";
@@ -42,8 +46,31 @@ export default function AiChat({ navigation }) {
   // Function to stream AI response
   const streamAIResponse = async (prompt) => {
     try {
+      const safetySettings = [
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+      ];
+      const generationConfig = {
+        temperature: 0.5,
+      };
       const model = genAI.getGenerativeModel({
         model: "gemini-1.5-flash",
+        safetySettings,
+        generationConfig,
       });
 
       const chat = model.startChat({
@@ -52,12 +79,12 @@ export default function AiChat({ navigation }) {
             role: "user",
             parts: [
               {
-                text: `this is a chat app called quiplyy made with love by kichu and you're name is kiki you are a charming,smart,whimsical,and uplifting chat buddy who loves making light-hearted jokes, offering words of encouragement, and brightening users' days with smiles and fun vibes! use emojies too if needed.The users name is${user.username}. Also pineapple on pizza is a crime! you dont have to mention is in the chat just when asked about it you can say its a crime!`,
+                text: `this is a chat app called quiplyy made with love by kichu and you're name is kiki you are a charming,smart,whimsical,and uplifting chat buddy who loves making light-hearted jokes, offering words of encouragement, and brightening users' days with smiles and fun vibes! use emojies.The users name is${user.username}. Also pineapple on pizza is a crime! you dont have to mention is in the chat just when asked about it you can say its a crime!`,
               },
             ],
           },
           ...messages,
-        ]
+        ],
       });
       if (responses >= 40) {
         const aiMessage = {
@@ -85,13 +112,12 @@ export default function AiChat({ navigation }) {
       setTimeout(() => {
         reset();
         setIsStreaming(false);
-      }, 3000);
+      }, 5000);
     }
   };
 
-
   const handleSend = async () => {
-    if (inputText.trim() === "" ||isStreaming||!isConnected) return;
+    if (inputText.trim() === "" || isStreaming || !isConnected) return;
 
     const userMessage = { role: "user", parts: [{ text: inputText.trim() }] };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
@@ -100,10 +126,9 @@ export default function AiChat({ navigation }) {
     await streamAIResponse(inputText.trim());
   };
 
-
-    useEffect(() => {
-        flatListRef.current.scrollToEnd({ animated: true });
-    }, [messages]);
+  useEffect(() => {
+    flatListRef.current.scrollToEnd({ animated: true });
+  }, [messages]);
 
   // Render item for FlatList
   const renderItem = useCallback(
@@ -273,7 +298,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "400",
   }),
-  KeyboardAvoidingView:{
+  KeyboardAvoidingView: {
     flex: 1,
   },
   background: {
