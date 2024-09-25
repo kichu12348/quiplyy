@@ -19,7 +19,7 @@ import { decode } from "base64-arraybuffer";
 import * as FileSystem from "expo-file-system";
 import { useSocket } from "../../contexts/socketContext";
 
-export default function SignUp({ navigation }){
+export default function SignUp({ navigation }) {
   const Auth = useAuth();
   const { isConnected, supabase, socket } = useSocket();
   const { theme, textInputColor, Icons, background } = useTheme();
@@ -32,12 +32,13 @@ export default function SignUp({ navigation }){
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [image, setImage] = useState(null);
+  const [signingUp, setSigningUp] = useState(false);
 
   const getImage = async () => {
     try {
       const { assets } = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        allowsEditing: false,
         aspect: [1, 1],
         quality: 0.5,
       });
@@ -67,7 +68,7 @@ export default function SignUp({ navigation }){
     });
     const { data, error } = await supabase.storage
       .from("profilePictures")
-      .upload(`${username}.${uri.split('.').pop()}`, decode(base64), {
+      .upload(`${username}.${uri.split(".").pop()}`, decode(base64), {
         contentType: "image/png",
         upsert: true,
       });
@@ -90,9 +91,15 @@ export default function SignUp({ navigation }){
       Alert.alert("Fill the fields");
       return;
     }
+    setSigningUp(true);
     const imageUri = await uploadProfilePicture(image);
-    if (!imageUri) return Alert.alert("Please Select an Image");
+    if (!imageUri) {
+      Alert.alert("Please Select an Image");
+      setSigningUp(false);
+      return;
+    }
     await Auth.signup(username.trim(), password.trim(), imageUri);
+    setSigningUp(false);
   };
 
   return (
@@ -109,7 +116,7 @@ export default function SignUp({ navigation }){
         <Image source={Icons.logo} style={styles.Image} />
         <TextInput
           style={styles.TextInput(textInputColor, theme)}
-          readOnly={image !== null}
+          readOnly={image !== null || signingUp}
           placeholder="username..."
           placeholderTextColor={theme === "dark" ? "#E0E0E0" : "#2D2D2D"}
           value={username}
@@ -119,13 +126,17 @@ export default function SignUp({ navigation }){
           style={styles.TextInput(textInputColor, theme)}
           placeholder="password.."
           value={password}
-          readOnly={image !== null}
+          readOnly={image !== null || signingUp}
           onChangeText={(text) => setPassword(text.trim())}
           placeholderTextColor={theme === "dark" ? "#E0E0E0" : "#2D2D2D"}
           secureTextEntry
           onSubmitEditing={handleSignUp}
         />
-        <TouchableOpacity style={styles.row} onPress={handleMovePage}>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={handleMovePage}
+          disabled={signingUp}
+        >
           <Text
             style={styles.textStyle(theme === "dark" ? "#E0E0E0" : "#2D2D2D")}
           >
@@ -139,14 +150,17 @@ export default function SignUp({ navigation }){
             {"  "}Login
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button(theme)} onPress={handleSignUp}>
+        <TouchableOpacity
+          style={styles.button(theme)}
+          onPress={handleSignUp}
+          disabled={signingUp}
+        >
           <Text style={styles.textStyle()}>Sign up</Text>
         </TouchableOpacity>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-};
-
+}
 
 const styles = StyleSheet.create({
   container: {

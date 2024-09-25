@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
-import { useEffect, useState, useCallback, memo, useMemo } from "react";
+import { useEffect, useState, useCallback, memo} from "react";
 import { TextInput } from "react-native-gesture-handler";
 import { useTheme } from "../../../../contexts/theme";
 import { useMessager } from "../../../../contexts/messagerContext";

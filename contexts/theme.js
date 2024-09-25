@@ -32,6 +32,23 @@ import logoD from "./images/logoD.png";
 import story from "./images/story.png";
 import aiL from "./images/aiL.png";
 import aiD from "./images/aiD.png";
+//import stickers
+import mogCat from "./stickers/mogCat.gif";
+import bonjour from "./stickers/bonjour.jpeg";
+import fisiks from "./stickers/fisiks.jpeg";
+import ionGetIt from "./stickers/ionGetIt.jpeg";
+import mexicanCat from "./stickers/mexicanCat.gif";
+import stopThinking from "./stickers/stopThinking.jpeg";
+import think from "./stickers/think.jpeg";
+import tricks from "./stickers/tricks.jpeg";
+import vanish from "./stickers/vanish.gif";
+import smileCat from "./stickers/smileCat.gif";
+import sus from "./stickers/sus.png";
+import okCat from "./stickers/okCat.png";
+import dogIntense from "./stickers/dogIntense.gif";
+import dancingDoge from "./stickers/dancingDoge.gif";
+import dancingDog from "./stickers/dancingDog.gif";
+import susAmg from "./stickers/susAmg.png";
 
 const ThemeContext = createContext();
 
@@ -52,6 +69,46 @@ const ThemeProvider = ({ children }) => {
     sender: "rgba(0, 122, 255, 1)",
     receiver: "rgba(0,255,0,0.8)",
   });
+
+  //stickers
+  const stickers = {
+    mogCat,
+    bonjour,
+    fisiks,
+    ionGetIt,
+    mexicanCat,
+    stopThinking,
+    think,
+    tricks,
+    vanish,
+    smileCat,
+    sus,
+    okCat,
+    dogIntense,
+    dancingDoge,
+    dancingDog,
+    susAmg,
+  };
+  const stickerList = [
+    { id: 1, name: "mogCat" },
+    { id: 2, name: "bonjour" },
+    { id: 3, name: "fisiks" },
+    { id: 4, name: "ionGetIt" },
+    { id: 5, name: "mexicanCat" },
+    { id: 6, name: "stopThinking" },
+    { id: 7, name: "think" },
+    { id: 8, name: "tricks" },
+    { id: 9, name: "vanish" },
+    { id: 10, name: "smileCat" },
+    { id: 11, name: "sus" },
+    { id: 12, name: "okCat" },
+    { id: 13, name: "dogIntense" },
+    { id: 14, name: "dancingDoge" },
+    { id: 15, name: "dancingDog" },
+    { id: 16, name: "susAmg" },
+  ];
+
+  /////////////////////////////////////////////
 
   const darkIcons = {
     chat: chatD,
@@ -192,6 +249,8 @@ const ThemeProvider = ({ children }) => {
       BackGroundForChat,
       lightIcons,
       darkIcons,
+      stickerList,
+      stickers,
     };
   }, [
     theme,

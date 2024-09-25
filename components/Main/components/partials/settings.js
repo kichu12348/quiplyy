@@ -86,10 +86,14 @@ const Settings = ({ navigation }) => {
     });
     const { data, error } = await socket.supabase.storage
       .from("profilePictures")
-      .upload(`${auth?.user?.username}.${uri.split('.').pop()}`, decode(base64), {
-        contentType: `image/${uri.split('.').pop()}`,
-        upsert: true,
-      });
+      .upload(
+        `${auth?.user?.username}.${uri.split(".").pop()}`,
+        decode(base64),
+        {
+          contentType: `image/${uri.split(".").pop()}`,
+          upsert: true,
+        }
+      );
     if (error) return Alert.alert("Error", "Failed to upload profile picture");
     auth.setProfilePicture(uri);
   };
@@ -231,6 +235,14 @@ const Settings = ({ navigation }) => {
             16. You agree to send at least one message a day that makes someone
             smile. If you fail, Chip might just come knocking. 👀🚪
             {"\n\n"}
+            17. You agree to send a random compliment to someone at least once a
+            week. If you don’t, you will not be getting the surprise Chip has in
+            store for you! 🎁😄✨
+            {"\n\n"}
+            18. By using this app, you consent to the possibility of your phone
+            getting a personality. If it starts asking for snacks, don’t be
+            alarmed—it just wants to bond! 🍕🤖💕
+            {"\n\n"}
           </Text>
         </ScrollView>
       </SafeAreaView>
@@ -303,9 +315,7 @@ const Settings = ({ navigation }) => {
                 {auth.user?.username}
               </Text>
               <View style={styles.space(20)} />
-              <View style={styles.left}>
-                
-              </View>
+              <View style={styles.left}></View>
               <View style={styles.space(10)} />
               <TextInput
                 style={styles.textInputStyle(
@@ -449,7 +459,7 @@ const Settings = ({ navigation }) => {
               15
             )}
           >
-            v 1.18.1
+            v 1.18.2
           </Text>
           <Text
             style={styles.text(

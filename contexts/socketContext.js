@@ -58,19 +58,6 @@ const SocketProvider = ({ children }) => {
     const messages = await db.getAllAsync("SELECT * FROM messages");
     setAllMessages(messages);
   };
-
-  function deleteMessageFromState(id) {
-    setAllMessages((prev) => {
-      return prev.filter((msg) => msg.id !== id);
-    });
-  }
-
-  function addMessageToState(msg) {
-    setAllMessages((prev) => {
-      return [...prev, msg];
-    });
-  }
-
   useEffect(() => {
     getMessageFromDB();
     const attemptConnection = () => {
@@ -114,9 +101,7 @@ const SocketProvider = ({ children }) => {
       endPoint,
       supabase,
       setAllMessages,
-      allMessages,
-      deleteMessageFromState,
-      addMessageToState,
+      allMessages
     };
   }, [socket, isLoading, isAuth, isConnected, allMessages]);
 

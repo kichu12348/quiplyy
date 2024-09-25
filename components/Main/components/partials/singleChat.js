@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import SafeAreaView from "./utils/safe";
 import { useCallback, useEffect, useRef, useState } from "react";
-import axios from "axios";
+import axios, { all } from "axios";
 import * as SQLite from "expo-sqlite";
 import { useTheme } from "../../../../contexts/theme";
 import { useMessager } from "../../../../contexts/messagerContext";
@@ -36,9 +36,24 @@ import BlurItem from "./chatComps/blurItem";
 import RenderList from "./chatComps/renderList";
 
 const SingleChat = ({ navigation }) => {
-  const { theme, Icons, textInputColor, BackGroundForChat } = useTheme();
+  const {
+    theme,
+    Icons,
+    textInputColor,
+    BackGroundForChat,
+    stickerList,
+    stickers,
+  } = useTheme();
   const { selectedContact, randomUID, setSelectedContact } = useMessager();
-  const { socket, isConnected, isLoading, endPoint, supabase } = useSocket();
+  const {
+    socket,
+    isConnected,
+    isLoading,
+    endPoint,
+    supabase,
+    allMessages,
+    setAllMessages,
+  } = useSocket();
   const { user, token } = useAuth();
 
   axios.defaults.baseURL = `${endPoint}/message`;
@@ -83,47 +98,8 @@ const SingleChat = ({ navigation }) => {
     `);
   };
 
-  const stickers = {
-    mogCat: require("./stickers/mogCat.gif"),
-    bonjour: require("./stickers/bonjour.jpeg"),
-    fisiks: require("./stickers/fisiks.jpeg"),
-    ionGetIt: require("./stickers/ionGetIt.jpeg"),
-    mexicanCat: require("./stickers/mexicanCat.gif"),
-    stopThinking: require("./stickers/stopThinking.jpeg"),
-    think: require("./stickers/think.jpeg"),
-    tricks: require("./stickers/tricks.jpeg"),
-    vanish: require("./stickers/vanish.gif"),
-    smileCat: require("./stickers/smileCat.gif"),
-    sus: require("./stickers/sus.png"),
-    okCat: require("./stickers/okCat.png"),
-    dogIntense: require("./stickers/dogIntense.gif"),
-    dancingDoge: require("./stickers/dancingDoge.gif"),
-    dancingDog: require("./stickers/dancingDog.gif"),
-    susAmg: require("./stickers/susAmg.png"),
-  };
-  const stickerList = [
-    { id: 1, name: "mogCat" },
-    { id: 2, name: "bonjour" },
-    { id: 3, name: "fisiks" },
-    { id: 4, name: "ionGetIt" },
-    { id: 5, name: "mexicanCat" },
-    { id: 6, name: "stopThinking" },
-    { id: 7, name: "think" },
-    { id: 8, name: "tricks" },
-    { id: 9, name: "vanish" },
-    { id: 10, name: "smileCat" },
-    { id: 11, name: "sus" },
-    { id: 12, name: "okCat" },
-    { id: 13, name: "dogIntense" },
-    { id: 14, name: "dancingDoge" },
-    { id: 15, name: "dancingDog" },
-    { id: 16, name: "susAmg" },
-  ];
   const loadMessages = async (db) => {
-    const rows = await db.getAllAsync(
-      "SELECT * FROM messages WHERE roomID = ?",
-      [selectedContact.roomID]
-    );
+    const rows = allMessages.filter((e) => e.roomID === selectedContact.roomID);
     rows.map((e) => {
       receivedMessageIds.current.add(e.id);
     });
@@ -142,6 +118,7 @@ const SingleChat = ({ navigation }) => {
       }
       await db.runAsync("DELETE FROM messages WHERE id = ?", [message.id]);
       setMessages((prev) => prev.filter((e) => e.id !== message.id));
+      setAllMessages((prev) => prev.filter((e) => e.id !== message.id));
       return;
     }
     if (message.isSticker) {
@@ -262,9 +239,11 @@ const SingleChat = ({ navigation }) => {
           if (!success) return;
           message.imageUri = uri;
           setMessages((prev) => [...prev, message]);
+          setAllMessages((prev) => [...prev, message]);
           await addMessageToDB(db, message);
         } else {
           setMessages((prev) => [...prev, message]);
+          setAllMessages((prev) => [...prev, message]);
           await addMessageToDB(db, message);
         }
         await axios.post("/delete", {
@@ -341,6 +320,7 @@ const SingleChat = ({ navigation }) => {
     const db = await dbPromise;
     await addMessageToDB(db, message);
     setMessages((prev) => [...prev, message]);
+    setAllMessages((prev) => [...prev, message]);
     socket.emit("message", { message });
     setIsSticker(false);
   };
@@ -369,6 +349,7 @@ const SingleChat = ({ navigation }) => {
     const db = await dbPromise;
     await addMessageToDB(db, message);
     setMessages((prev) => [...prev, message]);
+    setAllMessages((prev) => [...prev, message]);
     socket.emit("message", { message });
   };
 
@@ -403,6 +384,7 @@ const SingleChat = ({ navigation }) => {
     await db.runAsync("DELETE FROM messages WHERE id = ?", [messageId]);
     setIsFocused({ focused: false, item: null });
     setMessages((prev) => prev.filter((e) => e.id !== messageId));
+    setAllMessages((prev) => prev.filter((e) => e.id !== messageId));
   }
   useEffect(() => {
     if (socket) {
@@ -489,6 +471,7 @@ const SingleChat = ({ navigation }) => {
     const db = await dbPromise;
     await addMessageToDB(db, message);
     setMessages((prev) => [...prev, newMessage]);
+    setAllMessages((prev) => [...prev, newMessage]);
     socket.emit("message", { message });
   }
 
@@ -577,7 +560,13 @@ const SingleChat = ({ navigation }) => {
               <>
                 <TouchableOpacity
                   onPress={() => setIsSticker(true)}
-                  style={styles.Button(theme, isConnected, 35, 35, 10)}
+                  style={styles.Button(
+                    theme,
+                    isConnected && socket,
+                    35,
+                    35,
+                    10
+                  )}
                   disabled={!isConnected || isLoading || !socket}
                 >
                   <Image
@@ -587,7 +576,13 @@ const SingleChat = ({ navigation }) => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => uploadFile(endPoint)}
-                  style={styles.Button(theme, isConnected, 35, 35, 10)}
+                  style={styles.Button(
+                    theme,
+                    isConnected && socket,
+                    35,
+                    35,
+                    10
+                  )}
                   disabled={!isConnected || isLoading || !socket}
                 >
                   <Image
@@ -625,7 +620,7 @@ const SingleChat = ({ navigation }) => {
             />
             <TouchableOpacity
               onPress={sendMessage}
-              style={styles.Button(theme, isConnected, 35, 35, 0, 10)}
+              style={styles.Button(theme, isConnected && socket, 35, 35, 0, 10)}
               disabled={
                 !isConnected || msg.trim() === "" || isLoading || !socket
               }

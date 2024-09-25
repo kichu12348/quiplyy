@@ -12,6 +12,7 @@ const AuthProvider = ({ children }) => {
   const [contacts, setContacts] = useState(null);
   const [profilePicture, setProfilePicture] = useState(null);
   const [story, setStory] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [allStories, setAllStories] = useState([]);
   const {
     socket,
@@ -169,8 +170,6 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-
-
   //CLEARS ALL DATA AND SIGNS OUT
   const logOut = async () => {
     await removeData();
@@ -247,8 +246,10 @@ const AuthProvider = ({ children }) => {
       story,
       setStory,
       allStories,
+      messages,
+      setMessages,
     };
-  }, [user, story, token, contacts, profilePicture, allStories]);
+  }, [user, story, token, contacts, profilePicture, allStories, messages]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

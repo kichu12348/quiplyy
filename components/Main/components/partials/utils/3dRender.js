@@ -20,10 +20,6 @@ const Render3D = ({ item }) => {
   const [model, setModel] = useState(Cheese_Slice_Cheese_0);
 
   useEffect(() => {
-    useGLTF.preload(Pineapple_Slice_Pineapple_0);
-    useGLTF.preload(Cheese_Slice_Cheese_0);
-    useGLTF.preload(Waffle_Slice_Waffle_0);
-    useGLTF.preload(Pizza_Slice_Meat_Feast_0);
     setModelToRender();
   }, []);
 
@@ -31,18 +27,23 @@ const Render3D = ({ item }) => {
     switch (item) {
       case "Cheese":
         setModel(Cheese_Slice_Cheese_0);
+        useGLTF.preload(Cheese_Slice_Cheese_0);
         break;
       case "Pineapple":
         setModel(Pineapple_Slice_Pineapple_0);
+        useGLTF.preload(Pineapple_Slice_Pineapple_0);
         break;
       case "Waffle":
         setModel(Waffle_Slice_Waffle_0);
+        useGLTF.preload(Waffle_Slice_Waffle_0);
         break;
       case "Pizza":
         setModel(Pizza_Slice_Meat_Feast_0);
+        useGLTF.preload(Pizza_Slice_Meat_Feast_0);
         break;
       default:
         setModel(Cheese_Slice_Cheese_0);
+        useGLTF.preload(Cheese_Slice_Cheese_0);
         break;
     }
   };

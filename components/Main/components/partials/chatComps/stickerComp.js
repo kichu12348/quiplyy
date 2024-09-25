@@ -63,7 +63,10 @@ const StickerComponent =memo(({
             </TouchableOpacity>
           </View>
           <View style={styles.stickers}>
-            <ScrollView scrollEnabled={true} style={styles.ScrollView}>
+            <ScrollView 
+            showsVerticalScrollIndicator={false}
+            style={styles.ScrollView}
+            >
               {stickerList.length > 0
                 ? (() => {
                     const stickerItems = [];
