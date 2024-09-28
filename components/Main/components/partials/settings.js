@@ -519,7 +519,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     alignItems: "center",
     backgroundColor: "transparent",
-    marginTop: 20,
   }),
   Image: (
     marginR = 0,
