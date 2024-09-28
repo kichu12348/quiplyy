@@ -43,14 +43,18 @@ const Settings = ({ navigation }) => {
     try {
       const update = await Updates.checkForUpdateAsync();
       if (update.isAvailable) {
+        Alert.alert("Update Available 😃", "Restarting the App");
         await Updates.fetchUpdateAsync();
         await Updates.reloadAsync();
-        Alert.alert("Update Available", "Please Restart the App");
       } else {
-        Alert.alert("No Update Available");
+        Alert.alert("sedly no Update Available 😔");
       }
     } catch (error) {
-      Alert.alert("Nuh  uh!!!");
+      Alert.alert(
+        "Nuh  uh!!! 😼",
+        `
+       error: ${error.message}`
+      );
     }
   };
 
@@ -459,7 +463,7 @@ const Settings = ({ navigation }) => {
               15
             )}
           >
-            v 1.18.2
+            v 1.18.5
           </Text>
           <Text
             style={styles.text(
