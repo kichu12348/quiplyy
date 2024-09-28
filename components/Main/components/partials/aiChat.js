@@ -78,7 +78,7 @@ export default function AiChat({ navigation }) {
             role: "user",
             parts: [
               {
-                text: `from the messages you are supposed to determine the personality of the user and give the personality of the user as a response. you can use the user's name ${user.username} also keep it under 200 characters also describe like writing a biography`,
+                text: `from the messages you are supposed to determine the personality of the user and give the personality of the user as a response. you can use the user's name ${user.username} also keep it under 200 characters also describe like writing a biography in thirdperson perspective`,
               },
             ],
           },
@@ -113,8 +113,8 @@ export default function AiChat({ navigation }) {
   }, []);
 
   const randomCall = () => {
-    const random = Math.floor(Math.random() * 20);
-    if (random === 5) {
+    const shouldCall= messages.length%10;
+    if (shouldCall === 0&&responses>0){
       personalization();
     }
   };
