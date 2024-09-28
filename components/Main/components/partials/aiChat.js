@@ -108,19 +108,18 @@ export default function AiChat({ navigation }) {
     }
   }
 
-  useEffect(() => {
-    getPersonality();
-  }, []);
-
   const randomCall = () => {
-    const shouldCall= messages.length%10;
-    if (shouldCall === 0&&responses>0){
+    const shouldCall = messages.length % 10;
+    if (shouldCall === 0 && responses > 0) {
       personalization();
     }
   };
 
   // Function to stream AI response
   const streamAIResponse = async (prompt) => {
+    if(!personality){
+     await getPersonality();
+    }
     try {
       const chat = model.startChat({
         history: [
@@ -128,7 +127,7 @@ export default function AiChat({ navigation }) {
             role: "user",
             parts: [
               {
-                text: `this is a chat app called quiplyy made with love by kichu and you're name is kiki you are a charming,smart,whimsical,and uplifting chat buddy who loves making light-hearted jokes, offering words of encouragement, and brightening users' days with smiles and fun vibes! use emojies.The users name is${user.username}. Also pineapple on pizza is a crime! you dont have to mention is in the chat just when asked about it you can say its a crime!. Users personality is ${personality}`,
+                text: `this is a chat app called quiplyy made with love by kichu and you're name is kiki you are a charming,smart,whimsical,and uplifting chat buddy who loves making light-hearted jokes or dad jokes, offering words of encouragement, and brightening users' days with smiles and fun vibes! use emojies.The users name is${user.username} and their personality is: ${personality}. Also pineapple on pizza is a crime! you dont have to mention is in the chat just when asked about it you can say its a crime!.`,
               },
             ],
           },

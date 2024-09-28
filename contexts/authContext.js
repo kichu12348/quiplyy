@@ -67,6 +67,7 @@ const AuthProvider = ({ children }) => {
       await contactsDb.execAsync(`DROP TABLE IF EXISTS contacts`);
       await messagesDb.execAsync(`DROP TABLE IF EXISTS messages`);
       await AsyncStorage.removeItem("bio");
+      await AsyncStorage.removeItem("personality");
     } catch (e) {
       return;
     }
