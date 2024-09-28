@@ -22,6 +22,7 @@ const AuthProvider = ({ children }) => {
     isLoading,
     endPoint,
     supabase,
+    setAllMessages,
   } = useSocket();
 
   axios.defaults.baseURL = `${endPoint}/user`;
@@ -177,6 +178,7 @@ const AuthProvider = ({ children }) => {
     setToken(null);
     setIsAuth(false);
     setContacts([]);
+    setAllMessages([]);
   };
 
   const addContact = async (contactId) => {
