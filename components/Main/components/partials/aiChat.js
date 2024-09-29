@@ -21,9 +21,10 @@ import { useAuth } from "../../../../contexts/authContext";
 import { useSocket } from "../../../../contexts/socketContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import RotatingGradientRing from "./utils/animBg";
+import RenderList from "./chatComps/aiChatRenderList";
 
 export default function AiChat({ navigation }) {
-  const { Icons, theme, textInputColor, BackGroundForChat } = useTheme();
+  const { Icons, theme, textInputColor} = useTheme();
   const { isConnected } = useSocket();
   const { user, messages, setMessages } = useAuth();
   const [inputText, setInputText] = useState("");
@@ -179,21 +180,7 @@ export default function AiChat({ navigation }) {
     flatListRef.current.scrollToEnd({ animated: true });
   }, [messages]);
 
-  // Render item for FlatList
-  const renderItem = useCallback(
-    ({ item }) => (
-      <View
-        style={
-          item.role === "user"
-            ? styles.userMessage(theme)
-            : styles.aiMessage(theme)
-        }
-      >
-        <Text style={styles.textStyles(theme)}>{item.parts[0].text}</Text>
-      </View>
-    ),
-    []
-  );
+  
 
   return (
     <SafeAreaView>
@@ -216,7 +203,7 @@ export default function AiChat({ navigation }) {
       >
         <FlatList
           data={messages}
-          renderItem={renderItem}
+          renderItem={({ item }) => <RenderList item={item} />}
           keyExtractor={(item, index) => index.toString()}
           contentContainerStyle={styles.chatContainer}
           showsVerticalScrollIndicator={false}
@@ -272,26 +259,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingBottom: 10,
   },
-  userMessage: (theme) => ({
-    alignSelf: "flex-end",
-    backgroundColor:
-      theme === "dark" ? "rgba(0, 122, 255, 0.8)" : "rgba(0,255,0,0.8)",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-    marginVertical: 5,
-    maxWidth: "80%",
-  }),
-  aiMessage: (theme) => ({
-    alignSelf: "flex-start",
-    backgroundColor:
-      theme === "dark" ? "rgba(30,30,30,0.8)" : "rgba(224,224,224,0.8)",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-    marginVertical: 5,
-    maxWidth: "80%",
-  }),
   inputContainer: (c) => ({
     flexDirection: "row",
     paddingHorizontal: 5,
