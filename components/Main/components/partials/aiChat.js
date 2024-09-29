@@ -3,7 +3,6 @@ import { useTheme } from "../../../../contexts/theme";
 import SafeAreaView from "./utils/safe";
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   Image,
