@@ -2,7 +2,7 @@ import React, { memo } from "react";
 import { Text, View, StyleSheet, TextInput } from "react-native";
 import { useTheme } from "../../../../../contexts/theme";
 
-//dis code made me see stars 💀 welp such is such
+//dis code made me see stars 💀 welp such is such it workzzzz
 const RenderList = memo(({ item }) => {
   const { theme } = useTheme();
   let currIndex = 0;
