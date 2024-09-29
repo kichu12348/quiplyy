@@ -2,9 +2,11 @@ import React, { memo } from "react";
 import { Text, View, StyleSheet, TextInput } from "react-native";
 import { useTheme } from "../../../../../contexts/theme";
 
+//dis code made me see stars 💀 welp such is such
 const RenderList = memo(({ item }) => {
   const { theme } = useTheme();
   let currIndex = 0;
+
 
   const parseMessage = (item) => {
     if (item.role === "user") {
@@ -262,12 +264,12 @@ const styles = StyleSheet.create({
     maxWidth: "90%",
   }),
   textStyles: (theme, fw = "400") => ({
-    color: theme === "dark" ? "#E0E0E0" : "#2D2D2D", // Default color for regular text
+    color: theme === "dark" ? "#E0E0E0" : "#2D2D2D", 
     fontSize: 16,
     fontWeight: fw,
   }),
   codeBlock: (theme) => ({
-    backgroundColor: theme === "dark" ? "#333" : "#f4f4f4", // Background of code block
+    backgroundColor: theme === "dark" ? "#333" : "#f4f4f4", 
     padding: 10,
     marginVertical: 5,
     borderRadius: 10,
@@ -275,7 +277,7 @@ const styles = StyleSheet.create({
     borderColor: theme === "dark" ? "#555" : "#ccc",
   }),
   codeColor: (theme) => ({
-    color: theme === "dark" ? "#00FF00" : "rgba(0,0,250,0.7)", // Light green for dark mode, dark red for light mode
+    color: theme === "dark" ? "#00FF00" : "rgba(0,0,250,0.7)", // Light green for dark mode, dark blue for light mode
     fontSize:16,
     fontWeight:"400"
   }),
@@ -293,7 +295,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bulletPoint: (theme) => ({
-    color: theme === "dark" ? "#E0E0E0" : "#2D2D2D", // Same color as regular text
+    color: theme === "dark" ? "#E0E0E0" : "#2D2D2D", 
   }),
   inlineCodeBox: (theme) => ({
     backgroundColor: theme === "dark" ? "#444" : "#ececec",
