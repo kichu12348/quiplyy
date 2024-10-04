@@ -23,7 +23,7 @@ import RotatingGradientRing from "./utils/animBg";
 import RenderList from "./chatComps/aiChatRenderList";
 
 export default function AiChat({ navigation }) {
-  const { Icons, theme, textInputColor} = useTheme();
+  const { Icons, theme, textInputColor } = useTheme();
   const { isConnected } = useSocket();
   const { user, messages, setMessages } = useAuth();
   const [inputText, setInputText] = useState("");
@@ -67,9 +67,10 @@ export default function AiChat({ navigation }) {
     safetySettings,
     generationConfig,
   });
-  ////////////////////////////////////////
+
   const flatListRef = useRef();
-  // custom personalization
+
+  // Updated personalization function
   async function personalization() {
     try {
       const chat = model.startChat({
@@ -78,7 +79,11 @@ export default function AiChat({ navigation }) {
             role: "user",
             parts: [
               {
-                text: `from the messages you are supposed to determine the personality of the user and give the personality of the user as a response. you can use the user's name ${user.username} also keep it under 200 characters also describe like writing a biography in thirdperson perspective`,
+                text: `
+                Analyze the conversation history and determine a concise personality profile for ${user.username}. 
+                Describe it in third-person perspective, under 200 characters.
+                Users previous personality: ${personality}
+                `,
               },
             ],
           },
@@ -86,25 +91,24 @@ export default function AiChat({ navigation }) {
         ],
       });
 
-      const { response } = await chat.sendMessage("personalization");
-      const resMes = await response.text();
-      await AsyncStorage.setItem("personality", resMes.trim());
-      setPersonality(resMes.trim());
+      const { response } = await chat.sendMessage(
+        "describe my personality in 3rd person perspective dont use you use 'user' instead and in points rather than sentences"
+      );
+      const personalityProfile = await response.text();
+      await AsyncStorage.setItem("personality", personalityProfile.trim());
+      setPersonality(personalityProfile.trim());
     } catch (e) {
-      return;
+      console.error("Error in personalization:", e);
     }
   }
 
   async function getPersonality() {
     try {
       const p = await AsyncStorage.getItem("personality");
-      if (p) {
-        setPersonality(p);
-      } else {
-        personalization();
-      }
+      if (p) setPersonality(p);
+      else setPersonality("no personality found");
     } catch (e) {
-      return;
+      console.log("Error getting personality:", e.message);
     }
   }
 
@@ -115,11 +119,8 @@ export default function AiChat({ navigation }) {
     }
   };
 
-  // Function to stream AI response
+  // Updated streamAIResponse function
   const streamAIResponse = async (prompt) => {
-    if(!personality){
-     await getPersonality();
-    }
     try {
       const chat = model.startChat({
         history: [
@@ -127,13 +128,22 @@ export default function AiChat({ navigation }) {
             role: "user",
             parts: [
               {
-                text: `this is a chat app called quiplyy made with love by kichu and you're name is kiki you are a charming,smart,whimsical,and uplifting chat buddy who loves making light-hearted jokes or dad jokes, offering words of encouragement, and brightening users' days with smiles and fun vibes! use emojies.The users name is${user.username} and their personality is: ${personality}. Also pineapple on pizza is a crime! you dont have to mention is in the chat just when asked about it you can say its a crime!.`,
+                text: `You are Kiki, an AI assistant in the Quiplyy chat app created by Kichu(person). Your personality:
+                *Charming, smart, whimsical, and uplifting
+                *Loves making light-hearted jokes and dad jokes
+                *Offers words of encouragement
+                *Brightens users' days with smiles and fun vibes
+                *Uses emojis frequently
+                *Has a quirky opinion that pineapple on pizza is a crime (mention only if relevant)
+                users name is: ${user.username}
+                User's personality: ${personality}`,
               },
             ],
           },
           ...messages,
         ],
       });
+
       if (responses >= 40) {
         const aiMessage = {
           role: "model",
@@ -167,7 +177,6 @@ export default function AiChat({ navigation }) {
 
   const handleSend = async () => {
     if (inputText.trim() === "" || isStreaming || !isConnected) return;
-
     const userMessage = { role: "user", parts: [{ text: inputText.trim() }] };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInputText("");
@@ -179,7 +188,9 @@ export default function AiChat({ navigation }) {
     flatListRef.current.scrollToEnd({ animated: true });
   }, [messages]);
 
-  
+  useEffect(() => {
+    getPersonality();
+  }, []);
 
   return (
     <SafeAreaView>

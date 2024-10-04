@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
-import { useEffect, useState, useCallback, memo} from "react";
+import { useEffect, useState, useCallback, memo } from "react";
 import { TextInput } from "react-native-gesture-handler";
 import { useTheme } from "../../../../contexts/theme";
 import { useMessager } from "../../../../contexts/messagerContext";
@@ -25,6 +25,14 @@ import * as FileSystem from "expo-file-system";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import { decode } from "base64-arraybuffer";
 import CustomModal from "./utils/customModal";
+import { useMusic } from "../../../../contexts/musicContext";
+import Animated, {
+  Easing,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from "react-native-reanimated";
+
 
 const Body = ({ moveTo }) => {
   const theme = useTheme();
@@ -33,7 +41,46 @@ const Body = ({ moveTo }) => {
   const sql = useSql();
   const auth = useAuth();
   const { socket, isConnected, endPoint, supabase } = useSocket();
+  const {pauseSound, current, isPlaying} = useMusic();
+
   axios.defaults.baseURL = `${endPoint}/user`;
+  //animated music top bar
+
+  const topBar = useSharedValue(0);
+  const topBarStyle = useAnimatedStyle(() => {
+    return {
+      height: topBar.value,
+    };
+  });
+
+  const openTopBar = () => {
+
+      if(!isPlaying){
+        if(topBar.value === 0) return;
+        topBar.value = withTiming(0, {
+          duration: 300,
+          easing: Easing.in,
+        });
+      }else if(isPlaying){
+        topBar.value = 75;
+      }
+  };
+
+  useEffect(() => {
+    openTopBar();
+  }, [isPlaying]);
+
+
+  const closeTopBar = async () => {
+    if(topBar.value === 0 || !isPlaying) return;
+    topBar.value = withTiming(0, {
+      duration: 300,
+      easing: Easing.in,
+    });
+    pauseSound();
+  }
+
+  ////////////////////////////
 
   const [contacts, setContacts] = useState(sql.contacts);
   const [isStory, setIsStory] = useState(false);
@@ -117,18 +164,17 @@ const Body = ({ moveTo }) => {
         return null;
       }
       const uri = file.uri;
-      
-      const manipResult = await manipulateAsync(
-        uri,
-        [],
-        { compress: 0.5, format: SaveFormat.JPEG }
-      );
-      
+
+      const manipResult = await manipulateAsync(uri, [], {
+        compress: 0.5,
+        format: SaveFormat.JPEG,
+      });
+
       if (file.fileSize > maxSize) {
         Alert.alert("Error", "Image size should be less than 8MB");
         return null;
       }
-      const popedName=manipResult.uri.split("/").pop().split(".")[1];
+      const popedName = manipResult.uri.split("/").pop().split(".")[1];
       return { uri, popedName };
     } catch (error) {
       return null;
@@ -142,7 +188,7 @@ const Body = ({ moveTo }) => {
     const base64 = await FileSystem.readAsStringAsync(uri.uri, {
       encoding: FileSystem.EncodingType.Base64,
     });
-    const { data, error } = await supabase.storage
+    const {error } = await supabase.storage
       .from("stories")
       .upload(`${auth.user?.id}.${uri.popedName}`, decode(base64), {
         contentType: `image/${uri.popedName}`,
@@ -272,6 +318,31 @@ const Body = ({ moveTo }) => {
 
   return (
     <SafeAreaView>
+      <Animated.View style={[styles.topBar, topBarStyle]}>
+        {isPlaying && (
+          <TouchableOpacity 
+          style={styles.topBarBox(theme)}
+          onPress={() => moveTo("Stuff")}
+          >
+            <Image
+            style={styles.musicImage}
+            source={{uri: current?.image}}
+            />
+            <TouchableOpacity 
+            style={styles.playPause}
+            onPress={() => {
+              closeTopBar();
+            }}
+            >
+            <Image
+            style={styles.playPause}
+            source={theme.Icons.pause}
+            />
+
+            </TouchableOpacity>
+          </TouchableOpacity>
+        )}
+      </Animated.View>
       <View style={styles.textInputContainer(theme)}>
         <View style={styles.TextInp(theme)}>
           <TextInput
@@ -290,7 +361,6 @@ const Body = ({ moveTo }) => {
           />
           {query.trim() === "" && (
             <>
-
               <TouchableOpacity
                 style={styles.centerDivSpace(10)}
                 disabled={!isConnected}
@@ -301,8 +371,8 @@ const Body = ({ moveTo }) => {
               <TouchableOpacity
                 style={styles.centerDivSpace(10)}
                 disabled={!isConnected}
-                onPress={()=>{
-                  moveTo("AiChat")
+                onPress={() => {
+                  moveTo("AiChat");
                 }}
               >
                 <Image source={theme.Icons.ai} style={styles.Image(0, 35)} />
@@ -420,4 +490,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: space,
   }),
+  topBar: {
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  topBarBox: (theme) => ({
+    width: "95%",
+    height: "85%",
+    backgroundColor: theme.theme==="dark"?"#212121":"#e0e0e0",
+    borderRadius: 25,
+    justifyContent: "space-between",
+    alignItems: "center",
+    flexDirection: "row",
+    paddingHorizontal: 15,
+  }),
+  musicImage:{
+    height:40,
+    width:40,
+    borderRadius:10,
+  },
+  playPause:{
+    height:30,
+    width:30,
+    borderRadius:10,
+  }
 });
