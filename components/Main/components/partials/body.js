@@ -19,7 +19,6 @@ import { useAuth } from "../../../../contexts/authContext";
 import axios from "axios";
 import { useSocket } from "../../../../contexts/socketContext";
 import CreateGroupChat from "./createGroupChat";
-import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
@@ -32,7 +31,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from "react-native-reanimated";
-
+import RenderList from "./chatComps/contactsRenderList";
 
 const Body = ({ moveTo }) => {
   const theme = useTheme();
@@ -41,7 +40,7 @@ const Body = ({ moveTo }) => {
   const sql = useSql();
   const auth = useAuth();
   const { socket, isConnected, endPoint, supabase } = useSocket();
-  const {pauseSound, current, isPlaying} = useMusic();
+  const { pauseSound, current, isPlaying } = useMusic();
 
   axios.defaults.baseURL = `${endPoint}/user`;
   //animated music top bar
@@ -54,31 +53,29 @@ const Body = ({ moveTo }) => {
   });
 
   const openTopBar = () => {
-
-      if(!isPlaying){
-        if(topBar.value === 0) return;
-        topBar.value = withTiming(0, {
-          duration: 300,
-          easing: Easing.in,
-        });
-      }else if(isPlaying){
-        topBar.value = 75;
-      }
+    if (!isPlaying) {
+      if (topBar.value === 0) return;
+      topBar.value = withTiming(0, {
+        duration: 300,
+        easing: Easing.in,
+      });
+    } else if (isPlaying) {
+      topBar.value = 75;
+    }
   };
 
   useEffect(() => {
     openTopBar();
   }, [isPlaying]);
 
-
   const closeTopBar = async () => {
-    if(topBar.value === 0 || !isPlaying) return;
+    if (topBar.value === 0 || !isPlaying) return;
     topBar.value = withTiming(0, {
       duration: 300,
       easing: Easing.in,
     });
     pauseSound();
-  }
+  };
 
   ////////////////////////////
 
@@ -131,13 +128,17 @@ const Body = ({ moveTo }) => {
       });
   };
 
-  const shortenName = (name) => {
-    return name.length > 20 ? name.slice(0, 20) + "..." : name;
-  };
-
   const addContact = async (id) => {
     if (!isConnected) return;
     if (id === auth?.user?.id) return;
+    const check = sql.contacts.find((e) => e.id === id);
+    if (check) {
+      setMessager(check);
+      setIsQuerying(false);
+      setQuery("");
+      setContacts(sql.contacts);
+      return;
+    }
     const data = await auth.addContact(id);
     if (data) {
       setMessager(data);
@@ -188,7 +189,7 @@ const Body = ({ moveTo }) => {
     const base64 = await FileSystem.readAsStringAsync(uri.uri, {
       encoding: FileSystem.EncodingType.Base64,
     });
-    const {error } = await supabase.storage
+    const { error } = await supabase.storage
       .from("stories")
       .upload(`${auth.user?.id}.${uri.popedName}`, decode(base64), {
         contentType: `image/${uri.popedName}`,
@@ -204,82 +205,6 @@ const Body = ({ moveTo }) => {
     if (error || err) return Alert.alert("Error", "Failed to upload story");
     auth.setStory(uri.uri);
   };
-
-  const RenderList = memo(({ item }) => {
-    const [storyUri, setStoryUri] = useState(null);
-
-    async function getStory() {
-      if (!isConnected) return;
-      const { allStories } = auth;
-      if (!allStories || allStories.length === 0) return;
-      const story = allStories.find((e) => e.id === item.id);
-      if (!story) return;
-      setStoryUri(story.storyUri);
-    }
-
-    useEffect(() => {
-      getStory();
-    }, []);
-
-    const openStory = () => {
-      if (!storyUri) return;
-      setIsStory(true);
-      setIsStoryUri(
-        `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/stories/${storyUri}`
-      );
-    };
-
-    return item && item.id ? (
-      <TouchableOpacity
-        style={styles.listItem(theme)}
-        onPress={() => {
-          isQuerying ? addContact(item.id) : setMessager({ ...item });
-        }}
-        key={item.id}
-      >
-        {!item.isGroup ? (
-          <TouchableOpacity
-            style={styles.centerDiv}
-            disabled={!isConnected || !storyUri}
-            onPress={openStory}
-          >
-            <LinearGradient
-              colors={
-                storyUri
-                  ? [
-                      "#FF8C00" /* Dark Orange */,
-                      "#FFB600" /* Bright Yellow */,
-                      "#FF5733" /* Fiery Red-Orange */,
-                      "#C70039" /* Dark Red */,
-                      "#900C3F" /* Deep Magenta */,
-                      "#581845" /* Dark Purple */,
-                    ]
-                  : ["transparent", "transparent"]
-              }
-              style={styles.circle(55, "transparent", storyUri)}
-            >
-              <View style={styles.circle(50, theme.background)}>
-                <Image
-                  source={{
-                    uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${item.username.trim()}.jpg`,
-                  }}
-                  style={styles.Image(0, 50)}
-                />
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-        ) : (
-          <Image source={theme.Icons.group} style={styles.Image(0, 50)} />
-        )}
-
-        <Text
-          style={styles.textStyles(theme.theme === "dark" ? "white" : "black")}
-        >
-          {shortenName(item.username)}
-        </Text>
-      </TouchableOpacity>
-    ) : null;
-  });
 
   useEffect(() => {
     sql.Contacts();
@@ -320,25 +245,18 @@ const Body = ({ moveTo }) => {
     <SafeAreaView>
       <Animated.View style={[styles.topBar, topBarStyle]}>
         {isPlaying && (
-          <TouchableOpacity 
-          style={styles.topBarBox(theme)}
-          onPress={() => moveTo("Stuff")}
+          <TouchableOpacity
+            style={styles.topBarBox(theme)}
+            onPress={() => moveTo("Stuff")}
           >
-            <Image
-            style={styles.musicImage}
-            source={{uri: current?.image}}
-            />
-            <TouchableOpacity 
-            style={styles.playPause}
-            onPress={() => {
-              closeTopBar();
-            }}
+            <Image style={styles.musicImage} source={{ uri: current?.image }} />
+            <TouchableOpacity
+              style={styles.playPause}
+              onPress={() => {
+                closeTopBar();
+              }}
             >
-            <Image
-            style={styles.playPause}
-            source={theme.Icons.pause}
-            />
-
+              <Image style={styles.playPause} source={theme.Icons.pause} />
             </TouchableOpacity>
           </TouchableOpacity>
         )}
@@ -352,8 +270,7 @@ const Body = ({ moveTo }) => {
             value={query}
             onChangeText={(text) => {
               if (!isConnected) return;
-              if (query.trim() === "" || query.length < 3)
-                setContacts(sql.contacts);
+              if (query.length < 3) setContacts(sql.contacts);
               setQuery(text);
               queryUsers();
             }}
@@ -391,7 +308,16 @@ const Body = ({ moveTo }) => {
       <View style={styles.flatListContainer(width)}>
         <FlatList
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => <RenderList item={item} />}
+          renderItem={({ item }) => (
+            <RenderList
+              item={item}
+              isQuerying={isQuerying}
+              addContact={addContact}
+              setMessager={setMessager}
+              setIsStory={setIsStory}
+              setIsStoryUri={setIsStoryUri}
+            />
+          )}
           data={contacts}
           keyExtractor={(item) => item.id}
         />
@@ -431,16 +357,6 @@ const styles = StyleSheet.create({
     color: color === "dark" ? "white" : "black",
     fontWeight: "bold",
   }),
-  listItem: (theme) => ({
-    padding: 10,
-    backgroundColor: theme.theme === "dark" ? "#212121" : "#e0e0e0",
-    margin: 5,
-    marginLeft: 10,
-    width: "95%",
-    alignItems: "center",
-    flexDirection: "row",
-    borderRadius: 25,
-  }),
   flatListContainer: (width = "100%") => ({
     flex: 1,
     width: width,
@@ -473,18 +389,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.textInputColor.color,
     borderRadius: 30,
   }),
-  circle: (r, c = "transparent") => ({
-    height: r,
-    width: r,
-    borderRadius: r / 2,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: c,
-  }),
-  centerDiv: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
   centerDivSpace: (space) => ({
     justifyContent: "center",
     alignItems: "center",
@@ -498,21 +402,21 @@ const styles = StyleSheet.create({
   topBarBox: (theme) => ({
     width: "95%",
     height: "85%",
-    backgroundColor: theme.theme==="dark"?"#212121":"#e0e0e0",
+    backgroundColor: theme.theme === "dark" ? "#212121" : "#e0e0e0",
     borderRadius: 25,
     justifyContent: "space-between",
     alignItems: "center",
     flexDirection: "row",
     paddingHorizontal: 15,
   }),
-  musicImage:{
-    height:40,
-    width:40,
-    borderRadius:10,
+  musicImage: {
+    height: 40,
+    width: 40,
+    borderRadius: 10,
   },
-  playPause:{
-    height:30,
-    width:30,
-    borderRadius:10,
-  }
+  playPause: {
+    height: 30,
+    width: 30,
+    borderRadius: 10,
+  },
 });

@@ -463,7 +463,7 @@ const Settings = ({ navigation }) => {
               15
             )}
           >
-            v 1.19.1
+            v 1.20.0
           </Text>
           <Text
             style={styles.text(
