@@ -2,7 +2,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   Alert,
   Modal,
@@ -26,6 +25,7 @@ import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import ImageViewer from "./utils/imageView";
+import { Image } from "expo-image";
 
 const Settings = ({ navigation }) => {
   const theme = useTheme();
@@ -304,6 +304,7 @@ const Settings = ({ navigation }) => {
                           : theme.Icons.setting
                       }
                       style={styles.circle(150)}
+                      cachePolicy={"none"}
                     />
                   </View>
                 </LinearGradient>

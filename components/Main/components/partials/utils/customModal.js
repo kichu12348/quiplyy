@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, Pressable, StyleSheet, Image,View} from "react-native";
+import { Modal, Pressable, StyleSheet,View} from "react-native";
 import { PanGestureHandler } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -8,6 +8,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useTheme } from "../../../../../contexts/theme";
 import { StatusBar } from "expo-status-bar";
+import { Image } from "expo-image";
 
 const CustomModal = ({ visible, onRequestClose, ImageUri, time=20000 }) => {
   const translateX = useSharedValue(0);
@@ -86,7 +87,8 @@ const CustomModal = ({ visible, onRequestClose, ImageUri, time=20000 }) => {
             <Image 
             source={{ uri: ImageUri }} 
             style={styles.Image} 
-            resizeMode="contain"
+            contentFit="contain"
+            cachePolicy={"none"}
             />
             </View>
           </Animated.View>

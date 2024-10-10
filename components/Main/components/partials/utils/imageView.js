@@ -1,4 +1,4 @@
-import { View, Image, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import React from "react";
 import { useTheme } from "../../../../../contexts/theme";
 import SafeAreaView from "./safe";
@@ -9,6 +9,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from "react-native-reanimated";
+import { Image } from "expo-image";
 
 const ImageViewer = ({
   imageUri,
@@ -93,7 +94,9 @@ const ImageViewer = ({
               <Image
                 source={{ uri: imageUri }}
                 style={styles.image}
-                resizeMode={!isStory ? "contain" : "cover"}
+                contentFit={!isStory ? "contain" : "fit"}
+                enableLiveTextInteraction={true}
+                focusable={true}
               />
             )}
           </View>
@@ -128,8 +131,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   image: {
-    height: "95%",
-    width: "95%",
+    height: "100%",
+    width: "100%",
     alignSelf: "center",
     borderRadius: 10,
   },

@@ -2,7 +2,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   KeyboardAvoidingView,
   TextInput,
@@ -32,7 +31,7 @@ import Render3D from "./utils/3dRender";
 import ProfileViewer from "./utils/profileViewer";
 import StickerComponent from "./chatComps/stickerComp";
 import BlurItem from "./chatComps/blurItem";
-
+import { Image } from "expo-image";
 import RenderList from "./chatComps/renderList";
 
 const SingleChat = ({ navigation }) => {
@@ -509,9 +508,10 @@ const SingleChat = ({ navigation }) => {
           >
             <Image
               source={{
-                uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${selectedContact.username.trim()}.jpg`,
+                uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${selectedContact.username.trim()}.jpg?time=${new Date().getHours()}`,
               }}
               style={styles.Image(0, 0)}
+              cachePolicy={"none"}
             />
           </TouchableOpacity>
         ) : (

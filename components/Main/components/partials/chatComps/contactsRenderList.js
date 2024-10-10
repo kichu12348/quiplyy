@@ -1,9 +1,10 @@
 import { useState, useEffect, memo } from "react";
-import { TouchableOpacity, Text, View, Image } from "react-native";
+import { TouchableOpacity, Text, View} from "react-native";
 import { useSocket } from "../../../../../contexts/socketContext";
 import { useAuth } from "../../../../../contexts/authContext";
 import { useTheme } from "../../../../../contexts/theme";
 import { LinearGradient } from "expo-linear-gradient";
+import {Image} from 'expo-image';
 
 const RenderList = memo(
   ({
@@ -40,7 +41,7 @@ const RenderList = memo(
       if (!storyUri) return;
       setIsStory(true);
       setIsStoryUri(
-        `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/stories/${storyUri}`
+        `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/stories/${storyUri}?time=${new Date().getHours()}`
       );
     };
 
@@ -76,9 +77,10 @@ const RenderList = memo(
               <View style={styles.circle(50, theme.background)}>
                 <Image
                   source={{
-                    uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${item.username.trim()}.jpg`,
+                    uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${item.username.trim()}.jpg?time=${new Date().getHours()}`,
                   }}
                   style={styles.Image(0, 50)}
+                  cachePolicy={"none"}
                 />
               </View>
             </LinearGradient>

@@ -1,8 +1,9 @@
 import { memo } from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import LongPressComponent from "../utils/longPress";
 import { useTheme } from "../../../../../contexts/theme";
 import { useAuth } from "../../../../../contexts/authContext";
+import { Image } from "expo-image";
 
 const RenderList = memo(
   ({

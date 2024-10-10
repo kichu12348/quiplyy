@@ -1,10 +1,11 @@
-import { View, StyleSheet, Image, TouchableOpacity, Modal } from "react-native";
+import { View, StyleSheet,TouchableOpacity} from "react-native";
 import React from "react";
 import { useTheme } from "../../../../contexts/theme";
 import { useAuth } from "../../../../contexts/authContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSocket } from "../../../../contexts/socketContext";
 import CustomModal from "./utils/customModal";
+import { Image } from "expo-image";
 
 const Footer = ({ moveTo }) => {
   const { Icons, background } = useTheme();
@@ -51,6 +52,7 @@ const Footer = ({ moveTo }) => {
                       }
                     : Icons.chat
                 }
+                cachePolicy={"none"}
               />
             </View>
           </LinearGradient>

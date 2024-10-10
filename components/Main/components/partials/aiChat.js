@@ -1,11 +1,10 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTheme } from "../../../../contexts/theme";
 import SafeAreaView from "./utils/safe";
 import {
   View,
   StyleSheet,
   TouchableOpacity,
-  Image,
   TextInput,
   FlatList,
   KeyboardAvoidingView,
@@ -21,6 +20,7 @@ import { useSocket } from "../../../../contexts/socketContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import RotatingGradientRing from "./utils/animBg";
 import RenderList from "./chatComps/aiChatRenderList";
+import { Image } from "expo-image";
 
 export default function AiChat({ navigation }) {
   const { Icons, theme, textInputColor } = useTheme();

@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   StyleSheet,
   TextInput,
@@ -17,6 +16,7 @@ import { useAuth } from "../../../../../contexts/authContext";
 import LongPressComponent from "./longPress";
 import ImageViewer from "./imageView";
 import { LinearGradient } from "expo-linear-gradient";
+import { Image } from "expo-image";
 
 const ProfileViewer = ({ username, imageUri, setIsOpen, messages = null }) => {
   const { theme, Icons, textInputColor, background } = useTheme();
@@ -151,6 +151,7 @@ const ProfileViewer = ({ username, imageUri, setIsOpen, messages = null }) => {
                 <Image
                   source={{ uri: image }}
                   style={styles.image(150, 150, 75)}
+                  cachePolicy={"none"}
                 />
               </View>
             </LinearGradient>
