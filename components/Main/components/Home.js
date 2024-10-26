@@ -5,7 +5,6 @@ import {
   Text,
   Dimensions,
 } from "react-native";
-import SafeAreaView from "./partials/utils/safe";
 import {
   createStackNavigator,
   TransitionPresets,
@@ -107,6 +106,7 @@ const Home = ({ navigation }) => {
   };
 
   const startNotif = async () => {
+    if(text) return;
     const txt = await generateText();
     setText(txt);
     startAnimation();
@@ -141,7 +141,7 @@ const Home = ({ navigation }) => {
   }, [auth.token, socket.isAuth]);
 
   return (
-    <SafeAreaView>
+    <View style={styles.container(theme)}>
       <Animated.View style={[styles.topContainer, animatedStyle]}>
         {isVisible && (
           <TouchableOpacity onPress={resetAnimation}>
@@ -167,7 +167,7 @@ const Home = ({ navigation }) => {
         <Stack.Screen name="ChessJs" component={ChessJs} />
         <Stack.Screen name="AiChat" component={AiChat} />
       </Stack.Navigator>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -197,5 +197,9 @@ const styles = StyleSheet.create({
     color: theme === "dark" ? "#E0E0E0" : "#2D2D2D",
     fontSize: 16,
     fontWeight: "400",
+  }),
+  container:(theme) => ({
+    flex: 1,
+    backgroundColor: theme.background,
   }),
 });

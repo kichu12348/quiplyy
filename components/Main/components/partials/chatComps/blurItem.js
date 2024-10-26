@@ -30,6 +30,7 @@ const BlurItem = ({
         >
           <BlurView
             intensity={300}
+            tint={theme === "light" ? "light" : "dark"}
             style={styles.blurView(
               isFocused.item?.isSticker ? "center" : "flex-end"
             )}

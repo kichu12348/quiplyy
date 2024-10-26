@@ -21,6 +21,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import RotatingGradientRing from "./utils/animBg";
 import RenderList from "./chatComps/aiChatRenderList";
 import { Image } from "expo-image";
+import { BlurView } from "expo-blur";
 
 export default function AiChat({ navigation }) {
   const { Icons, theme, textInputColor } = useTheme();
@@ -207,8 +208,8 @@ export default function AiChat({ navigation }) {
         </TouchableOpacity>
       </View>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 25}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 25}
         style={styles.KeyboardAvoidingView}
       >
         <FlatList
@@ -225,6 +226,17 @@ export default function AiChat({ navigation }) {
         />
         <View style={styles.footer}>
           <View style={styles.inputContainer(textInputColor)}>
+            <BlurView
+              intensity={90}
+              tint={theme === "dark" ? "dark" : "light"}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingHorizontal: 5,
+              }}
+            >
             <TextInput
               style={styles.input(theme, textInputColor)}
               value={inputText}
@@ -244,6 +256,7 @@ export default function AiChat({ navigation }) {
             >
               <Image source={Icons.sendBtn} style={styles.backIcon} />
             </TouchableOpacity>
+            </BlurView>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -270,14 +283,12 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   inputContainer: (c) => ({
-    flexDirection: "row",
-    paddingHorizontal: 5,
-    backgroundColor: c.color,
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     borderRadius: 25,
-    width: "95%",
+    width: "96.5%",
     height: 50,
+    overflow: "hidden",
   }),
   input: (theme, c) => ({
     flex: 1,
@@ -290,7 +301,7 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     justifyContent: "flex-start",
     alignItems: "center",
-    minHeight: 70,
+    marginBottom: 10,
   },
   Button: (
     theme,

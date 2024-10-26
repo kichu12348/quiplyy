@@ -1,9 +1,10 @@
-import { View, Text,StyleSheet, SafeAreaView} from 'react-native'
+import {StyleSheet} from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { useTheme } from '../../../../contexts/theme'
 import React from 'react'
 import Footer from './footer'
 import Body from './body'
+import SafeAreaView from './utils/safe'
 
 const Chats = ({navigation}) => {
     const moveTo=(screen)=>{

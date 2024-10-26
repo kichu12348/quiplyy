@@ -59,7 +59,7 @@ const ThemeProvider = ({ children }) => {
   const [background, setBackground] = useState("#121212");
   const [textInputColor, setTextInputColor] = useState({
     border: "#616161",
-    color: "rgba(30,30,30,0.8)",
+    color: "rgba(0,0,0,0.5)",
   });
   const [chatMsgColor, setChatMsgColor] = useState({
     senderMsgColor: "#4CAF50",
@@ -179,7 +179,7 @@ const ThemeProvider = ({ children }) => {
         setBackground("#121212");
         setTextInputColor({
           border: "#616161",
-          color: "rgba(30,30,30,0.8)",
+          color: "rgba(0,0,0,0.5)",
         });
       }
     } catch (e) {

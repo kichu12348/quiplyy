@@ -9,11 +9,13 @@ import {
   FlatList,
   Modal,
   Alert,
+  ImageBackground,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
 import { useCallback, useEffect, useRef, useState } from "react";
-import axios, { all } from "axios";
+import axios from "axios";
 import * as SQLite from "expo-sqlite";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "../../../../contexts/theme";
 import { useMessager } from "../../../../contexts/messagerContext";
 import { useSocket } from "../../../../contexts/socketContext";
@@ -26,14 +28,12 @@ import {
   copyFileToDocumentDirectory,
 } from "./utils/fileUpload";
 import ImageViewer from "./utils/imageView";
-import { Canvas } from "@react-three/fiber/native";
-import Render3D from "./utils/3dRender";
 import ProfileViewer from "./utils/profileViewer";
 import StickerComponent from "./chatComps/stickerComp";
 import BlurItem from "./chatComps/blurItem";
 import { Image } from "expo-image";
 import RenderList from "./chatComps/renderList";
-
+import { BlurView } from "expo-blur";
 const SingleChat = ({ navigation }) => {
   const {
     theme,
@@ -67,12 +67,32 @@ const SingleChat = ({ navigation }) => {
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [imageUri, setImageUri] = useState(null);
   const [isProfileViewerOpen, setIsProfileViewerOpen] = useState(false);
+  const [background, setBackground] = useState(null);
   const receivedMessageIds = useRef(new Set());
   const flatListRef = useRef(null);
 
   const shortenName = (name) => {
     return name.length > 10 ? name.slice(0, 10) + "..." : name;
   };
+
+  async function getBackgroundImage() {
+    const roomID = selectedContact.roomID;
+    const data = await AsyncStorage.getItem(`background_${roomID}`);
+    if (data) return JSON.parse(data);
+    return null;
+  }
+
+  async function setBackgroundImage() {
+    const data = await getBackgroundImage();
+    if (data) {
+      setBackground(data);
+      return;
+    }
+  }
+
+  useEffect(() => {
+    setBackgroundImage();
+  }, []);
 
   const dbPromise = SQLite.openDatabaseAsync("messages.db");
 
@@ -287,7 +307,9 @@ const SingleChat = ({ navigation }) => {
           }
         }
       }
-      flatListRef.current?.scrollToEnd({ animated: true });
+      flatListRef.current?.scrollToEnd({
+        animated: true,
+      });
     } catch (e) {
       console.log("error: check message: ", e.message);
     }
@@ -322,6 +344,7 @@ const SingleChat = ({ navigation }) => {
     setAllMessages((prev) => [...prev, message]);
     socket.emit("message", { message });
     setIsSticker(false);
+    flatListRef.current?.scrollToEnd({ animated: true });
   };
 
   const sendMessage = async () => {
@@ -350,6 +373,7 @@ const SingleChat = ({ navigation }) => {
     setMessages((prev) => [...prev, message]);
     setAllMessages((prev) => [...prev, message]);
     socket.emit("message", { message });
+    flatListRef.current?.scrollToEnd({ animated: true });
   };
 
   const deleteMessage = async (messageId, item) => {
@@ -472,20 +496,11 @@ const SingleChat = ({ navigation }) => {
     setMessages((prev) => [...prev, newMessage]);
     setAllMessages((prev) => [...prev, newMessage]);
     socket.emit("message", { message });
+    flatListRef.current?.scrollToEnd({ animated: true });
   }
 
   return (
     <SafeAreaView>
-      {/*3d stofff */}
-      <View style={styles.background}>
-        <Canvas
-          style={StyleSheet.absoluteFillObject}
-          camera={{ position: [2, 3, 5], fov: 30 }}
-        >
-          <Render3D item={BackGroundForChat} />
-        </Canvas>
-      </View>
-      {/*3d stofff */}
       <View style={styles.header(theme)}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -528,111 +543,133 @@ const SingleChat = ({ navigation }) => {
           </>
         )}
       </View>
+
       <KeyboardAvoidingView
         style={styles.body}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        enabled
-        keyboardVerticalOffset={Platform.OS === "ios" ? 45 : 25}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 10}
       >
-        <View style={styles.flatListContainer}>
-          <FlatList
-            data={messages}
-            renderItem={({ item }) => (
-              <RenderList
-                item={item}
-                isFocused={isFocused}
-                longPressEventHandle={longPressEventHandle}
-                onTapOnImage={onTapOnImage}
-                stickers={stickers}
-              />
-            )}
-            ref={flatListRef}
-            showsVerticalScrollIndicator={false}
-            onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
-            onContentSizeChange={() =>
-              flatListRef.current.scrollToEnd({ animated: true })
-            }
-          />
-        </View>
-        <View style={styles.footer(textInputColor)}>
-          <View style={styles.textInp(textInputColor, maxHeight)}>
-            {msg.trim() === "" ? (
-              <>
-                <TouchableOpacity
-                  onPress={() => setIsSticker(true)}
-                  style={styles.Button(
-                    theme,
-                    isConnected && socket,
-                    35,
-                    35,
-                    10
-                  )}
-                  disabled={!isConnected || isLoading || !socket}
-                >
-                  <Image
-                    source={Icons.sticker}
-                    style={styles.Image(0, 0, 35, 35)}
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => uploadFile(endPoint)}
-                  style={styles.Button(
-                    theme,
-                    isConnected && socket,
-                    35,
-                    35,
-                    10
-                  )}
-                  disabled={!isConnected || isLoading || !socket}
-                >
-                  <Image
-                    source={Icons.upload}
-                    style={styles.Image(0, 0, 35, 35)}
-                  />
-                </TouchableOpacity>
-              </>
-            ) : null}
-
-            <TextInput
-              placeholder="Type a message"
-              placeholderTextColor={theme === "dark" ? "#E0E0E0" : "#2D2D2D"}
-              style={styles.TextInput(theme)}
-              readOnly={!isConnected || isLoading || !socket}
-              multiline={true}
-              numberOfLines={4}
-              editable={isConnected && !isLoading && socket}
-              onContentSizeChange={(e) => {
-                if (
-                  e.nativeEvent.contentSize.height > 50 &&
-                  e.nativeEvent.contentSize.height < 60
-                ) {
-                  setMaxHeight(e.nativeEvent.contentSize.height);
-                } else if (e.nativeEvent.contentSize.height > 60) {
-                  setMaxHeight(60);
-                } else {
-                  setMaxHeight(50);
-                }
+        <ImageBackground
+          source={{
+            uri: background?.image
+          }}
+          style={styles.flex1}
+        >
+          <View style={styles.flatListContainer}>
+            <FlatList
+              data={messages}
+              renderItem={({ item }) => (
+                <RenderList
+                  item={item}
+                  isFocused={isFocused}
+                  longPressEventHandle={longPressEventHandle}
+                  onTapOnImage={onTapOnImage}
+                  stickers={stickers}
+                  background={background}
+                />
+              )}
+              ref={flatListRef}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              onContentSizeChange={() => {
+                flatListRef.current.scrollToEnd({ animated: true });
               }}
-              value={msg}
-              onChangeText={(text) => {
-                setMsg(text);
+              onLayout={() => {
+                flatListRef.current.scrollToEnd({ animated: true });
               }}
             />
-            <TouchableOpacity
-              onPress={sendMessage}
-              style={styles.Button(theme, isConnected && socket, 35, 35, 0, 10)}
-              disabled={
-                !isConnected || msg.trim() === "" || isLoading || !socket
-              }
-            >
-              <Image
-                source={Icons.sendBtn}
-                style={styles.Image(0, 0, 35, 35)}
-              />
-            </TouchableOpacity>
           </View>
-        </View>
+          <View style={styles.footer(textInputColor)}>
+            <View style={styles.textInp(textInputColor, maxHeight, false)}>
+              <BlurView style={styles.textInp(textInputColor, maxHeight, true)}>
+                {msg.trim() === "" ? (
+                  <>
+                    <TouchableOpacity
+                      onPress={() => setIsSticker(true)}
+                      style={styles.Button(
+                        theme,
+                        isConnected && socket,
+                        35,
+                        35,
+                        10
+                      )}
+                      disabled={!isConnected || isLoading || !socket}
+                    >
+                      <Image
+                        source={Icons.sticker}
+                        style={styles.Image(0, 0, 35, 35)}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => uploadFile(endPoint)}
+                      style={styles.Button(
+                        theme,
+                        isConnected && socket,
+                        35,
+                        35,
+                        10
+                      )}
+                      disabled={!isConnected || isLoading || !socket}
+                    >
+                      <Image
+                        source={Icons.upload}
+                        style={styles.Image(0, 0, 35, 35)}
+                      />
+                    </TouchableOpacity>
+                  </>
+                ) : null}
+                <TextInput
+                  placeholder="Type a message"
+                  placeholderTextColor={
+                    theme === "dark" ? "#E0E0E0" : "#2D2D2D"
+                  }
+                  style={styles.TextInput(theme)}
+                  readOnly={!isConnected || isLoading || !socket}
+                  multiline={true}
+                  numberOfLines={4}
+                  editable={isConnected && !isLoading && socket}
+                  onContentSizeChange={(e) => {
+                    if (
+                      e.nativeEvent.contentSize.height > 50 &&
+                      e.nativeEvent.contentSize.height < 80
+                    ) {
+                      setMaxHeight(e.nativeEvent.contentSize.height);
+                    } else if (e.nativeEvent.contentSize.height > 80) {
+                      setMaxHeight(80);
+                    } else {
+                      setMaxHeight(50);
+                    }
+                  }}
+                  value={msg}
+                  onChangeText={(text) => {
+                    setMsg(text);
+                  }}
+                />
+                <TouchableOpacity
+                  onPress={sendMessage}
+                  style={styles.Button(
+                    theme,
+                    isConnected && socket,
+                    35,
+                    35,
+                    0,
+                    10
+                  )}
+                  disabled={
+                    !isConnected || msg.trim() === "" || isLoading || !socket
+                  }
+                >
+                  <Image
+                    source={Icons.sendBtn}
+                    style={styles.Image(0, 0, 35, 35)}
+                  />
+                </TouchableOpacity>
+              </BlurView>
+            </View>
+          </View>
+        </ImageBackground>
       </KeyboardAvoidingView>
+
       <Modal
         visible={isSticker}
         animationType="slide"
@@ -700,6 +737,9 @@ const SingleChat = ({ navigation }) => {
           setIsOpen={setIsProfileViewerOpen}
           imageUri={`https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/profilePictures/${selectedContact.username.trim()}.jpg`}
           messages={messages}
+          selectedContact={selectedContact}
+          currBackground={background}
+          setBackground={setBackground}
         />
       </Modal>
     </SafeAreaView>
@@ -712,7 +752,6 @@ const styles = StyleSheet.create({
   container: (theme) => ({
     flex: 1,
     backgroundColor: theme === "dark" ? "black" : "white",
-    flexDirection: "column",
   }),
   background: {
     ...StyleSheet.absoluteFillObject,
@@ -767,21 +806,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   footer: () => ({
-    flex: 0.15,
     width: "100%",
     alignItems: "center",
-    justifyContent: "center",
-    minHeight: 50,
-    maxHeight: 100,
+    justifyContent: "flex-start",
+    paddingBottom: 5,
   }),
-  textInp: (color, height = 50) => ({
+  textInp: (color, height = 50, isBlur = false) => ({
     height: height,
-    width: "95%",
+    width: isBlur ? "100%" : "96.5%",
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: height === 50 ? "center" : "flex-end",
     justifyContent: "space-evenly",
-    backgroundColor: color.color,
-    borderRadius: 30,
+    borderRadius: height !== 50 ? 10 : 30,
+    paddingBottom: !isBlur ? 0 : height === 50 ? 0 : 5,
+    overflow: "hidden",
+    ...Platform.select({
+      android: {
+        marginBottom: isBlur ? 0 : 5,
+        backgroundColor: color.color,
+      },
+      ios: {
+        backgroundColor: null,
+      },
+    }),
   }),
   TextInput: (theme) => ({
     minHeight: 50,
@@ -814,46 +861,6 @@ const styles = StyleSheet.create({
     marginLeft: marginLeft,
     marginRight: marginR,
   }),
-  stickerModal: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    flexDirection: "column",
-    justifyContent: "flex-end",
-    alignItems: "center",
-  },
-  stickerContainer: () => ({
-    height: "50%",
-    width: "100%",
-    flexDirection: "column",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    zIndex: 10,
-  }),
-  stickerHeader: {
-    height: "10%",
-    width: "100%",
-    backgroundColor: "transparent",
-    alignItems: "flex-start",
-    justifyContent: "center",
-  },
-  stickers: {
-    flex: 1,
-    backgroundColor: "transparent",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  rows: {
-    flexDirection: "row",
-    justifyContent: "space-evenly",
-    alignItems: "center",
-    margin: 10,
-  },
-  ScrollView: {
-    flex: 1,
-    backgroundColor: "transparent",
-  },
   blurView: (justifyContent = "center") => ({
     flex: 1,
     justifyContent: "center",
@@ -899,5 +906,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     justifyContent: "center",
     paddingRight: 10,
+  },
+  flex1: {
+    flex: 1,
   },
 });

@@ -1,6 +1,5 @@
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   Image,
@@ -386,7 +385,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-evenly",
-    backgroundColor: theme.textInputColor.color,
+    backgroundColor: theme.theme === "dark" ? "rgba(30,30,30,0.8)" : "#e0e0e0",
     borderRadius: 30,
   }),
   centerDivSpace: (space) => ({

@@ -369,50 +369,6 @@ const Settings = ({ navigation }) => {
               }
             />
           </View>
-          <View
-            style={styles.middle(
-              "space-between",
-              "column",
-              "flex-start",
-              20,
-              theme
-            )}
-          >
-            <Text
-              style={styles.text(
-                theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D"
-              )}
-            >
-              3D Background
-            </Text>
-            <ScrollView
-              style={styles.container()}
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-            >
-              {["Cheese", "Pineapple", "Waffle", "Pizza"].map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.stuffContainer}
-                  onPress={() => {
-                    theme.chatBackgroundModel(item);
-                  }}
-                >
-                  <Text
-                    style={styles.text(
-                      theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D",
-                      20,
-                      10,
-                      10
-                    )}
-                  >
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
           <View style={styles.middle("center", "column", "center", 0, theme)}>
             <View style={styles.row}>
               <TouchableOpacity
@@ -464,7 +420,7 @@ const Settings = ({ navigation }) => {
               15
             )}
           >
-            v 1.20.0
+            v 1.21.0
           </Text>
           <Text
             style={styles.text(

@@ -3,7 +3,7 @@ import { TouchableWithoutFeedback} from "react-native";
 
 const LongPressComponent = ({
   children,
-  onLongPress,
+  onLongPress=()=>{},
   time = 500,
   style = { flex: 1 },
   onTap,

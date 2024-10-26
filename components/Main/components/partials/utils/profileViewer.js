@@ -7,6 +7,7 @@ import {
   Modal,
   ScrollView,
   Dimensions,
+  FlatList,
 } from "react-native";
 import { useState, useEffect } from "react";
 import SafeAreaView from "./safe";
@@ -17,13 +18,176 @@ import LongPressComponent from "./longPress";
 import ImageViewer from "./imageView";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
+import { BlurView } from "expo-blur";
+import { useBackground } from "../../../../../contexts/imageBackground";
 
-const ProfileViewer = ({ username, imageUri, setIsOpen, messages = null }) => {
+const MediaList = ({ imageMessages, Icons, setIsOpen }) => {
+  const [isMediaOpen, setIsMediaOpen] = useState(false);
+  const [mediaUri, setMediaUri] = useState(null);
+  const { width } = Dimensions.get('window');
+  const noOfRows = Math.ceil(imageMessages.length / 3);
+
+  return (
+    <SafeAreaView>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => setIsOpen(false)}>
+          <Image source={Icons.return} style={styles.image(40, 40, 0)} />
+        </TouchableOpacity>
+      </View>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {(() => {
+          let rows = [];
+          for (let i = 0; i < noOfRows; i++) {
+            let row = [];
+            for (let j = 0; j < 3; j++) {
+              if (imageMessages[i * 3 + j]) {
+                row.push(
+                  <TouchableOpacity
+                    key={`${i}+${j}`}
+                    onPress={() => {
+                      setIsMediaOpen(true);
+                      setMediaUri(imageMessages[i * 3 + j].imageUri);
+                    }}
+                  >
+                    <Image
+                      source={{ uri: imageMessages[i * 3 + j].imageUri }}
+                      style={styles.rowElem(120, Math.floor(width / 3 - 10))}
+                    />
+                  </TouchableOpacity>
+                );
+              }
+            }
+            rows.push(<View style={styles.row}>{row}</View>);
+          }
+          return rows;
+        })().map((row, index) => (
+          <View key={index} style={styles.column}>
+            {row}
+          </View>
+        ))}
+      </ScrollView>
+      <Modal
+        visible={isMediaOpen}
+        transparent={true}
+        hardwareAccelerated={true}
+        onRequestClose={() => setIsMediaOpen(false)}
+        animationType="slide"
+      >
+        <ImageViewer imageUri={mediaUri} setIsImageViewerOpen={setIsMediaOpen} />
+      </Modal>
+    </SafeAreaView>
+  );
+};
+
+const BackgroundImage = ({ 
+  image, 
+  currBackground, 
+  Icons, 
+  downloadBackground, 
+  setBackgroundImageForRoom,
+  setBackground,
+  selectedContact 
+}) => {
+  const { width, height: screenHeight } = Dimensions.get('window');
+  if (!image) return null;
+  const isActive = currBackground && currBackground.id === image.id;
+
+  return (
+    <View style={styles.backgroundBox(width, screenHeight)}>
+      <TouchableOpacity
+        style={styles.backgroundContainer(true)}
+        onPress={() => {
+          if (!image.isDownloaded) {
+            downloadBackground(image);
+          } else {
+            if (isActive) return;
+            setBackgroundImageForRoom(image, selectedContact.roomID);
+            setBackground(image);
+          }
+        }}
+      >
+        <Image
+          source={{ uri: image.image }}
+          style={styles.backgroundImage("100%", "100%", 10)}
+        >
+          <>
+            {!image.isDownloaded && (
+              <View style={styles.downloadBackground(image.isDownloaded)}>
+                <Image source={Icons.download} style={styles.downloadButton} />
+              </View>
+            )}
+            {isActive && (
+              <View style={styles.downloadBackground(!isActive)}>
+                <Image source={Icons.tick} style={styles.downloadButton} />
+              </View>
+            )}
+          </>
+        </Image>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const BackgroundList = ({ 
+  backgrounds, 
+  theme, 
+  Icons, 
+  setIsBackgroundOpen,
+  currBackground,
+  downloadBackground,
+  setBackgroundImageForRoom,
+  setBackground,
+  selectedContact
+}) => {
+  return (
+    <BlurView
+      intensity={100}
+      style={styles.scrollView}
+      tint={theme === "dark" ? "dark" : "light"}
+    >
+      <SafeAreaView backgroundColor={"transparent"}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setIsBackgroundOpen(false)}>
+            <Image source={Icons.return} style={styles.image(40, 40, 0)} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.flex1}>
+          <FlatList
+            data={backgrounds}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <BackgroundImage 
+                image={item}
+                currBackground={currBackground}
+                Icons={Icons}
+                downloadBackground={downloadBackground}
+                setBackgroundImageForRoom={setBackgroundImageForRoom}
+                setBackground={setBackground}
+                selectedContact={selectedContact}
+              />
+            )}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+      </SafeAreaView>
+    </BlurView>
+  );
+};
+
+const ProfileViewer = ({
+  username,
+  imageUri,
+  setIsOpen,
+  messages = null,
+  selectedContact = null,
+  currBackground = null,
+  setBackground
+}) => {
   const { theme, Icons, textInputColor, background } = useTheme();
   const { isConnected, supabase } = useSocket();
+  const { backgrounds, setBackgroundImageForRoom, downloadBackground } = useBackground();
   const auth = useAuth();
 
-  //states
   const [bio, setBio] = useState("");
   const [image, setImage] = useState(imageUri);
   const [isOpen, setOpen] = useState(false);
@@ -31,9 +195,7 @@ const ProfileViewer = ({ username, imageUri, setIsOpen, messages = null }) => {
     messages?.filter((msg) => msg.isImage)
   );
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
-  const [isMediaOpen, setIsMediaOpen] = useState(false);
-  const [mediaUri, setMediaUri] = useState(null);
-  const { width } = Dimensions.get("window");
+  const [isBackgroundOpen, setIsBackgroundOpen] = useState(false);
 
   useEffect(() => {
     getBio();
@@ -67,68 +229,6 @@ const ProfileViewer = ({ username, imageUri, setIsOpen, messages = null }) => {
     }
   }
 
-  const MediaList = ({ imageMessages }) => {
-    const noOfRows = Math.ceil(imageMessages.length / 3);
-    return (
-      <SafeAreaView>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => setIsOpen(false)}>
-            <Image source={Icons.return} style={styles.image(40, 40, 0)} />
-          </TouchableOpacity>
-        </View>
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-        >
-          {(() => {
-            let rows = [];
-            for (let i = 0; i < noOfRows; i++) {
-              let row = [];
-              for (let j = 0; j < 3; j++) {
-                if (imageMessages[i * 3 + j]) {
-                  row.push(
-                    <TouchableOpacity
-                      key={`${i}+${j}`}
-                      onPress={() => {
-                        setIsMediaOpen(true);
-                        setMediaUri(imageMessages[i * 3 + j].imageUri);
-                      }}
-                    >
-                      <Image
-                        source={{ uri: imageMessages[i * 3 + j].imageUri }}
-                        style={styles.rowElem(120, Math.floor(width / 3 - 10))}
-                      />
-                    </TouchableOpacity>
-                  );
-                }
-              }
-              rows.push(<View style={styles.row}>{row}</View>);
-            }
-            return rows;
-          })().map((row, index) => {
-            return (
-              <View key={index} style={styles.column}>
-                {row}
-              </View>
-            );
-          })}
-        </ScrollView>
-        <Modal
-          visible={isMediaOpen}
-          transparent={true}
-          hardwareAccelerated={true}
-          onRequestClose={() => setIsMediaOpen(false)}
-          animationType="slide"
-        >
-          <ImageViewer
-            imageUri={mediaUri}
-            setIsImageViewerOpen={setIsMediaOpen}
-          />
-        </Modal>
-      </SafeAreaView>
-    );
-  };
-
   return (
     <SafeAreaView>
       <View style={styles.header}>
@@ -156,55 +256,57 @@ const ProfileViewer = ({ username, imageUri, setIsOpen, messages = null }) => {
               </View>
             </LinearGradient>
           </LongPressComponent>
-          <Text
-            style={styles.textStyles(
-              theme === "dark" ? "#E0E0E0" : "#2D2D2D",
-              20,
-              "bold"
-            )}
-          >
+          <Text style={styles.textStyles(theme === "dark" ? "#E0E0E0" : "#2D2D2D", 20, "bold")}>
             {username}
           </Text>
         </View>
-        
-          <View style={styles.textInp}>
-            <TextInput
-              style={styles.textInputStyle(textInputColor, theme)}
-              multiline={true}
-              numberOfLines={4}
-              placeholder="Bio....."
-              value={bio}
-              readOnly={true}
-              placeholderTextColor={
-                theme === "dark"
-                  ? "rgba(224,224,224,0.5)"
-                  : "rgba(45,45,45,0.5)"
-              }
-            />
+
+        <View style={styles.textInp}>
+          <TextInput
+            style={styles.textInputStyle(textInputColor, theme)}
+            multiline={true}
+            numberOfLines={4}
+            placeholder="Bio....."
+            value={bio}
+            readOnly={true}
+            placeholderTextColor={
+              theme === "dark" ? "rgba(224,224,224,0.5)" : "rgba(45,45,45,0.5)"
+            }
+          />
         </View>
         {messages && (
-          <View style={styles.mediaBox}>
-            <TouchableOpacity
-              onPress={() => {
-                setIsImageViewerOpen(true);
-              }}
-              style={styles.mediaContainer(textInputColor.color)}
-            >
-              <Text
-                style={styles.textStyles(
+          <>
+            <View style={styles.mediaBox(0)}>
+              <TouchableOpacity
+                onPress={() => setIsImageViewerOpen(true)}
+                style={styles.mediaContainer(textInputColor.color)}
+              >
+                <Text style={styles.textStyles(
                   theme === "dark" ? "#E0E0E0" : "#2D2D2D",
                   20,
                   "bold"
-                )}
+                )}>
+                  Media
+                </Text>
+                <Image source={Icons.return} style={styles.image(35, 35, 0, 180)} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.mediaBox()}>
+              <TouchableOpacity
+                onPress={() => setIsBackgroundOpen(true)}
+                style={styles.mediaContainer(textInputColor.color)}
               >
-                Media
-              </Text>
-              <Image
-                source={Icons.return}
-                style={styles.image(35, 35, 0, 180)}
-              />
-            </TouchableOpacity>
-          </View>
+                <Text style={styles.textStyles(
+                  theme === "dark" ? "#E0E0E0" : "#2D2D2D",
+                  20,
+                  "bold"
+                )}>
+                  Chat Background
+                </Text>
+                <Image source={Icons.return} style={styles.image(35, 35, 0, 180)} />
+              </TouchableOpacity>
+            </View>
+          </>
         )}
       </View>
 
@@ -228,7 +330,30 @@ const ProfileViewer = ({ username, imageUri, setIsOpen, messages = null }) => {
         onRequestClose={() => setIsImageViewerOpen(false)}
         animationType="slide"
       >
-        <MediaList imageMessages={imageMessages} />
+        <MediaList 
+          imageMessages={imageMessages} 
+          Icons={Icons}
+          setIsOpen={setIsImageViewerOpen}
+        />
+      </Modal>
+      <Modal
+        visible={isBackgroundOpen}
+        transparent={true}
+        hardwareAccelerated={true}
+        onRequestClose={() => setIsBackgroundOpen(false)}
+        animationType="slide"
+      >
+        <BackgroundList 
+          backgrounds={backgrounds}
+          theme={theme}
+          Icons={Icons}
+          setIsBackgroundOpen={setIsBackgroundOpen}
+          currBackground={currBackground}
+          downloadBackground={downloadBackground}
+          setBackgroundImageForRoom={setBackgroundImageForRoom}
+          setBackground={setBackground}
+          selectedContact={selectedContact}
+        />
       </Modal>
     </SafeAreaView>
   );
@@ -345,11 +470,48 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  mediaBox: {
+  mediaBox: (mb = 20) => ({
     height: 60,
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: mb,
+  }),
+  backgroundBox: (w, h) => ({
+    height: h * 0.6,
+    width: w,
+    justifyContent: "center",
+    alignItems: "center",
+  }),
+  backgroundContainer: (w, h) => ({
+    height: "90%",
+    width: "90%",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 30,
+    positon: "relative",
+  }),
+  backgroundImage: (w, h, r) => ({
+    height: h,
+    width: w,
+    borderRadius: r,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  }),
+  downloadButton: {
+    height: 50,
+    width: 50,
+    alignSelf: "center",
   },
+  downloadBackground: (isD = false) => ({
+    height: "100%",
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: isD ? null : "rgba(0,0,0,0.5)",
+  }),
+  flex1: {
+    flex:1
+  }
 });
