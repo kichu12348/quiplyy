@@ -2,7 +2,7 @@
   "expo": {
     "name": "quiplyy",
     "slug": "quiplyy",
-    "version": "1.21.0",
+    "version": "1.21.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -40,6 +40,9 @@
     },
     "updates": {
       "url": "https://u.expo.dev/d4288b3d-885d-4907-b976-b55e20a87bb3"
+    },
+    "experiments":{
+      "reactCompiler": true
     }
   }
 }

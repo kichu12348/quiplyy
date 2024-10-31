@@ -1,6 +1,6 @@
 {
   "name": "quiplyy",
-  "version": "1.21.0",
+  "version": "1.21.1",
   "main": "expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
@@ -16,6 +16,7 @@
     "@react-navigation/stack": "^6.3.29",
     "@supabase/supabase-js": "^2.44.0",
     "axios": "^1.7.2",
+    "babel-plugin-react-compiler": "^19.0.0-beta-6fc168f-20241025",
     "base64-arraybuffer": "^1.0.2",
     "chess.js": "^1.0.0-beta.8",
     "expo": "~51.0.38",
@@ -31,6 +32,7 @@
     "expo-status-bar": "~1.12.1",
     "expo-updates": "~0.25.27",
     "react": "18.2.0",
+    "react-compiler-runtime": "^19.0.0-beta-6fc168f-20241025",
     "react-native": "0.74.5",
     "react-native-chessboard": "^0.1.2",
     "react-native-gesture-handler": "~2.16.1",

@@ -10,6 +10,7 @@ import RenderList from "./renderList";
 import { BlurView } from "expo-blur";
 import { useTheme } from "../../../../../contexts/theme";
 import { useAuth } from "../../../../../contexts/authContext";
+import { useSocket } from "../../../../../contexts/socketContext";
 
 const BlurItem = ({
   isFocused,
@@ -22,6 +23,7 @@ const BlurItem = ({
 }) => {
     const {theme}=useTheme();
     const {user}=useAuth();
+    const {isConnected,socket}=useSocket();
   return (
     <>
       {isFocused.item && (
@@ -46,7 +48,10 @@ const BlurItem = ({
               {isFocused.item.sender === user?.id && (
                 <View style={styles.blurList(theme)}>
                   <TouchableOpacity
-                    style={styles.blurTextContainer}
+                    style={[styles.blurTextContainer,{
+                      opacity:isConnected&&socket?1:0.5,
+                    }]}
+                    disabled={!isConnected||!socket}
                     onPress={() => {
                       deleteMessage(isFocused.item.id, isFocused.item);
                     }}

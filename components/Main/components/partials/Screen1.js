@@ -7,7 +7,6 @@ import {
   Image,
   Modal,
   StyleSheet,
-  Platform,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
 import { useTheme } from "../../../../contexts/theme";
@@ -39,7 +38,7 @@ const Screen1 = ({ navigation }) => {
     }
   };
 
-  openBlog = (blog) => {
+  const openBlog = (blog) => {
     setCurrentBlog(blog);
     navigation.navigate("Blog");
   };

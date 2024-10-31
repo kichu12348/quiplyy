@@ -10,6 +10,7 @@ import {
   Modal,
   Alert,
   ImageBackground,
+  Dimensions,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -35,14 +36,7 @@ import { Image } from "expo-image";
 import RenderList from "./chatComps/renderList";
 import { BlurView } from "expo-blur";
 const SingleChat = ({ navigation }) => {
-  const {
-    theme,
-    Icons,
-    textInputColor,
-    BackGroundForChat,
-    stickerList,
-    stickers,
-  } = useTheme();
+  const { theme, Icons, textInputColor, stickerList, stickers } = useTheme();
   const { selectedContact, randomUID, setSelectedContact } = useMessager();
   const {
     socket,
@@ -81,6 +75,8 @@ const SingleChat = ({ navigation }) => {
     if (data) return JSON.parse(data);
     return null;
   }
+
+  const { width, height } = Dimensions.get("window");
 
   async function setBackgroundImage() {
     const data = await getBackgroundImage();
@@ -551,12 +547,16 @@ const SingleChat = ({ navigation }) => {
       >
         <ImageBackground
           source={{
-            uri: background?.image
+            uri: background?.image,
           }}
           style={styles.flex1}
         >
-          <View style={styles.flatListContainer}>
+          {/* Main content container */}
+          <View style={styles.contentContainer}>
+            {/* Messages list that extends behind the input */}
             <FlatList
+              style={styles.messagesList}
+              contentContainerStyle={styles.messagesContent}
               data={messages}
               renderItem={({ item }) => (
                 <RenderList
@@ -578,94 +578,107 @@ const SingleChat = ({ navigation }) => {
                 flatListRef.current.scrollToEnd({ animated: true });
               }}
             />
-          </View>
-          <View style={styles.footer(textInputColor)}>
-            <View style={styles.textInp(textInputColor, maxHeight, false)}>
-              <BlurView style={styles.textInp(textInputColor, maxHeight, true)}>
-                {msg.trim() === "" ? (
-                  <>
-                    <TouchableOpacity
-                      onPress={() => setIsSticker(true)}
-                      style={styles.Button(
-                        theme,
-                        isConnected && socket,
-                        35,
-                        35,
-                        10
-                      )}
-                      disabled={!isConnected || isLoading || !socket}
-                    >
-                      <Image
-                        source={Icons.sticker}
-                        style={styles.Image(0, 0, 35, 35)}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => uploadFile(endPoint)}
-                      style={styles.Button(
-                        theme,
-                        isConnected && socket,
-                        35,
-                        35,
-                        10
-                      )}
-                      disabled={!isConnected || isLoading || !socket}
-                    >
-                      <Image
-                        source={Icons.upload}
-                        style={styles.Image(0, 0, 35, 35)}
-                      />
-                    </TouchableOpacity>
-                  </>
-                ) : null}
-                <TextInput
-                  placeholder="Type a message"
-                  placeholderTextColor={
-                    theme === "dark" ? "#E0E0E0" : "#2D2D2D"
-                  }
-                  style={styles.TextInput(theme)}
-                  readOnly={!isConnected || isLoading || !socket}
-                  multiline={true}
-                  numberOfLines={4}
-                  editable={isConnected && !isLoading && socket}
-                  onContentSizeChange={(e) => {
-                    if (
-                      e.nativeEvent.contentSize.height > 50 &&
-                      e.nativeEvent.contentSize.height < 80
-                    ) {
-                      setMaxHeight(e.nativeEvent.contentSize.height);
-                    } else if (e.nativeEvent.contentSize.height > 80) {
-                      setMaxHeight(80);
-                    } else {
-                      setMaxHeight(50);
-                    }
-                  }}
-                  value={msg}
-                  onChangeText={(text) => {
-                    setMsg(text);
-                  }}
-                />
-                <TouchableOpacity
-                  onPress={sendMessage}
-                  style={styles.Button(
-                    theme,
-                    isConnected && socket,
-                    35,
-                    35,
-                    0,
-                    10
-                  )}
-                  disabled={
-                    !isConnected || msg.trim() === "" || isLoading || !socket
-                  }
+
+            {/* Floating input container */}
+            <View style={styles.floatingInputContainer}>
+              <View style={styles.textInp(width, maxHeight, false, theme)}>
+                <BlurView
+                  intensity={80}
+                  tint={theme === "dark" ? "dark" : "light"}
+                  style={styles.inputBlurContainer(maxHeight)}
                 >
-                  <Image
-                    source={Icons.sendBtn}
-                    style={styles.Image(0, 0, 35, 35)}
-                  />
-                </TouchableOpacity>
-              </BlurView>
+                  <View style={styles.inputContent(textInputColor, maxHeight)}>
+                    {msg.trim() === "" ? (
+                      <>
+                        <TouchableOpacity
+                          onPress={() => setIsSticker(true)}
+                          style={styles.Button(
+                            theme,
+                            isConnected && socket,
+                            35,
+                            35,
+                            10
+                          )}
+                          disabled={!isConnected || isLoading || !socket}
+                        >
+                          <Image
+                            source={Icons.sticker}
+                            style={styles.Image(0, 0, 35, 35)}
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => uploadFile(endPoint)}
+                          style={styles.Button(
+                            theme,
+                            isConnected && socket,
+                            35,
+                            35,
+                            10
+                          )}
+                          disabled={!isConnected || isLoading || !socket}
+                        >
+                          <Image
+                            source={Icons.upload}
+                            style={styles.Image(0, 0, 35, 35)}
+                          />
+                        </TouchableOpacity>
+                      </>
+                    ) : null}
+                    <TextInput
+                      placeholder="Type a message"
+                      placeholderTextColor={
+                        theme === "dark" ? "#E0E0E0" : "#2D2D2D"
+                      }
+                      style={styles.TextInput(theme)}
+                      readOnly={!isConnected || isLoading || !socket}
+                      multiline={true}
+                      numberOfLines={4}
+                      editable={isConnected && !isLoading && socket}
+                      onContentSizeChange={(e) => {
+                        if (
+                          e.nativeEvent.contentSize.height > 50 &&
+                          e.nativeEvent.contentSize.height < 80
+                        ) {
+                          setMaxHeight(e.nativeEvent.contentSize.height);
+                        } else if (e.nativeEvent.contentSize.height > 80) {
+                          setMaxHeight(80);
+                        } else {
+                          setMaxHeight(50);
+                        }
+                      }}
+                      value={msg}
+                      onChangeText={(text) => {
+                        setMsg(text);
+                        isTypingHandler(text);
+                      }}
+                    />
+                    <TouchableOpacity
+                      onPress={sendMessage}
+                      style={styles.Button(
+                        theme,
+                        isConnected && socket,
+                        35,
+                        35,
+                        0,
+                        10
+                      )}
+                      disabled={
+                        !isConnected ||
+                        msg.trim() === "" ||
+                        isLoading ||
+                        !socket
+                      }
+                    >
+                      <Image
+                        source={Icons.sendBtn}
+                        style={styles.Image(0, 0, 35, 35)}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </BlurView>
+              </View>
             </View>
+            <View style={styles.bottomBar}></View>
           </View>
         </ImageBackground>
       </KeyboardAvoidingView>
@@ -751,12 +764,34 @@ export default SingleChat;
 const styles = StyleSheet.create({
   container: (theme) => ({
     flex: 1,
-    backgroundColor: theme === "dark" ? "black" : "white",
+    position: "relative",
   }),
   background: {
     ...StyleSheet.absoluteFillObject,
     zIndex: -1,
   },
+  messagesList: {
+    flex: 1,
+  },
+  messagesContent: {
+    paddingBottom: 80,
+  },
+  floatingInputContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 8,
+    paddingBottom: 8,
+    zIndex: 1,
+  },
+  inputContent: (color, height = 50) => ({
+    flexDirection: "row",
+    alignItems: height === 50 ? "center" : "flex-end",
+    justifyContent: "space-evenly",
+    paddingVertical: 5,
+    minHeight: height,
+  }),
   textStyles: (
     theme,
     fontSize = 20,
@@ -811,9 +846,9 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     paddingBottom: 5,
   }),
-  textInp: (color, height = 50, isBlur = false) => ({
+  textInp: (width, height = 50, isBlur = false, theme) => ({
     height: height,
-    width: isBlur ? "100%" : "96.5%",
+    width: isBlur ? "100%" : width * 0.9625,
     flexDirection: "row",
     alignItems: height === 50 ? "center" : "flex-end",
     justifyContent: "space-evenly",
@@ -823,7 +858,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       android: {
         marginBottom: isBlur ? 0 : 5,
-        backgroundColor: color.color,
+        backgroundColor: theme === "dark" ? "rgba(30,30,30,0.8)" : "#e0e0e0",
       },
       ios: {
         backgroundColor: null,
@@ -909,5 +944,21 @@ const styles = StyleSheet.create({
   },
   flex1: {
     flex: 1,
+  },
+  inputBlurContainer: (height) => ({
+    height: height,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "space-evenly",
+  }),
+  contentContainer: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  bottomBar: {
+    height: 20,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

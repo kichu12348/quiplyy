@@ -18,7 +18,8 @@ import Animated, {
 } from "react-native-reanimated";
 import ProgressBar from "./utils/progressBar";
 import { useMusic } from "../../../../contexts/musicContext";
-import { useEffect,useState} from "react";
+import { useEffect, useState } from "react";
+import { BlurView } from "expo-blur";
 
 const Music = () => {
   const theme = useTheme();
@@ -49,7 +50,7 @@ const Music = () => {
   });
 
   const startAnimation = (state) => {
-    if(current) return;
+    if (current) return;
     footerHeight.value = withTiming(state ? 100 : 0, {
       duration: 300,
       easing: Easing.in,
@@ -108,12 +109,12 @@ const Music = () => {
     updateDur(playbackStatus);
   }, [playbackStatus]);
 
-
   useEffect(() => {
-    if (isPlaying || current){
+    if (isPlaying || current) {
       footerHeight.value = 100;
-      if(playbackStatus){
-        durWidth.value = (playbackStatus.positionMillis / playbackStatus.durationMillis) * 100;
+      if (playbackStatus) {
+        durWidth.value =
+          (playbackStatus.positionMillis / playbackStatus.durationMillis) * 100;
       }
     }
   }, []);
@@ -121,7 +122,7 @@ const Music = () => {
   const renderItem = ({ item, index }) => {
     if (!item || !item.title) return null;
     return (
-      <View style={styles.itemContainer()}>
+      <View style={styles.itemContainer}>
         <TouchableOpacity
           key={`${item.id}-${index}`}
           style={styles.soundBox(theme)}
@@ -144,26 +145,32 @@ const Music = () => {
             }
           }}
         >
-          {!item.isDownloaded ? (
-            <Image
-              source={{
-                uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/songImg/${item.image}`,
-              }}
-              style={styles.audioImage()}
-            />
-          ) : (
-            <Image source={{ uri: item.image }} style={styles.audioImage()} />
-          )}
-          <Text style={styles.text(theme.theme)}>{item.title}</Text>
-
-          <View style={styles.setEnd}>
-            {!item.isDownloaded && (
+          <BlurView
+            intensity={90}
+            style={styles.blur}
+            tint={theme.theme === "dark" ? "dark" : "light"}
+          >
+            {!item.isDownloaded ? (
               <Image
-                source={theme.Icons.download}
-                style={styles.audioImage(40, 40, 0)}
+                source={{
+                  uri: `https://vevcjimdxdaprqrdbptj.supabase.co/storage/v1/object/public/songImg/${item.image}`,
+                }}
+                style={styles.audioImage()}
               />
+            ) : (
+              <Image source={{ uri: item.image }} style={styles.audioImage()} />
             )}
-          </View>
+            <Text style={styles.text(theme.theme)}>{item.title}</Text>
+
+            <View style={styles.setEnd}>
+              {!item.isDownloaded && (
+                <Image
+                  source={theme.Icons.download}
+                  style={styles.audioImage(40, 40, 0)}
+                />
+              )}
+            </View>
+          </BlurView>
         </TouchableOpacity>
       </View>
     );
@@ -307,14 +314,20 @@ const styles = StyleSheet.create({
   },
   soundBox: (theme) => ({
     height: 100,
-    width: "80%",
-    backgroundColor:
-      theme.theme === "dark" ? "rgba(15,15,15,0.5)" : "rgba(230,230,230,0.5)",
+    width: "90%",
+    ...Platform.select({
+      ios: {
+        backgroundColor: null,
+      },
+      android: {
+        backgroundColor:
+          theme.theme === "dark"
+            ? "rgba(15,15,15,0.5)"
+            : "rgba(230,230,230,0.5)",
+      },
+    }),
     borderRadius: 15,
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    padding: 10,
+    overflow: "hidden",
   }),
   audioImage: (h = 80, w = 80, mr = 20, br = 10) => ({
     height: h,
@@ -328,13 +341,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
   }),
-  itemContainer: () => ({
+  itemContainer: {
     height: 100,
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
     marginVertical: 10,
-  }),
+  },
   setEnd: {
     flex: 1,
     justifyContent: "center",
@@ -406,4 +419,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   }),
+  blur: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    padding: 10,
+  },
 });

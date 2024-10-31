@@ -58,24 +58,26 @@ const SocketProvider = ({ children }) => {
     const messages = await db.getAllAsync("SELECT * FROM messages");
     setAllMessages(messages);
   };
+
+  const attemptConnection = () => {
+    if (!isLoading) return;
+    NetInfo.fetch().then((state) => {
+      setIsConnected(state.isConnected);
+    });
+    isLoggedIn();
+    const socket = io(endPoint);
+    socket.on("connect", async () => {
+      setIsLoading(false);
+      setSocket(socket);
+      checkIfConnectedInBackground();
+    });
+
+    socket.on("connect_error", () => {
+      setTimeout(attemptConnection, 10000);
+    });
+  };
   useEffect(() => {
     getMessageFromDB();
-    const attemptConnection = () => {
-      if (!isLoading) return;
-      NetInfo.fetch().then((state) => {
-        setIsConnected(state.isConnected);
-      });
-      isLoggedIn();
-      const socket = io(endPoint);
-      socket.on("connect", async () => {
-        setIsLoading(false);
-        setSocket(socket);
-      });
-
-      socket.on("connect_error", () => {
-        setTimeout(attemptConnection, 10000);
-      });
-    };
 
     attemptConnection();
 
@@ -90,6 +92,17 @@ const SocketProvider = ({ children }) => {
     }
   }, [socket]);
 
+  async function checkIfConnectedInBackground() {
+    const state = await NetInfo.fetch();
+    const timeOut = setTimeout(checkIfConnectedInBackground, 10000);
+    if (!state.isConnected) {
+      socket?.disconnect();
+      setSocket(null);
+      setIsConnected(false);
+      clearTimeout(timeOut);
+      return;
+    }
+  }
 
   const value = useMemo(() => {
     return {
@@ -101,7 +114,7 @@ const SocketProvider = ({ children }) => {
       endPoint,
       supabase,
       setAllMessages,
-      allMessages
+      allMessages,
     };
   }, [socket, isLoading, isAuth, isConnected, allMessages]);
 
