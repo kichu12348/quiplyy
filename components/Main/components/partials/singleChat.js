@@ -35,6 +35,7 @@ import BlurItem from "./chatComps/blurItem";
 import { Image } from "expo-image";
 import RenderList from "./chatComps/renderList";
 import { BlurView } from "expo-blur";
+import { usePineappleBan } from "../../../../contexts/pineabbleBanContext";
 const SingleChat = ({ navigation }) => {
   const { theme, Icons, textInputColor, stickerList, stickers } = useTheme();
   const { selectedContact, randomUID, setSelectedContact } = useMessager();
@@ -48,6 +49,8 @@ const SingleChat = ({ navigation }) => {
     setAllMessages,
   } = useSocket();
   const { user, token } = useAuth();
+
+  const {checkIfTextHasPineapple,setBanTime}=usePineappleBan();
 
   axios.defaults.baseURL = `${endPoint}/message`;
 
@@ -362,7 +365,9 @@ const SingleChat = ({ navigation }) => {
       imageUri: null,
       isDownloaded: false,
     };
-
+    if (checkIfTextHasPineapple(msg)) {
+      setBanTime();
+    }
     setMsg("");
     const db = await dbPromise;
     await addMessageToDB(db, message);

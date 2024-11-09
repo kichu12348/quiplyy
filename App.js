@@ -10,6 +10,7 @@ import { AuthProvider } from "./contexts/authContext";
 import { BlogProvider } from "./contexts/BlogContext";
 import { MusicProvider } from "./contexts/musicContext";
 import { BackgroundProvider } from "./contexts/imageBackground";
+import { PineappleBanProvider } from "./contexts/pineabbleBanContext";
 import Main from "./components/Main/main";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { enableScreens } from "react-native-screens";
@@ -29,7 +30,9 @@ export default function App() {
                     <BlogProvider>
                       <MusicProvider>
                         <BackgroundProvider>
-                          <Main />
+                          <PineappleBanProvider>
+                            <Main />
+                          </PineappleBanProvider>
                         </BackgroundProvider>
                       </MusicProvider>
                     </BlogProvider>
