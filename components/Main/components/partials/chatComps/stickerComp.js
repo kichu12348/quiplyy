@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { BlurView } from "expo-blur";
-import { useTheme } from "../../../../../contexts/theme";
+import Icon from "../utils/icons";
 
 const StickerComponent =memo(({
   stickers,
@@ -16,8 +16,6 @@ const StickerComponent =memo(({
   setIsSticker,
   sendSticker,
 }) => {
-
-    const {Icons}= useTheme();
 
     const rowLength =
     stickerList.length % 3 === 0
@@ -56,10 +54,7 @@ const StickerComponent =memo(({
               style={styles.Image(10, 20, 40, 40, 0, "flex-start")}
               onPress={() => setIsSticker(false)}
             >
-              <Image
-                source={Icons.return}
-                style={styles.Image(10, 20, 40, 40, 0, "flex-start")}
-              />
+              <Icon name="ChevronLeft" size={40} />
             </TouchableOpacity>
           </View>
           <View style={styles.stickers}>

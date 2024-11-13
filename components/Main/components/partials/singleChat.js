@@ -36,6 +36,9 @@ import { Image } from "expo-image";
 import RenderList from "./chatComps/renderList";
 import { BlurView } from "expo-blur";
 import { usePineappleBan } from "../../../../contexts/pineabbleBanContext";
+import Icon from "./utils/icons";
+
+
 const SingleChat = ({ navigation }) => {
   const { theme, Icons, textInputColor, stickerList, stickers } = useTheme();
   const { selectedContact, randomUID, setSelectedContact } = useMessager();
@@ -507,7 +510,7 @@ const SingleChat = ({ navigation }) => {
           onPress={() => navigation.goBack()}
           style={styles.Image(10, 20)}
         >
-          <Image source={Icons.return} style={styles.Image()} />
+          <Icon name="ChevronLeft" size={40} />
         </TouchableOpacity>
 
         <Text style={styles.textStyles(theme)}>
@@ -532,13 +535,13 @@ const SingleChat = ({ navigation }) => {
           </TouchableOpacity>
         ) : (
           <>
-            <Image source={Icons.group} style={styles.Image(20, 10)} />
+            <Icon name="Users" size={40} />
             <View style={styles.addUserConatiner}>
               <TouchableOpacity
                 onPress={() => setIsAddUser(true)}
                 disabled={!isConnected || isLoading || !socket}
               >
-                <Image source={Icons.add} style={styles.Image()} />
+                <Icon name="CirclePlus" size={40} />
               </TouchableOpacity>
             </View>
           </>
@@ -606,10 +609,10 @@ const SingleChat = ({ navigation }) => {
                           )}
                           disabled={!isConnected || isLoading || !socket}
                         >
-                          <Image
-                            source={Icons.sticker}
-                            style={styles.Image(0, 0, 35, 35)}
-                          />
+                          <Icon name="SmilePlus" 
+                          size={35}
+                          color={"#fff"}
+                           />
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => uploadFile(endPoint)}
@@ -622,9 +625,10 @@ const SingleChat = ({ navigation }) => {
                           )}
                           disabled={!isConnected || isLoading || !socket}
                         >
-                          <Image
-                            source={Icons.upload}
-                            style={styles.Image(0, 0, 35, 35)}
+                          <Icon 
+                          name="CloudUpload" 
+                          size={35} 
+                          color={"#fff"}
                           />
                         </TouchableOpacity>
                       </>
@@ -674,9 +678,9 @@ const SingleChat = ({ navigation }) => {
                         !socket
                       }
                     >
-                      <Image
-                        source={Icons.sendBtn}
-                        style={styles.Image(0, 0, 35, 35)}
+                      <Icon name="SendHorizontal" 
+                      size={30} 
+                      color={"#fff"}
                       />
                     </TouchableOpacity>
                   </View>

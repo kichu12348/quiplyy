@@ -9,9 +9,10 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { useTheme } from "../../../../../contexts/theme";
+import Icon from "./icons";
 
 const RotatingGradientRing = () => {
-  const { background,Icons } = useTheme();
+  const { background} = useTheme();
   const rotation = useSharedValue(0);
 
   useEffect(() => {
@@ -40,7 +41,7 @@ const RotatingGradientRing = () => {
         />
       </Animated.View>
       <View style={[styles.backgroundRing, { backgroundColor: background }]} >
-        <Image source={Icons.ai} style={styles.image} />
+        <Icon name="Bot" size={100}/>
       </View>
     </View>
   );

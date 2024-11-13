@@ -1,17 +1,20 @@
-import { StyleSheet, View,Modal,Text} from "react-native";
+import { StyleSheet, View, Modal, Text } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useTheme } from "../../contexts/theme";
 import Auth from "../Auth/authPage";
 import Home from "./components/Home";
 import Loading from "../Auth/loadingPage";
-import { createStackNavigator,TransitionPresets } from "@react-navigation/stack";
+import {
+  createStackNavigator,
+  TransitionPresets,
+} from "@react-navigation/stack";
 import { usePineappleBan } from "../../contexts/pineabbleBanContext";
 import { BlurView } from "expo-blur";
 
 const Main = () => {
   const Stack = createStackNavigator();
   const theme = useTheme();
-  const {isPineappleBanned}=usePineappleBan();
+  const { isPineappleBanned } = usePineappleBan();
 
   return (
     <View style={styles.container}>
@@ -22,7 +25,7 @@ const Main = () => {
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
-          ...TransitionPresets.SlideFromRightIOS
+          ...TransitionPresets.SlideFromRightIOS,
         }}
       >
         <Stack.Screen
@@ -49,23 +52,19 @@ const Main = () => {
           }}
         />
       </Stack.Navigator>
-      <Modal 
-      visible={isPineappleBanned}
-      transparent={true}
-      animationType="slide"
-      hardwareAccelerated={true}
+      <Modal
+        visible={isPineappleBanned}
+        transparent={true}
+        animationType="slide"
+        hardwareAccelerated={true}
       >
-        <BlurView 
-        style={styles.modalContainer}
-        intensity={100}
-        tint="dark"
-        >
+        <BlurView style={styles.modalContainer} intensity={100} tint="dark">
           <View style={styles.modalTextContainer}>
-          <Text style={styles.modalText}>
-            You are banned for 5 minutes 😼
-            {"\n\n"}
-            Should not have used pineapple 🍍 word more than 10 times!!!!
-          </Text>
+            <Text style={styles.modalText}>
+              You are banned for 5 minutes 😼
+              {"\n\n"}
+              Should not have used pineapple 🍍 word more than 10 times!!!!
+            </Text>
           </View>
         </BlurView>
       </Modal>
@@ -79,21 +78,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  modalContainer:{
-    flex:1,
-    justifyContent:"center",
-    alignItems:"center",
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  modalText:{
-    color:"rgba(255,0,0,0.9)",
-    fontSize:24,
-    fontWeight:"bold",
-    textAlign:"center",
+  modalText: {
+    color: "rgba(255,0,0,0.9)",
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
   },
-  modalTextContainer:{
-    padding:20,
-    borderRadius:20,
-    backgroundColor:"rgba(0,0,0,0.5)",
-    width:"80%",
-  }
+  modalTextContainer: {
+    padding: 20,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    width: "80%",
+  },
 });

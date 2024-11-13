@@ -1,52 +1,30 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Modal,
-} from "react-native";
-import SafeAreaView from "./utils/safe";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, SafeAreaView } from "react-native";
 import { useTheme } from "../../../../contexts/theme";
-import { useSocket } from "../../../../contexts/socketContext";
 import { Chess } from "chess.js";
-import Chessboard from "react-native-chessboard";
+import Chessboard from "react-native-chessboard"; // Fix import
+import Icon from "./utils/icons";
+
 
 const ChessJs = ({ navigation }) => {
-  const { theme, Icons } = useTheme();
-  const { socket } = useSocket();
-  const chessboardRef = useRef(null);
+  const { theme } = useTheme();
 
   const [game, setGame] = useState(() => new Chess());
-  const [isMultiplayer, setIsMultiplayer] = useState(false);
+  const [fen, setFen] = useState(game.fen());
   const [playerColor, setPlayerColor] = useState("w");
   const [isWhiteCheck, setIsWhiteCheck] = useState(false);
   const [isBlackCheck, setIsBlackCheck] = useState(false);
   const [isCheckmate, setIsCheckmate] = useState(false);
   const [isDraw, setIsDraw] = useState(false);
   const [winner, setWinner] = useState(null);
-
-  useEffect(() => {
-    if (isMultiplayer) {
-      socket?.on("move", async (move) => {
-        await handleMove(move.from, move.to);
-      });
-
-      socket.on("playerColor", (color) => {
-        setPlayerColor(color);
-      });
-
-      return () => {
-        socket?.off("move");
-        socket?.off("playerColor");
-      };
-    }
-  }, [isMultiplayer, socket]);
+  const chessBoardRef = useRef(null);
 
   const handleMove = async ({ move, state }) => {
     try {
+      game.move(move); // Make the move first
       const { in_checkmate, in_draw, in_check } = state;
+      setFen(game.fen());
+      
       if (in_checkmate) {
         setIsCheckmate(true);
         setWinner(move.color === "w" ? "White" : "Black");
@@ -57,14 +35,10 @@ const ChessJs = ({ navigation }) => {
       } else if (in_check) {
         if (move.color === "w") {
           setIsWhiteCheck(true);
-          setTimeout(() => {
-            setIsWhiteCheck(false);
-          }, 3000);
+          setTimeout(() => setIsWhiteCheck(false), 3000);
         } else {
-          setIsWhiteCheck(true);
-          setTimeout(() => {
-            setIsWhiteCheck(false);
-          }, 3000);
+          setIsBlackCheck(true);
+          setTimeout(() => setIsBlackCheck(false), 3000);
         }
       } else if (in_draw) {
         setIsDraw(true);
@@ -78,62 +52,38 @@ const ChessJs = ({ navigation }) => {
     }
   };
 
-  const makeAIMove = async () => {
-    const moves = game.moves();
-    if (moves.length > 0) {
-      const randomMove = moves[Math.floor(Math.random() * moves.length)];
-      await handleMove(randomMove.slice(0, 2), randomMove.slice(2, 4));
-    }
-  };
-
-  const startMultiplayerGame = useCallback(() => {
-    socket?.emit("joinGame");
-    socket?.on("playerColor", (color) => {
-      setPlayerColor(color);
-    });
-    setIsMultiplayer(true);
-  }, [socket]);
-
   const resetGame = useCallback(() => {
+    const newGame = new Chess();
+    setGame(newGame);
+    setFen(newGame.fen());
     setIsBlackCheck(false);
     setIsWhiteCheck(false);
     setIsCheckmate(false);
     setIsDraw(false);
     setWinner(null);
-    chessboardRef.current?.resetBoard();
-    setGame(new Chess());
   }, []);
 
   return (
-    <SafeAreaView>
+    <SafeAreaView style={styles.container(theme)}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Image source={Icons.return} style={styles.backIcon} />
+          <Icon name="ChevronLeft" size={40} />
         </TouchableOpacity>
-        <Image source={Icons.chess} style={styles.backIcon} />
+        <Icon name="Gamepad" size={40} />
       </View>
       <View style={styles.body}>
         <Text style={styles.status(theme, true)}>
-          {" "}
           {isBlackCheck ? "Check!" : null}
         </Text>
         <Chessboard
-          ref={chessboardRef}
-          fen={game.fen()}
+          fen={fen}
           playerColor={playerColor}
           onMove={handleMove}
         />
         <View style={styles.buttons}>
-          {/* <TouchableOpacity
-            style={styles.button(true)}
-            onPress={() => setIsMultiplayer(false)}
-            disabled={true}
-          >
-            <Text style={styles.textStyles(theme, 16)}>Play AI</Text>
-          </TouchableOpacity> */}
           <TouchableOpacity
             style={styles.button(false, theme)}
             onPress={resetGame}
@@ -142,16 +92,8 @@ const ChessJs = ({ navigation }) => {
               Reset Game
             </Text>
           </TouchableOpacity>
-          {/* <TouchableOpacity
-            style={styles.button(true)}
-            onPress={startMultiplayerGame}
-            disabled={true}
-          >
-            <Text style={styles.textStyles(theme, 16)}>Play Multiplayer</Text>
-          </TouchableOpacity> */}
         </View>
         <Text style={styles.status(theme)}>
-          {" "}
           {isWhiteCheck ? "Check!" : null}
         </Text>
       </View>
@@ -162,7 +104,7 @@ const ChessJs = ({ navigation }) => {
       >
         <View style={styles.isPage}>
           <Text style={styles.textStyles(theme)}>
-            {winner ? winner + " wins" : "it's a Draw!!!"}
+            {winner ? `${winner} wins` : "It's a Draw!!!"}
           </Text>
           <TouchableOpacity
             style={styles.button(false, theme)}
@@ -176,6 +118,8 @@ const ChessJs = ({ navigation }) => {
   );
 };
 
+
+
 const styles = StyleSheet.create({
   container: (theme) => ({
     flex: 1,
@@ -183,11 +127,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     alignItems: "center",
   }),
-  textStyles: (
-    theme,
-    fts = 20,
-    color = theme === "dark" ? "white" : "black"
-  ) => ({
+  textStyles: (theme, fts = 20, color = theme === "dark" ? "white" : "black") => ({
     color: color,
     fontSize: fts,
     fontWeight: "bold",
@@ -201,10 +141,6 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginHorizontal: 10,
-  },
-  backIcon: {
-    width: 40,
-    height: 40,
   },
   buttons: {
     flexDirection: "row",

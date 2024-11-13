@@ -5,6 +5,7 @@ import { useAuth } from "../../../../../contexts/authContext";
 import { useTheme } from "../../../../../contexts/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import {Image} from 'expo-image';
+import Icon from "../utils/icons";
 
 const RenderList = memo(
   ({
@@ -86,7 +87,7 @@ const RenderList = memo(
             </LinearGradient>
           </TouchableOpacity>
         ) : (
-          <Image source={theme.Icons.group} style={styles.Image(0, 50)} />
+          <Icon name="Users" size={40} />
         )}
 
         <Text

@@ -15,9 +15,10 @@ import { useSocket } from "../../../../contexts/socketContext";
 import axios from "axios";
 import { useAuth } from "../../../../contexts/authContext";
 import { useMessager } from "../../../../contexts/messagerContext";
+import Icon from "./utils/icons";
 
 const AddUserToGroup = ({ setIsAddUser }) => {
-  const { theme, Icons } = useTheme();
+  const { theme} = useTheme();
   const { updateContact, contacts } = useSql();
   const { socket, isConnected, endPoint } = useSocket();
   const { token } = useAuth();
@@ -86,7 +87,9 @@ const AddUserToGroup = ({ setIsAddUser }) => {
         <Text style={styles.text(theme)}>{item.username}</Text>
         <View style={styles.tickContainer}>
           {selectedContacts.includes(item.id) ? (
-            <Image source={Icons.tick} style={styles.Image(30)} />
+            <Icon name="Check" size={30} 
+             style={{ alignSelf: "flex-end",marginRight: 10}}
+            />
           ) : null}
         </View>
       </TouchableOpacity>
@@ -105,7 +108,9 @@ const AddUserToGroup = ({ setIsAddUser }) => {
     <SafeAreaView style={styles.container(theme)}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => setIsAddUser(false)}>
-          <Image source={Icons.return} style={styles.Image(50)} />
+          <Icon name="ChevronLeft" size={40}
+            style={{ marginRog: 10 ,alignSelf: "center"}}
+           />
         </TouchableOpacity>
         <Text style={styles.text(theme)}>Add Users</Text>
       </View>

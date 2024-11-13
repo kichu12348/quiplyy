@@ -1,4 +1,4 @@
-import { View, StyleSheet,TouchableOpacity} from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import React from "react";
 import { useTheme } from "../../../../contexts/theme";
 import { useAuth } from "../../../../contexts/authContext";
@@ -6,19 +6,20 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSocket } from "../../../../contexts/socketContext";
 import CustomModal from "./utils/customModal";
 import { Image } from "expo-image";
+import Icon from "./utils/icons";
 
 const Footer = ({ moveTo }) => {
-  const { Icons, background } = useTheme();
+  const { background } = useTheme();
   const { user, profilePicture, story } = useAuth();
   const { isConnected } = useSocket();
   const [showImage, setShowImage] = React.useState(false);
   return (
     <View style={styles.container(background)}>
       <TouchableOpacity onPress={() => moveTo("Stuff")}>
-        <Image style={styles.Image()} source={Icons.stuff} />
+        <Icon name="Shovel" size={40} />
       </TouchableOpacity>
       <TouchableOpacity onPress={() => moveTo("blogPage")}>
-        <Image style={styles.Image()} source={Icons.blog} />
+        <Icon name="Share2" size={40} />
       </TouchableOpacity>
       <View>
         <TouchableOpacity
@@ -45,13 +46,9 @@ const Footer = ({ moveTo }) => {
             <View style={styles.circle(40, background)}>
               <Image
                 style={styles.Image(true)}
-                source={
-                  user
-                    ? {
-                        uri: profilePicture,
-                      }
-                    : Icons.chat
-                }
+                source={{
+                  uri: profilePicture,
+                }}
                 cachePolicy={"none"}
               />
             </View>
@@ -59,7 +56,7 @@ const Footer = ({ moveTo }) => {
         </TouchableOpacity>
       </View>
       <TouchableOpacity onPress={() => moveTo("Settings")}>
-        <Image style={styles.Image()} source={Icons.setting} />
+        <Icon name="Settings" size={40} />
       </TouchableOpacity>
       <CustomModal
         visible={showImage}

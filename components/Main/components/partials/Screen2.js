@@ -12,9 +12,10 @@ import SafeAreaView from "./utils/safe";
 import { useTheme } from "../../../../contexts/theme";
 import { useBlog } from "../../../../contexts/BlogContext";
 import readingIMG from "./images/readingIMG.jpg";
+import Icon from "./utils/icons";
 
 const Screen2 = ({ navigation }) => {
-  const { theme, Icons } = useTheme();
+  const { theme } = useTheme();
   const { currentBlog } = useBlog();
 
   return (
@@ -24,7 +25,7 @@ const Screen2 = ({ navigation }) => {
           style={styles.backButton()}
           onPress={() => navigation.goBack()}
         >
-          <Image source={Icons.return} style={styles.backIcon} />
+          <Icon name="ChevronLeft" size={40} />
           
         </TouchableOpacity>
         <Text style={styles.textStyles(20,"bold",0)}>Back</Text>

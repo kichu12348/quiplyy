@@ -1,37 +1,10 @@
 import { useState, useContext, createContext, useMemo, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import chatL from "./images/chatL.png";
-import chatD from "./images/chatD.png";
-import settingL from "./images/settingL.png";
-import settingD from "./images/settingD.png";
-import stuffL from "./images/stuffL.png";
-import stuffD from "./images/stuffD.png";
-import returnL from "./images/returnL.png";
-import returnD from "./images/returnD.png";
-import sendBtnD from "./images/sendBtnD.png";
-import stickerD from "./images/stickerD.png";
-import blogD from "./images/blogD.png";
-import blogL from "./images/blogL.png";
-import addL from "./images/addL.png";
-import addD from "./images/addD.png";
-import tickL from "./images/tickL.png";
-import tickD from "./images/tickD.png";
-import groupL from "./images/groupL.png";
-import groupD from "./images/groupD.png";
-import chessD from "./images/chessD.png";
-import chessL from "./images/chessL.png";
-import uploadD from "./images/uploadD.png";
-import downloadD from "./images/donwloadD.png";
-import downloadL from "./images/downloadL.png";
-import playL from "./images/playL.png";
-import playD from "./images/playD.png";
-import pauseL from "./images/pauseL.png";
-import pauseD from "./images/pauseD.png";
+
+//import icons
 import logoL from "./images/logoL.png";
 import logoD from "./images/logoD.png";
-import story from "./images/story.png";
-import aiL from "./images/aiL.png";
-import aiD from "./images/aiD.png";
+
 //import stickers
 import mogCat from "./stickers/mogCat.gif";
 import bonjour from "./stickers/bonjour.jpeg";
@@ -111,45 +84,11 @@ const ThemeProvider = ({ children }) => {
   /////////////////////////////////////////////
 
   const darkIcons = {
-    chat: chatD,
-    setting: settingD,
-    stuff: stuffD,
-    return: returnD,
-    sendBtn: sendBtnD,
-    sticker: stickerD,
-    blog: blogD,
-    add: addD,
-    tick: tickD,
-    group: groupD,
-    chess: chessD,
-    upload: uploadD,
-    download: downloadD,
-    play: playD,
-    pause: pauseD,
     logo: logoD,
-    story: story,
-    ai: aiD,
   };
 
   const lightIcons = {
-    chat: chatL,
-    setting: settingL,
-    stuff: stuffL,
-    return: returnL,
-    sendBtn: sendBtnD,
-    sticker: stickerD,
-    blog: blogL,
-    add: addL,
-    tick: tickL,
-    group: groupL,
-    chess: chessL,
-    upload: uploadD,
-    download: downloadL,
-    play: playL,
-    pause: pauseL,
     logo: logoL,
-    story: story,
-    ai: aiL,
   };
 
   const [Icons, setIcons] = useState(darkIcons);

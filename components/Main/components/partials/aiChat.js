@@ -22,9 +22,10 @@ import RotatingGradientRing from "./utils/animBg";
 import RenderList from "./chatComps/aiChatRenderList";
 import { Image } from "expo-image";
 import { BlurView } from "expo-blur";
+import Icon from "./utils/icons";
 
 export default function AiChat({ navigation }) {
-  const { Icons, theme, textInputColor } = useTheme();
+  const {theme, textInputColor } = useTheme();
   const { isConnected } = useSocket();
   const { user, messages, setMessages } = useAuth();
   const [inputText, setInputText] = useState("");
@@ -204,7 +205,7 @@ export default function AiChat({ navigation }) {
           style={styles.backIcon}
           onPress={() => navigation.goBack()}
         >
-          <Image source={Icons.return} style={styles.backIcon} />
+          <Icon name="ChevronLeft" size={40} />
         </TouchableOpacity>
       </View>
       <KeyboardAvoidingView
@@ -254,7 +255,7 @@ export default function AiChat({ navigation }) {
               onPress={handleSend}
               disabled={!isConnected || isStreaming}
             >
-              <Image source={Icons.sendBtn} style={styles.backIcon} />
+              <Icon name="SendHorizontal" size={30} />
             </TouchableOpacity>
             </BlurView>
           </View>

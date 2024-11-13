@@ -1,6 +1,5 @@
 import { View, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import React from "react";
-import { useTheme } from "../../../../../contexts/theme";
 import SafeAreaView from "./safe";
 import * as MediaLibrary from "expo-media-library";
 import { PanGestureHandler } from "react-native-gesture-handler";
@@ -10,6 +9,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { Image } from "expo-image";
+import Icon from "./icons";
 
 const ImageViewer = ({
   imageUri,
@@ -17,7 +17,6 @@ const ImageViewer = ({
   isProfilePicture = false,
   isStory = false,
 }) => {
-  const { Icons } = useTheme();
 
   async function saveImage() {
     if (isProfilePicture) return;
@@ -81,11 +80,11 @@ const ImageViewer = ({
               style={styles.backButton()}
               onPress={() => setIsImageViewerOpen(false)}
             >
-              <Image source={Icons.return} style={styles.backIcon} />
+              <Icon name="ChevronLeft" size={40} />
             </TouchableOpacity>
             {!isProfilePicture && (
               <TouchableOpacity style={styles.backButton()} onPress={saveImage}>
-                <Image source={Icons.download} style={styles.backIcon} />
+                <Icon name="CloudDownload" size={40} />
               </TouchableOpacity>
             )}
           </View>

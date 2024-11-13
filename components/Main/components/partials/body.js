@@ -31,6 +31,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import RenderList from "./chatComps/contactsRenderList";
+import Icon from "./utils/icons";
 
 const Body = ({ moveTo }) => {
   const theme = useTheme();
@@ -255,7 +256,7 @@ const Body = ({ moveTo }) => {
                 closeTopBar();
               }}
             >
-              <Image style={styles.playPause} source={theme.Icons.pause} />
+              <Icon name="Pause" size={30} />
             </TouchableOpacity>
           </TouchableOpacity>
         )}
@@ -282,7 +283,7 @@ const Body = ({ moveTo }) => {
                 disabled={!isConnected}
                 onPress={uploadStory}
               >
-                <Image source={theme.Icons.story} style={styles.Image(0, 35)} />
+                <Icon name="CircleFadingPlus" size={34} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.centerDivSpace(10)}
@@ -291,14 +292,14 @@ const Body = ({ moveTo }) => {
                   moveTo("AiChat");
                 }}
               >
-                <Image source={theme.Icons.ai} style={styles.Image(0, 35)} />
+                <Icon name="BotMessageSquare" size={34} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.Image(10)}
                 disabled={!isConnected || !socket}
                 onPress={openGpChat}
               >
-                <Image source={theme.Icons.add} style={styles.Image()} />
+                <Icon name="Users" size={34} />
               </TouchableOpacity>
             </>
           )}

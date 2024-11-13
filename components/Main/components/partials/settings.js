@@ -26,6 +26,7 @@ import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import ImageViewer from "./utils/imageView";
 import { Image } from "expo-image";
+import Icon from "./utils/icons";
 
 const Settings = ({ navigation }) => {
   const theme = useTheme();
@@ -164,7 +165,7 @@ const Settings = ({ navigation }) => {
             style={styles.Image(10)}
             onPress={() => setModalVisible(false)}
           >
-            <Image source={theme.Icons.return} style={styles.Image(0)} />
+            <Icon  name="ChevronLeft" size={40} />
           </TouchableOpacity>
           <Text
             style={styles.text(theme.theme === "dark" ? "#E0E0E0" : "#2D2D2D")}
@@ -260,7 +261,7 @@ const Settings = ({ navigation }) => {
           style={styles.Image(10)}
           onPress={() => navigation.goBack()}
         >
-          <Image source={theme.Icons.return} style={styles.Image(0)} />
+          <Icon name="ChevronLeft" size={40}/>
         </TouchableOpacity>
 
         <Text
@@ -420,7 +421,7 @@ const Settings = ({ navigation }) => {
               15
             )}
           >
-            v 1.21.2
+            v 1.22.0
           </Text>
           <Text
             style={styles.text(

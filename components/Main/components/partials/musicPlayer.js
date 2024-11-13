@@ -20,6 +20,7 @@ import ProgressBar from "./utils/progressBar";
 import { useMusic } from "../../../../contexts/musicContext";
 import { useEffect, useState } from "react";
 import { BlurView } from "expo-blur";
+import Icon from "./utils/icons";
 
 const Music = () => {
   const theme = useTheme();
@@ -164,9 +165,10 @@ const Music = () => {
 
             <View style={styles.setEnd}>
               {!item.isDownloaded && (
-                <Image
-                  source={theme.Icons.download}
-                  style={styles.audioImage(40, 40, 0)}
+                <Icon 
+                name="CloudDownload" 
+                size={30} 
+                style={{ alignSelf: "flex-end",marginRight: 10}}
                 />
               )}
             </View>
@@ -199,12 +201,9 @@ const Music = () => {
             {isPlayerOpen && (
               <TouchableOpacity
                 onPress={openPlayerComplete}
-                style={styles.rotImage(40, 40, 0, 0, 270)}
+                style={styles.rotImage(40, 40, 0, 0, 0)}
               >
-                <Image
-                  source={theme.Icons.return}
-                  style={styles.rotImage(40, 40, 0, 0, 0)}
-                />
+                <Icon name="ChevronDown" size={40} />
               </TouchableOpacity>
             )}
             {!isPlayerOpen ? (
@@ -225,15 +224,9 @@ const Music = () => {
                   }}
                 >
                   {isPlaying ? (
-                    <Image
-                      source={theme.Icons.pause}
-                      style={styles.audioImage(25, 25, 0, 0)}
-                    />
+                    <Icon name="Pause" size={30} />
                   ) : (
-                    <Image
-                      source={theme.Icons.play}
-                      style={styles.audioImage(25, 25, 0, 0)}
-                    />
+                    <Icon name="Play" size={30} />
                   )}
                 </TouchableOpacity>
               </>
@@ -264,23 +257,15 @@ const Music = () => {
                     }}
                   >
                     {isPlaying ? (
-                      <Image
-                        source={
-                          theme.theme === "dark"
-                            ? theme.lightIcons.pause
-                            : theme.darkIcons.pause
-                        }
-                        style={styles.audioImage(25, 25, 0, 0)}
-                      />
+                      <Icon name="Pause" 
+                      size={30}
+                      color={theme.theme === "dark" ? "black" : "white"}
+                       />
                     ) : (
-                      <Image
-                        source={
-                          theme.theme === "dark"
-                            ? theme.lightIcons.play
-                            : theme.darkIcons.play
-                        }
-                        style={styles.audioImage(25, 25, 0, 0)}
-                      />
+                      <Icon name="Play" 
+                      size={30}
+                      color={theme.theme === "dark" ? "black" : "white"}
+                       />
                     )}
                   </TouchableOpacity>
                 </View>

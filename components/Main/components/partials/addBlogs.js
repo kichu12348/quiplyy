@@ -15,9 +15,10 @@ import {
   Alert,
 } from "react-native";
 import SafeAreaView from "./utils/safe";
+import Icon from "./utils/icons";
 
 const AddBlogs = ({ setIsAddBlog, supabase,setBlogs }) => {
-  const { theme, Icons, chatColor } = useTheme();
+  const { theme,chatColor } = useTheme();
   const {isConnected} = useSocket();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -53,7 +54,7 @@ const AddBlogs = ({ setIsAddBlog, supabase,setBlogs }) => {
               setIsAddBlog(false);
             }}
           >
-            <Image source={Icons.return} style={styles.backIcon} />
+            <Icon name="ChevronLeft" size={40} />
           </TouchableOpacity>
         </View>
         <KeyboardAvoidingView

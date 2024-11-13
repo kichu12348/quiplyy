@@ -3,6 +3,7 @@ import SafeAreaView from './utils/safe'
 import React from 'react'
 import Music from './musicPlayer'
 import { useTheme } from '../../../../contexts/theme'
+import Icon from './utils/icons'
 
 const Stuff = ({navigation}) => {
 
@@ -14,13 +15,13 @@ const Stuff = ({navigation}) => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Image source={Icons.return} style={styles.backIcon} />
+          <Icon name="ChevronLeft" size={40} />
         </TouchableOpacity>
         <Text style={styles.title(theme)}>Stuff</Text>
         <View style={styles.chessBox}>
-          <TouchableOpacity onPress={()=>navigation.navigate('ChessJs')}>
+          {/* <TouchableOpacity onPress={()=>navigation.navigate('ChessJs')}>
           <Image source={Icons.chess} style={styles.backIcon} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
       <Music />

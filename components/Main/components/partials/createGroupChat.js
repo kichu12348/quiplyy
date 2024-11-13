@@ -15,6 +15,7 @@ import { useSql } from "../../../../contexts/sqlContext";
 import { useSocket } from "../../../../contexts/socketContext";
 import axios from "axios";
 import { useAuth } from "../../../../contexts/authContext";
+import Icon from "./utils/icons";
 
 const CreateGroupChat = ({ setIsGpChat }) => {
   const { theme, Icons, textInputColor, background } = useTheme();
@@ -108,7 +109,7 @@ const CreateGroupChat = ({ setIsGpChat }) => {
         <Text style={styles.text(theme)}>{item.username}</Text>
         <View style={styles.tickContainer}>
           {selectedContacts.includes(item.id) ? (
-            <Image source={Icons.tick} style={styles.Image(30)} />
+            <Icon name="Check" size={30}  style={{alignSelf:"flex-end"}}/>
           ) : null}
         </View>
       </TouchableOpacity>
@@ -128,7 +129,11 @@ const CreateGroupChat = ({ setIsGpChat }) => {
       <View style={styles.container(background)}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => setIsGpChat(false)}>
-            <Image source={Icons.return} style={styles.Image(50)} />
+            <Icon 
+            name="ChevronLeft" 
+            size={40}
+            style={{marginLeft:10,alignSelf:"center"}}
+             />
           </TouchableOpacity>
           <Text style={styles.text(theme)}>CreateGroupChat</Text>
         </View>

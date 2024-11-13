@@ -41,7 +41,7 @@ const Home = ({ navigation }) => {
 
   // AI model setup
   const genAI = new GoogleGenerativeAI(
-    "AIzaSyBOTCMRvTiPh5Ymole_TBaM5dHHPla1K24"
+    "AIzaSyBDGayU5oxZzHpQQbxpW3S54h34_pdZDLw"
   );
 
   const safetySettings = [
@@ -74,11 +74,15 @@ const Home = ({ navigation }) => {
   });
 
   async function generateText() {
-    const { response } = await model.generateContent(
-      `you are supposed to send a random happy,funny,caring,blush type or a super cheesy pickup line 👀 or any type of message that can make one smile or laugh or feel good about themselves no insulting stuff, use emojis as much as possible. the user is: ${auth.user?.username}. Max length of the message should be 300 characters.`
-    );
-    const result = await response.text();
-    return result.trim();
+    try {
+      const { response } = await model.generateContent(
+        `you are supposed to send a random happy,funny,caring,blush type or a super cheesy pickup line 👀 or any type of message that can make one smile or laugh or feel good about themselves no insulting stuff, use emojis as much as possible. the user is: ${auth.user?.username}. Max length of the message should be 300 characters.`
+      );
+      const result = await response.text();
+      return result.trim();
+    } catch (e) {
+      return null;
+    }
   }
 
   const height = useSharedValue(0);
@@ -106,8 +110,9 @@ const Home = ({ navigation }) => {
   };
 
   const startNotif = async () => {
-    if(text) return;
+    if (text) return;
     const txt = await generateText();
+    if(!txt) return;
     setText(txt);
     startAnimation();
   };
@@ -198,7 +203,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "400",
   }),
-  container:(theme) => ({
+  container: (theme) => ({
     flex: 1,
     backgroundColor: theme.background,
   }),

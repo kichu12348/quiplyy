@@ -13,9 +13,10 @@ import { useTheme } from "../../../../contexts/theme";
 import { useSocket } from "../../../../contexts/socketContext";
 import AddBlogs from "./addBlogs";
 import { useBlog } from "../../../../contexts/BlogContext";
+import Icon from "./utils/icons";
 
 const Screen1 = ({ navigation }) => {
-  const { theme, Icons } = useTheme();
+  const { theme} = useTheme();
   const { isConnected, supabase } = useSocket();
   const [blogs, setBlogs] = useState([]);
   const [isAddBlog, setIsAddBlog] = useState(false);
@@ -74,7 +75,7 @@ const Screen1 = ({ navigation }) => {
             style={styles.backButton()}
             onPress={() => navigation.goBack()}
           >
-            <Image source={Icons.return} style={styles.backIcon} />
+            <Icon name="ChevronLeft" size={40} />
           </TouchableOpacity>
           <Text style={styles.title(theme)}>Blogs</Text>
         </View>
@@ -83,7 +84,7 @@ const Screen1 = ({ navigation }) => {
           disabled={!isConnected}
           onPress={() => setIsAddBlog(true)}
         >
-          <Image source={Icons.add} style={styles.backIcon} />
+          <Icon name="CirclePlus" size={40} />
         </TouchableOpacity>
       </View>
 

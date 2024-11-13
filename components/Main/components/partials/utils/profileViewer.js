@@ -20,8 +20,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import { BlurView } from "expo-blur";
 import { useBackground } from "../../../../../contexts/imageBackground";
+import Icon from "./icons";
 
-const MediaList = ({ imageMessages, Icons, setIsOpen }) => {
+const MediaList = ({ imageMessages, setIsOpen }) => {
   const [isMediaOpen, setIsMediaOpen] = useState(false);
   const [mediaUri, setMediaUri] = useState(null);
   const { width } = Dimensions.get('window');
@@ -31,7 +32,7 @@ const MediaList = ({ imageMessages, Icons, setIsOpen }) => {
     <SafeAreaView>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => setIsOpen(false)}>
-          <Image source={Icons.return} style={styles.image(40, 40, 0)} />
+          <Icon name="ChevronLeft" size={40} />
         </TouchableOpacity>
       </View>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -81,8 +82,7 @@ const MediaList = ({ imageMessages, Icons, setIsOpen }) => {
 
 const BackgroundImage = ({ 
   image, 
-  currBackground, 
-  Icons, 
+  currBackground,  
   downloadBackground, 
   setBackgroundImageForRoom,
   setBackground,
@@ -113,12 +113,12 @@ const BackgroundImage = ({
           <>
             {!image.isDownloaded && (
               <View style={styles.downloadBackground(image.isDownloaded)}>
-                <Image source={Icons.download} style={styles.downloadButton} />
+                <Icon name="CloudDownload" size={50} />
               </View>
             )}
             {isActive && (
               <View style={styles.downloadBackground(!isActive)}>
-                <Image source={Icons.tick} style={styles.downloadButton} />
+                <Icon name="Check" size={50} />
               </View>
             )}
           </>
@@ -131,7 +131,6 @@ const BackgroundImage = ({
 const BackgroundList = ({ 
   backgrounds, 
   theme, 
-  Icons, 
   setIsBackgroundOpen,
   currBackground,
   downloadBackground,
@@ -148,7 +147,7 @@ const BackgroundList = ({
       <SafeAreaView backgroundColor={"transparent"}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => setIsBackgroundOpen(false)}>
-            <Image source={Icons.return} style={styles.image(40, 40, 0)} />
+            <Icon name="ChevronLeft" size={40} />
           </TouchableOpacity>
         </View>
         <View style={styles.flex1}>
@@ -159,7 +158,6 @@ const BackgroundList = ({
               <BackgroundImage 
                 image={item}
                 currBackground={currBackground}
-                Icons={Icons}
                 downloadBackground={downloadBackground}
                 setBackgroundImageForRoom={setBackgroundImageForRoom}
                 setBackground={setBackground}
@@ -183,7 +181,7 @@ const ProfileViewer = ({
   currBackground = null,
   setBackground
 }) => {
-  const { theme, Icons, textInputColor, background } = useTheme();
+  const { theme, textInputColor, background } = useTheme();
   const { isConnected, supabase } = useSocket();
   const { backgrounds, setBackgroundImageForRoom, downloadBackground } = useBackground();
   const auth = useAuth();
@@ -233,7 +231,7 @@ const ProfileViewer = ({
     <SafeAreaView>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => setIsOpen(false)}>
-          <Image source={Icons.return} style={styles.image(40, 40, 0)} />
+          <Icon name="ChevronLeft" size={40} />
         </TouchableOpacity>
       </View>
       <View style={styles.spaceEvenly}>
@@ -288,7 +286,7 @@ const ProfileViewer = ({
                 )}>
                   Media
                 </Text>
-                <Image source={Icons.return} style={styles.image(35, 35, 0, 180)} />
+                <Icon name="ChevronRight" size={40} />
               </TouchableOpacity>
             </View>
             <View style={styles.mediaBox()}>
@@ -303,7 +301,7 @@ const ProfileViewer = ({
                 )}>
                   Chat Background
                 </Text>
-                <Image source={Icons.return} style={styles.image(35, 35, 0, 180)} />
+                <Icon name="ChevronRight" size={40} />
               </TouchableOpacity>
             </View>
           </>
@@ -332,7 +330,6 @@ const ProfileViewer = ({
       >
         <MediaList 
           imageMessages={imageMessages} 
-          Icons={Icons}
           setIsOpen={setIsImageViewerOpen}
         />
       </Modal>
@@ -346,7 +343,6 @@ const ProfileViewer = ({
         <BackgroundList 
           backgrounds={backgrounds}
           theme={theme}
-          Icons={Icons}
           setIsBackgroundOpen={setIsBackgroundOpen}
           currBackground={currBackground}
           downloadBackground={downloadBackground}
