@@ -13,7 +13,7 @@ const SocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [allMessages, setAllMessages] = useState([]);
 
-  const endPoint = "https://quiplyserver.onrender.com"; //https://quiplyserver.onrender.com
+  const endPoint = "http://34.47.218.65"; //https://quiplyserver.onrender.com
   const SUPABASE_URL = "https://vevcjimdxdaprqrdbptj.supabase.co";
   const SUPABASE_KEY =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZldmNqaW1keGRhcHJxcmRicHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTE4NzMxMTAsImV4cCI6MjAyNzQ0OTExMH0.8p3Ho0QJ0h-3ANpQLa_qX05PCqWu22X2l2YdL4dBss8";
